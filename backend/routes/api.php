@@ -1,0 +1,42 @@
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\ReceiptController;
+use App\Http\Controllers\Api\TransactionController;
+
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});
+
+use App\Http\Controllers\Api\BatchController;
+
+// Batch routes
+Route::prefix('batches')->group(function () {
+    Route::get('/', [BatchController::class, 'index']);
+    Route::post('/', [BatchController::class, 'store']);
+    Route::get('/{batch}', [BatchController::class, 'show']);
+    Route::patch('/{batch}/status', [BatchController::class, 'updateStatus']);
+    Route::patch('/{batch}/receipts/{receipt}/label', [BatchController::class, 'updateReceiptLabel']);
+    Route::delete('/{batch}', [BatchController::class, 'destroy']);
+    Route::post('/{batch}/process', [BatchController::class, 'process']);
+});
+
+// Receipt routes
+Route::prefix('receipts')->group(function () {
+    Route::post('/upload', [ReceiptController::class, 'upload']);
+    Route::get('/', [ReceiptController::class, 'index']);
+    Route::get('/{receipt}/image', [ReceiptController::class, 'serveImage'])->name('receipts.image');
+    Route::patch('/{receipt}', [ReceiptController::class, 'updateCategory'])->name('receipts.update-category');
+    Route::patch('/{receipt}/account', [ReceiptController::class, 'assignAccount'])->name('receipts.assign-account');
+    Route::patch('/{receipt}/ocr', [ReceiptController::class, 'updateOcrData'])->name('receipts.update-ocr');
+    Route::delete('/{receipt}', [ReceiptController::class, 'destroy'])->name('receipts.destroy');
+});
+
+// Transaction routes
+Route::prefix('transactions')->group(function () {
+    Route::post('/', [TransactionController::class, 'store']);
+    Route::get('/', [TransactionController::class, 'index']);
+    Route::get('/{transaction}', [TransactionController::class, 'show']);
+    Route::delete('/{transaction}', [TransactionController::class, 'destroy']);
+});
