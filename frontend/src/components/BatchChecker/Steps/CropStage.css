@@ -1,0 +1,535 @@
+/* ─── Fonts ─────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+
+/* ─── Ocean Blue Tokens ──────────────────────────────────────────────────────── */
+:root {
+  --ocean-950:  #020c18;
+  --ocean-900:  #051628;
+  --ocean-850:  #071e35;
+  --ocean-800:  #0a2540;
+  --ocean-700:  #0e3a5e;
+  --ocean-600:  #1260a4;
+  --ocean-500:  #1a7fcb;
+  --ocean-400:  #38a8e8;
+  --ocean-300:  #67c6f5;
+  --ocean-200:  #a8dffb;
+  --ocean-100:  #ddf2fe;
+
+  --amber-500:  #f59e0b;
+  --amber-400:  #fbbf24;
+  --amber-300:  #fcd34d;
+
+  --glass-bg:         rgba(10, 37, 64, 0.6);
+  --glass-border:     rgba(56, 168, 232, 0.12);
+  --glass-border-mid: rgba(56, 168, 232, 0.22);
+  --glow-blue:        rgba(26, 127, 203, 0.35);
+  --glow-amber:       rgba(245, 158, 11, 0.35);
+
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body:    'Space Grotesk', system-ui, sans-serif;
+
+  --radius-card:   14px;
+  --radius-btn:    14px;
+  --radius-badge:  8px;
+  --radius-input:  12px;
+}
+
+/* ─── Root ───────────────────────────────────────────────────────────────────── */
+.cs-root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: var(--font-body);
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(18, 96, 164, 0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(26, 127, 203, 0.12) 0%, transparent 55%),
+    var(--ocean-950);
+  animation: cs-fade-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes cs-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Content Layout ─────────────────────────────────────────────────────────── */
+.cs-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ─── Canvas Wrapper ─────────────────────────────────────────────────────────── */
+.cs-canvas-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  overflow: hidden;
+}
+
+.cs-canvas-rotator {
+  transform-origin: center center;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+}
+
+.cs-image {
+  max-width: 420px !important;
+  max-height: 600px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  display: block;
+  transition: opacity 0.3s ease;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Sidebar ────────────────────────────────────────────────────────────────── */
+.cs-sidebar {
+  width: 480px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.01);
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+  overflow-y: auto;
+  gap: 24px;
+  animation: cs-slide-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes cs-slide-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.cs-sidebar::-webkit-scrollbar { width: 4px; }
+.cs-sidebar::-webkit-scrollbar-track { background: transparent; }
+.cs-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(56, 168, 232, 0.2);
+  border-radius: 99px;
+}
+.cs-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(56, 168, 232, 0.4); }
+
+/* ─── Header Card ────────────────────────────────────────────────────────────── */
+.cs-header-card {
+  padding: 24px 28px;
+  border-radius: 20px;
+  text-align: left;
+  border: 1px solid;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cs-header-card.gcash {
+  background: rgba(18, 96, 164, 0.12);
+  border-color: rgba(56, 168, 232, 0.25);
+}
+
+.cs-header-card.others {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.cs-header-icon {
+  display: none;
+}
+
+.cs-header-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1;
+  position: relative;
+  display: inline-block;
+}
+
+.cs-header-title::after {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 3px;
+  border-radius: 99px;
+  margin-top: 6px;
+  background: linear-gradient(90deg, var(--ocean-400), var(--ocean-300));
+  box-shadow: 0 0 8px var(--glow-blue);
+}
+
+.cs-header-card.others .cs-header-title::after {
+  background: linear-gradient(90deg, var(--amber-500), var(--amber-400));
+  box-shadow: 0 0 8px var(--glow-amber);
+}
+
+.cs-header-subtitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(168, 223, 251, 0.45);
+  line-height: 1.5;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+/* ─── Stats Grid ─────────────────────────────────────────────────────────────── */
+.cs-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.cs-stat-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.cs-stat-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
+}
+
+.cs-stat-card.gcash {
+  background: rgba(18, 96, 164, 0.08);
+  border-color: rgba(56, 168, 232, 0.15);
+}
+
+.cs-stat-card.others {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.15);
+}
+
+.cs-stat-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+
+.cs-stat-value {
+  font-family: 'Space Mono', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ─── Info Section ───────────────────────────────────────────────────────────── */
+.cs-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cs-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+}
+
+.cs-info-label {
+  font-size: 9px;
+  font-weight: 900;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.cs-info-value {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.cs-info-value.gcash { color: var(--ocean-300); }
+.cs-info-value.others { color: var(--amber-400); }
+
+/* ─── Rotate Button ──────────────────────────────────────────────────────────── */
+.cs-rotate-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cs-rotate-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.cs-rotate-label {
+  font-size: 9px;
+  font-weight: 900;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  transition: color 0.2s;
+}
+
+.cs-rotate-btn:hover .cs-rotate-label {
+  color: #fff;
+}
+
+.cs-rotate-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-rotate-angle {
+  font-size: 9px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.cs-rotate-icon {
+  color: #64748b;
+  transition: all 0.3s;
+}
+
+.cs-rotate-btn:hover .cs-rotate-icon {
+  color: #fff;
+}
+
+/* ─── Form ───────────────────────────────────────────────────────────────────── */
+.cs-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cs-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cs-form-label {
+  font-size: 9px;
+  font-weight: 900;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.cs-form-input,
+.cs-form-select {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-input);
+  padding: 12px 16px;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.cs-form-input:focus,
+.cs-form-select:focus {
+  border-color: var(--amber-500);
+  background: rgba(245, 158, 11, 0.05);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.cs-form-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.cs-form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%2364748b' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+  cursor: pointer;
+  color-scheme: dark;
+}
+
+.cs-form-select option {
+  background: #0a2540;
+  color: #fff;
+  padding: 8px;
+}
+
+/* ─── Recategorize Button ────────────────────────────────────────────────────── */
+.cs-recategorize-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 9px;
+  font-weight: 900;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.cs-recategorize-btn:hover {
+  color: #fff;
+}
+
+/* ─── Navigation ─────────────────────────────────────────────────────────────── */
+.cs-nav {
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cs-nav-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.cs-nav-btn {
+  flex: 1;
+  padding: 16px 24px;
+  border-radius: var(--radius-btn);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.cs-nav-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.cs-nav-btn.prev {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #64748b;
+}
+
+.cs-nav-btn.prev:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.cs-nav-btn.next {
+  flex: 2;
+  box-shadow: 0 6px 28px rgba(18, 96, 164, 0.45);
+}
+
+.cs-nav-btn.next.gcash {
+  background: linear-gradient(135deg, var(--ocean-500) 0%, var(--ocean-600) 60%, #0f4c91 100%);
+  color: #fff;
+  border: 1px solid rgba(56, 168, 232, 0.35);
+}
+
+.cs-nav-btn.next.others {
+  background: linear-gradient(135deg, var(--amber-500) 0%, #d97706 60%, #b45309 100%);
+  color: #000;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  box-shadow: 0 6px 28px rgba(245, 158, 11, 0.45);
+}
+
+.cs-nav-btn.next:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 36px rgba(18, 96, 164, 0.55);
+}
+
+.cs-nav-btn.next.others:hover {
+  box-shadow: 0 12px 36px rgba(245, 158, 11, 0.55);
+}
+
+.cs-nav-btn.next:active {
+  transform: translateY(0);
+}
+
+.cs-nav-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.cs-nav-divider {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cs-nav-text {
+  font-size: 9px;
+  font-weight: 900;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  white-space: nowrap;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .cs-sidebar {
+    width: 400px;
+    padding: 30px;
+  }
+
+  .cs-canvas-wrapper {
+    padding: 30px;
+  }
+
+  .cs-image {
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 900px) {
+  .cs-content {
+    flex-direction: column;
+  }
+
+  .cs-sidebar {
+    width: 100%;
+    max-height: 40vh;
+  }
+
+  .cs-canvas-wrapper {
+    flex: 1;
+  }
+}

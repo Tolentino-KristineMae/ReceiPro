@@ -5,6 +5,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import WizardStepCrop from './Steps/WizardStepCrop';
 import BillingSummaryModal from './BillingSummaryModal';
 import SortingStage from './Steps/SortingStage';
+import CropStage from './Steps/CropStage';
 import { getApiUrl } from '../../apiConfig';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -228,9 +229,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   const [manualReference, setManualReference] = useState('');
   const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Image rotation state (0, 90, 180, 270)
+  // Image rotation state - tracks cumulative rotation for smooth animation
   const [imageRotation, setImageRotation] = useState(0);
-  const rotateImage = () => setImageRotation(r => (r + 90) % 360);
+  const rotateImage = () => setImageRotation(r => r + 90);
 
   // Per-receipt account tracking (receipt.id → account name)
   const [accountEntries, setAccountEntries] = useState({});
@@ -742,11 +743,14 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 <polyline points="14 17.5 16.5 20 21 15"/>
               </svg>
             )}
-            {/* Stage 3: Crop */}
+            {/* Stage 3: Crop & Input */}
             {phase === 'crop' && (
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 2v14a2 2 0 002 2h14"/>
-                <path d="M18 22V8a2 2 0 00-2-2H2"/>
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="9" y1="3" x2="9" y2="21"/>
+                <line x1="15" y1="3" x2="15" y2="21"/>
+                <line x1="3" y1="9" x2="21" y2="9"/>
+                <line x1="3" y1="15" x2="21" y2="15"/>
               </svg>
             )}
             {/* Stage 4: OCR */}
@@ -826,10 +830,44 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   Classify each receipt as GCash or Others
                 </div>
               </div>
+            ) : phase === 'crop' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {/* Stage pill */}
+                  <span style={{
+                    padding: '3px 10px', borderRadius: '100px',
+                    background: 'rgba(245,158,11,0.15)',
+                    border: '1px solid rgba(245,158,11,0.35)',
+                    color: '#fbbf24',
+                    fontSize: '9px', fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.2em',
+                    fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                  }}>
+                    Stage 3 of 8
+                  </span>
+                </div>
+                {/* Title */}
+                <div style={{
+                  fontSize: '16px', fontWeight: 700,
+                  color: '#f1f5f9',
+                  letterSpacing: '-0.02em', lineHeight: 1.2,
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  Crop & Input
+                </div>
+                {/* Subtitle */}
+                <div style={{
+                  fontSize: '10px', fontWeight: 500,
+                  color: '#64748b',
+                  letterSpacing: '0.04em',
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  Crop GCash receipts and input Others manually
+                </div>
+              </div>
             ) : (
               <>
                 <div className="cw-title">
-                  {phase === 'crop' && 'Stage 3: Crop & Input'}
                   {phase === 'ocr' && 'Stage 4: Extraction'}
                   {phase === 'verify' && 'Stage 5: Run Check'}
                   {phase === 'finalize' && 'Stage 6: Finalize'}
@@ -1352,137 +1390,59 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 </div>
               )}
             </div>
+          ) : phase === 'crop' ? (
+            <CropStage
+              current={current}
+              currentCategory={currentCategory}
+              currentAccount={currentAccount}
+              setCurrentAccount={setCurrentAccount}
+              crop={crop}
+              onChange={onChange}
+              onComplete={onComplete}
+              imgRef={imgRef}
+              onImageLoad={onImageLoad}
+              imageRotation={imageRotation}
+              rotateImage={rotateImage}
+              manualAmount={manualAmount}
+              setManualAmount={setManualAmount}
+              manualReference={manualReference}
+              setManualReference={setManualReference}
+              manualDate={manualDate}
+              setManualDate={setManualDate}
+              ACCOUNTS={ACCOUNTS}
+              onPrev={handlePrev}
+              onNext={handleNextCrop}
+              onRecategorize={() => {
+                setPhase('categorize');
+                setIndex(0);
+                setCrop(null);
+                setCompletedCrop(null);
+              }}
+              index={index}
+              total={total}
+              gcashProcessed={gcashProcessed}
+              gcashTotal={gcashReceipts.length}
+              othersProcessed={othersProcessed}
+              othersTotal={othersReceipts.length}
+              isGcash={isGcash}
+              isOthers={isOthers}
+            />
           ) : (
             <WizardStepCrop
-              crop={phase === 'crop' && currentCategory === 'gcash' ? crop : null}
+              crop={null}
               onChange={onChange}
               onComplete={onComplete}
               imgRef={imgRef}
               src={current ? `http://localhost:8000/api/receipts/${current.id}/image` : ''}
               onLoad={onImageLoad}
-              disabled={phase === 'categorize'}
+              disabled={true}
               category={currentCategory}
               rotation={imageRotation}
             />
           )}
 
-          {phase !== 'categorize' && (
+          {phase !== 'categorize' && phase !== 'crop' && (
           <div className="cw-sidebar">
-            {phase === 'crop' && (
-              <div className="flex flex-col gap-6 animate-in slide-in-from-right-4 duration-300">
-                <div className={`${currentCategory === 'gcash' ? 'bg-blue-500/10 border-blue-500/20' : 'bg-amber-500/10 border-amber-500/20'} border rounded-[32px] p-8 text-center`}>
-                  <div className="text-4xl mb-4">{currentCategory === 'gcash' ? '✂️' : '✍️'}</div>
-                  <h4 className="text-white font-black uppercase tracking-widest text-sm mb-2">
-                    {currentCategory === 'gcash' ? 'Stage 3: Crop & Input' : 'Stage 3: Manual Input'}
-                  </h4>
-                  <p className="text-slate-400 text-[10px] font-medium leading-relaxed">
-                    {currentCategory === 'gcash' 
-                      ? `Adjust the crop for GCash receipt ${index + 1}.`
-                      : `Enter the details manually for Other receipt ${index + 1}.`}
-                  </p>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between px-2">
-                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Category</span>
-                    <span className={`text-[10px] font-bold uppercase tracking-widest ${currentCategory === 'gcash' ? 'text-blue-400' : 'text-amber-400'}`}>{currentCategory}</span>
-                  </div>
-
-                  {currentAccount && (
-                    <div className="flex items-center justify-between px-2">
-                      <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Account</span>
-                      <span className="text-[10px] font-bold text-white uppercase tracking-widest">{currentAccount}</span>
-                    </div>
-                  )}
-
-                  {/* Rotate button */}
-                  <button
-                    onClick={rotateImage}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all group"
-                  >
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest group-hover:text-white transition-colors">
-                      Rotate Image
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">
-                        {imageRotation === 0 ? 'Portrait' : imageRotation === 90 ? 'Landscape' : imageRotation === 180 ? 'Inverted' : 'Landscape ←'}
-                      </span>
-                      <svg
-                        width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                        className="text-slate-500 group-hover:text-white transition-colors"
-                        style={{ transform: `rotate(${imageRotation}deg)`, transition: 'transform 0.3s ease' }}
-                      >
-                        <path d="M21 2v6h-6" />
-                        <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-                        <path d="M3 22v-6h6" />
-                        <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-                      </svg>
-                    </div>
-                  </button>
-                  
-                  {currentCategory === 'others' && (
-                    <div className="flex flex-col gap-4 mt-4 p-4 bg-white/5 rounded-2xl border border-white/5">
-                      <div>
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Account</label>
-                        <select
-                          value={currentAccount || ''}
-                          onChange={(e) => setCurrentAccount(e.target.value)}
-                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold focus:border-amber-500 outline-none transition-all appearance-none"
-                          style={{ colorScheme: 'dark' }}
-                        >
-                          <option value="">— Select Account —</option>
-                          {ACCOUNTS.map(acc => (
-                            <option key={acc} value={acc}>{acc}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Amount (₱)</label>
-                        <input 
-                          type="number" 
-                          value={manualAmount} 
-                          onChange={(e) => setManualAmount(e.target.value)}
-                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold focus:border-amber-500 outline-none transition-all"
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Label</label>
-                        <input 
-                          type="text" 
-                          value={manualReference} 
-                          onChange={(e) => setManualReference(e.target.value)}
-                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold focus:border-amber-500 outline-none transition-all"
-                          placeholder="e.g. Payment"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Transaction Date</label>
-                        <input 
-                          type="date" 
-                          value={manualDate} 
-                          onChange={(e) => setManualDate(e.target.value)}
-                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold focus:border-amber-500 outline-none transition-all"
-                        />
-                      </div>
-                    </div>
-                  )}
-                  
-                  <button 
-                    onClick={() => {
-                      setPhase('categorize');
-                      setIndex(0);
-                      setCrop(null);
-                      setCompletedCrop(null);
-                    }}
-                    className="w-full py-3 text-[9px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
-                  >
-                    ← Re-categorize All
-                  </button>
-                </div>
-              </div>
-            )}
 
             {phase === 'ocr' && (
               <div className="flex flex-col gap-6 animate-in slide-in-from-right-4 duration-300">
