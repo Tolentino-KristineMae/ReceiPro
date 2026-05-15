@@ -3,8 +3,8 @@ import { createWorker } from 'tesseract.js';
 import { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import WizardStepCrop from './Steps/WizardStepCrop';
-import WizardStepFilterAndAssign from './Steps/WizardStepFilterAndAssign';
 import BillingSummaryModal from './BillingSummaryModal';
+import SortingStage from './Steps/SortingStage';
 import { getApiUrl } from '../../apiConfig';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -12,9 +12,9 @@ const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap');
 
   .cw-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+    position: fixed; inset: 0; background: rgba(226, 240, 253, 0.85);
     display: flex; align-items: center; justify-content: center;
-    z-index: 1000; padding: 20px; backdrop-filter: blur(12px);
+    z-index: 1000; padding: 20px; backdrop-filter: blur(16px);
   }
   .cw-card {
     background: #0b0d11; border: 1px solid rgba(255,255,255,0.08);
@@ -45,8 +45,6 @@ const CSS = `
   .cw-subtitle { font-family: 'DM Sans', sans-serif; font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
   .cw-close { position: absolute; right: 40px; color: #475569; font-size: 20px; cursor: pointer; transition: color 0.2s; border: none; background: none; }
   .cw-close:hover { color: #fff; }
-  .cw-reset { position: absolute; right: 80px; color: #ef4444; font-size: 16px; cursor: pointer; transition: color 0.2s; border: none; background: none; }
-  .cw-reset:hover { color: #dc2626; }
 
   .cw-content { 
     flex: 1; 
@@ -233,6 +231,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   // Image rotation state (0, 90, 180, 270)
   const [imageRotation, setImageRotation] = useState(0);
   const rotateImage = () => setImageRotation(r => (r + 90) % 360);
+
+  // Per-receipt account tracking (receipt.id → account name)
+  const [accountEntries, setAccountEntries] = useState({});
   
   const imgRef = useRef(null);
   const ACCOUNTS = ['Babilyn', 'Nixie', 'Kristine'];
@@ -355,45 +356,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     return canvas.toDataURL('image/png');
   };
 
-  const handleReset = () => {
-    if (window.confirm('This will reset all progress and start from the beginning. Are you sure?')) {
-      // Reset all state to initial values
-      setPhase('categorize');
-      setIndex(0);
-      setCheckedForOthers(new Set());
-      setSortingView('select');
-      setSelections({});
-      setCrops({});
-      setManualEntries({});
-      setIsProcessingOcr(false);
-      setIsVerifying(false);
-      setIsFinalizing(false);
-      setOcrResults(null);
-      setShowOcrPreview(false);
-      setShowVerifyPreview(false);
-      setFinalizedBatch(null);
-      setDeductionType('none');
-      setManualDeduction('');
-      setBillingMethod('both');
-      setCashDenominations({
-        '1000': 0, '500': 0, '200': 0, '100': 0, '50': 0, '20': 0,
-        'c20': 0, 'c10': 0, 'c5': 0, 'c1': 0
-      });
-      setBankTransferAmount(0);
-      setShowBillingSummary(false);
-      setShowBillingSummaryModal(false);
-      setSavedBatchInfo(null);
-      setCurrentCategory(null);
-      setCurrentAccount(null);
-      setCrop(null);
-      setCompletedCrop(null);
-      setManualAmount('');
-      setManualReference('');
-      setManualDate(new Date().toISOString().split('T')[0]);
-      setImageRotation(0);
-    }
-  };
-
   const handlePrev = () => {
     if (index > 0) {
       setIndex(i => i - 1);
@@ -482,7 +444,10 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       payload.ocr_data = mData;
       if (currentAccount) payload.account_holder = currentAccount;
       setManualEntries(prev => ({ ...prev, [index]: mData }));
-      // Also persist the chosen account into selections so OCR loop can read it
+      // Track account by receipt id so OCR loop can read it reliably
+      if (currentAccount && current) {
+        setAccountEntries(prev => ({ ...prev, [current.id]: currentAccount }));
+      }
       setSelections(prev => ({
         ...prev,
         [index]: { ...prev[index], category: 'others', account: currentAccount || 'OTHERS' }
@@ -604,10 +569,10 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
         const sessionManual = manualEntries[i];
         if ((r.category === 'others' && r.ocr_data?.manual) || sessionManual) {
           const data = sessionManual || r.ocr_data;
-          // Account: prefer session selection, then receipt's saved value
-          const sessionAccount = selections[i]?.account || null;
-          const resolvedReceipt = sessionAccount
-            ? { ...r, account_holder: sessionAccount }
+          // Account: prefer accountEntries (set during manual input), then receipt's saved value
+          const resolvedAccount = accountEntries[r.id] || r.account_holder;
+          const resolvedReceipt = resolvedAccount
+            ? { ...r, account_holder: resolvedAccount }
             : r;
           results.push({
             receipt: resolvedReceipt,
@@ -616,7 +581,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
             date: data.date,
             confidence: 100,
             manualEntry: true,
-            account_holder: resolvedReceipt.account_holder,
+            account_holder: resolvedAccount || r.account_holder,
           });
           continue;
         }
@@ -721,14 +686,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     }
   };
 
-  const handleCategorySelect = (cat) => {
-    setCurrentCategory(cat);
-    setCurrentAccount(null);
-  };
-
-  const handleAccountSelect = (acc) => {
-    setCurrentAccount(acc);
-  };
+  
 
   useEffect(() => {
     if (total === 0 && !isProcessingOcr && !isVerifying && !isFinalizing) {
@@ -751,21 +709,133 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       <div className="cw-card">
         {/* Header */}
         <div className="cw-header">
-          <div className="cw-header-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 2v14a2 2 0 002 2h14" /><path d="M18 22V8a2 2 0 00-2-2H2" />
-            </svg>
+          <div className="cw-header-icon" style={{
+            background: phase === 'categorize' ? 'rgba(99,102,241,0.12)' :
+                        phase === 'crop'       ? 'rgba(245,158,11,0.12)' :
+                        phase === 'ocr'        ? 'rgba(251,191,36,0.12)' :
+                        phase === 'verify'     ? 'rgba(59,130,246,0.12)' :
+                        phase === 'finalize'   ? 'rgba(16,185,129,0.12)' :
+                        phase === 'summary'    ? 'rgba(168,85,247,0.12)' :
+                                                 'rgba(16,185,129,0.12)',
+            border: `1px solid ${
+                        phase === 'categorize' ? 'rgba(99,102,241,0.3)'  :
+                        phase === 'crop'       ? 'rgba(245,158,11,0.3)'  :
+                        phase === 'ocr'        ? 'rgba(251,191,36,0.3)'  :
+                        phase === 'verify'     ? 'rgba(59,130,246,0.3)'  :
+                        phase === 'finalize'   ? 'rgba(16,185,129,0.3)'  :
+                        phase === 'summary'    ? 'rgba(168,85,247,0.3)'  :
+                                                 'rgba(16,185,129,0.3)'}`,
+            color: phase === 'categorize' ? '#818cf8' :
+                   phase === 'crop'       ? '#f59e0b' :
+                   phase === 'ocr'        ? '#fbbf24' :
+                   phase === 'verify'     ? '#60a5fa' :
+                   phase === 'finalize'   ? '#34d399' :
+                   phase === 'summary'    ? '#c084fc' :
+                                            '#34d399',
+          }}>
+            {/* Stage 2: Sorting — grid with checkboxes */}
+            {phase === 'categorize' && (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+                <polyline points="14 17.5 16.5 20 21 15"/>
+              </svg>
+            )}
+            {/* Stage 3: Crop */}
+            {phase === 'crop' && (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 2v14a2 2 0 002 2h14"/>
+                <path d="M18 22V8a2 2 0 00-2-2H2"/>
+              </svg>
+            )}
+            {/* Stage 4: OCR */}
+            {phase === 'ocr' && (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/>
+                <rect x="7" y="7" width="10" height="10" rx="1"/>
+              </svg>
+            )}
+            {/* Stage 5: Verify */}
+            {phase === 'verify' && (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 12l2 2 4-4"/>
+                <path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/>
+              </svg>
+            )}
+            {/* Stage 6: Finalize */}
+            {phase === 'finalize' && (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5"/>
+                <path d="M2 12l10 5 10-5"/>
+              </svg>
+            )}
+            {/* Stage 7: Summary */}
+            {phase === 'summary' && (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+            )}
+            {/* Stage 8: Billing */}
+            {phase === 'billing' && (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <line x1="2" y1="10" x2="22" y2="10"/>
+              </svg>
+            )}
           </div>
           <div className="cw-title-group">
-            <div className="cw-title">
-              {phase === 'categorize' && 'Stage 2: Sorting'}
-              {phase === 'crop' && 'Stage 3: Crop & Input'}
-              {phase === 'ocr' && 'Stage 4: Extraction'}
-              {phase === 'verify' && 'Stage 5: Run Check'}
-              {phase === 'finalize' && 'Stage 6: Finalize'}
-              {phase === 'summary' && 'Stage 7: Summary'}
-              {phase === 'billing' && 'Stage 8: Billing'}
-            </div>
+            {/* Stage 2 gets its own styled header to match SortingStage's design language */}
+            {phase === 'categorize' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {/* Stage pill */}
+                  <span style={{
+                    padding: '3px 10px', borderRadius: '100px',
+                    background: 'rgba(99,102,241,0.15)',
+                    border: '1px solid rgba(99,102,241,0.35)',
+                    color: '#a5b4fc',
+                    fontSize: '9px', fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.2em',
+                    fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                  }}>
+                    Stage 2 of 8
+                  </span>
+                </div>
+                {/* Title */}
+                <div style={{
+                  fontSize: '16px', fontWeight: 700,
+                  color: '#f1f5f9',
+                  letterSpacing: '-0.02em', lineHeight: 1.2,
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  Sort Receipts
+                </div>
+                {/* Subtitle */}
+                <div style={{
+                  fontSize: '10px', fontWeight: 500,
+                  color: '#64748b',
+                  letterSpacing: '0.04em',
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  Classify each receipt as GCash or Others
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="cw-title">
+                  {phase === 'crop' && 'Stage 3: Crop & Input'}
+                  {phase === 'ocr' && 'Stage 4: Extraction'}
+                  {phase === 'verify' && 'Stage 5: Run Check'}
+                  {phase === 'finalize' && 'Stage 6: Finalize'}
+                  {phase === 'summary' && 'Stage 7: Summary'}
+                  {phase === 'billing' && 'Stage 8: Billing'}
+                </div>
             <div className="cw-subtitle">
               {phase === 'ocr' && 'Analyzing batch receipts...'}
               {phase === 'verify' && 'Verifying claims with transactions...'}
@@ -816,15 +886,10 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 </div>
               )}
             </div>
+              </>
+            )}
           </div>
           <button className="cw-close" onClick={onClose}>✕</button>
-          <button 
-            className="cw-reset" 
-            onClick={handleReset}
-            title="Reset all stages and start over"
-          >
-            🔄
-          </button>
         </div>
 
         {/* Progress */}
@@ -846,214 +911,17 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
             <div className="flex-1 flex flex-col bg-black/20 overflow-hidden">
 
               {/* ── Stage 2: Sorting ── */}
-              {phase === 'categorize' && sortingView === 'select' && (
-                <div className="flex-1 flex flex-col p-8 overflow-hidden animate-in fade-in duration-300">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h3 className="text-2xl font-black text-white uppercase tracking-tight">Select Others</h3>
-                      <p className="text-slate-500 text-[11px] font-medium mt-1">
-                        Check the receipts that belong to <span className="text-amber-400 font-bold">Others</span>. Everything else goes to <span className="text-blue-400 font-bold">GCash</span>.
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">
-                        GCash: {receipts.length - checkedForOthers.size}
-                      </span>
-                      <span className="px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 text-[10px] font-black uppercase tracking-widest border border-amber-500/20">
-                        Others: {checkedForOthers.size}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Receipt grid */}
-                  <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                    <div className="grid grid-cols-6 gap-2">
-                      {receipts.map((r) => {
-                        const isChecked = checkedForOthers.has(r.id);
-                        return (
-                          <div
-                            key={r.id}
-                            onClick={() => {
-                              setCheckedForOthers(prev => {
-                                const next = new Set(prev);
-                                if (next.has(r.id)) next.delete(r.id);
-                                else next.add(r.id);
-                                return next;
-                              });
-                            }}
-                            style={{ cursor: 'pointer', position: 'relative', borderRadius: '16px', overflow: 'hidden',
-                              border: isChecked ? '2px solid #f59e0b' : '2px solid rgba(255,255,255,0.06)',
-                              background: isChecked ? 'rgba(245,158,11,0.06)' : 'rgba(255,255,255,0.02)',
-                              transition: 'all 0.15s',
-                            }}
-                          >
-                            {/* Checkbox overlay */}
-                            <div style={{
-                              position: 'absolute', top: '8px', left: '8px', zIndex: 10,
-                              width: '22px', height: '22px', borderRadius: '6px',
-                              background: isChecked ? '#f59e0b' : 'rgba(0,0,0,0.6)',
-                              border: isChecked ? '2px solid #f59e0b' : '2px solid rgba(255,255,255,0.25)',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              transition: 'all 0.15s',
-                            }}>
-                              {isChecked && (
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                                  <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                              )}
-                            </div>
-
-                            {/* Category badge */}
-                            <div style={{
-                              position: 'absolute', top: '8px', right: '8px', zIndex: 10,
-                              padding: '2px 8px', borderRadius: '6px', fontSize: '8px', fontWeight: 800,
-                              textTransform: 'uppercase', letterSpacing: '0.1em',
-                              background: isChecked ? 'rgba(245,158,11,0.9)' : 'rgba(59,130,246,0.9)',
-                              color: '#fff',
-                            }}>
-                              {isChecked ? 'Others' : 'GCash'}
-                            </div>
-
-                            <img
-                              src={getApiUrl(`/api/receipts/${r.id}/image`)}
-                              alt=""
-                              crossOrigin="anonymous"
-                              style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block',
-                                opacity: isChecked ? 0.7 : 1, transition: 'opacity 0.15s' }}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Apply button */}
-                  <div className="pt-6 flex gap-4">
-                    <button
-                      onClick={handleApplySorting}
-                      disabled={isSavingSorting}
-                      className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-black text-[11px] uppercase tracking-[0.2em] hover:scale-[1.01] transition-all shadow-xl shadow-blue-500/20 disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-3"
-                    >
-                      {isSavingSorting ? (
-                        <>
-                          <span style={{ width:'14px', height:'14px', display:'inline-block', border:'2px solid currentColor', borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.6s linear infinite' }} />
-                          Saving…
-                        </>
-                      ) : (
-                        <>Apply Sorting →</>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Stage 2: Review (after Apply) ── */}
-              {phase === 'categorize' && sortingView === 'review' && (
-                <div className="flex-1 flex flex-col p-8 overflow-hidden animate-in fade-in duration-300">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-2xl font-black text-white uppercase tracking-tight">Review Sorting</h3>
-                    <button
-                      onClick={() => setSortingView('select')}
-                      className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
-                    >
-                      ← Edit
-                    </button>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                    <div style={{
-                      display: 'flex',
-                      gap: '0',
-                      height: '100%',
-                    }}>
-
-                      {/* GCash column */}
-                      {receipts.filter(r => !checkedForOthers.has(r.id)).length > 0 && (
-                        <div style={{ flex: 1, minWidth: 0, paddingRight: checkedForOthers.size > 0 ? '24px' : '0' }}>
-                          <div className="flex items-center gap-3 mb-4">
-                            <span className="text-[11px] font-black text-blue-400 uppercase tracking-widest">GCash</span>
-                            <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold border border-blue-500/20">
-                              {receipts.filter(r => !checkedForOthers.has(r.id)).length}
-                            </span>
-                          </div>
-                          <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
-                            {receipts.filter(r => !checkedForOthers.has(r.id)).map(r => (
-                              <div key={r.id} style={{ borderRadius: '10px', overflow: 'hidden', border: '2px solid rgba(59,130,246,0.35)', background: 'rgba(59,130,246,0.05)' }}>
-                                <img src={`http://localhost:8000/api/receipts/${r.id}/image`} alt="" crossOrigin="anonymous"
-                                  style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block' }} />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* ── Separator ── */}
-                      {receipts.filter(r => !checkedForOthers.has(r.id)).length > 0 && checkedForOthers.size > 0 && (
-                        <div style={{
-                          flexShrink: 0,
-                          width: '3px',
-                          alignSelf: 'stretch',
-                          background: 'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.25) 15%, rgba(255,255,255,0.25) 85%, transparent 100%)',
-                          borderRadius: '99px',
-                          margin: '0 4px',
-                          position: 'relative',
-                        }}>
-                          {/* Center label */}
-                          <div style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            background: '#0b0d11',
-                            border: '1px solid rgba(255,255,255,0.15)',
-                            borderRadius: '6px',
-                            padding: '6px 4px',
-                            writingMode: 'vertical-rl',
-                            fontSize: '8px',
-                            fontWeight: 900,
-                            color: 'rgba(255,255,255,0.3)',
-                            letterSpacing: '0.2em',
-                            textTransform: 'uppercase',
-                            whiteSpace: 'nowrap',
-                          }}>
-                            vs
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Others column */}
-                      {checkedForOthers.size > 0 && (
-                        <div style={{ flex: 1, minWidth: 0, paddingLeft: receipts.filter(r => !checkedForOthers.has(r.id)).length > 0 ? '24px' : '0' }}>
-                          <div className="flex items-center gap-3 mb-4">
-                            <span className="text-[11px] font-black text-amber-400 uppercase tracking-widest">Others</span>
-                            <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 text-[10px] font-bold border border-amber-500/20">
-                              {checkedForOthers.size}
-                            </span>
-                          </div>
-                          <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
-                            {receipts.filter(r => checkedForOthers.has(r.id)).map(r => (
-                              <div key={r.id} style={{ borderRadius: '10px', overflow: 'hidden', border: '2px solid rgba(245,158,11,0.35)', background: 'rgba(245,158,11,0.05)' }}>
-                                <img src={`http://localhost:8000/api/receipts/${r.id}/image`} alt="" crossOrigin="anonymous"
-                                  style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', display: 'block' }} />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                    </div>
-                  </div>
-
-                  {/* Proceed button */}
-                  <div className="pt-6">
-                    <button
-                      onClick={handleProceedToCrop}
-                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black text-[11px] uppercase tracking-[0.2em] hover:scale-[1.01] transition-all shadow-xl shadow-green-500/20 flex items-center justify-center gap-3"
-                    >
-                      Looks Good — Proceed to Crop & Input →
-                    </button>
-                  </div>
-                </div>
+              {phase === 'categorize' && (
+                <SortingStage
+                  receipts={receipts}
+                  checkedForOthers={checkedForOthers}
+                  setCheckedForOthers={setCheckedForOthers}
+                  sortingView={sortingView}
+                  setSortingView={setSortingView}
+                  isSavingSorting={isSavingSorting}
+                  onApply={handleApplySorting}
+                  onProceed={handleProceedToCrop}
+                />
               )}
               {/* Phase 3 Preview */}
               {phase === 'ocr' && showOcrPreview && (

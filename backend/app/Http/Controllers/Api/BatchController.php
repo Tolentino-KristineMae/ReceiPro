@@ -166,7 +166,7 @@ class BatchController extends Controller
             $isVerified = false;
             $matchDetails = null;
 
-            if ($ocrData['reference'] && trim($ocrData['reference']) !== 'MISSING' && $ocrData['amount'] > 0) {
+            if ($ocrData['reference'] && trim($ocrData['reference']) !== 'MISSING') {
                 // Query the Transactions table to find a match
                 // For GCash: match reference/label, amount, and account_holder
                 // For others: match reference/label and amount (account_holder may be 'OTHERS')

@@ -368,7 +368,7 @@ export default function BatchDetail({
                 return (
                   <button className="btn-primary-modern" style={{ width: 'auto' }} onClick={() => setShowProcessor('categorize')}>
                     <Icon.Circle size={10} />
-                    Start Sorting ({stats.unsorted})
+                    Start Sorting
                   </button>
                 );
               }
