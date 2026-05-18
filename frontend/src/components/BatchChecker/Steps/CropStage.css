@@ -95,9 +95,9 @@
   background: rgba(255, 255, 255, 0.01);
   display: flex;
   flex-direction: column;
-  padding: 40px;
+  padding: 24px;
   overflow-y: auto;
-  gap: 24px;
+  gap: 14px;
   animation: cs-slide-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -116,15 +116,15 @@
 
 /* ─── Header Card ────────────────────────────────────────────────────────────── */
 .cs-header-card {
-  padding: 24px 28px;
-  border-radius: 20px;
+  padding: 14px 18px;
+  border-radius: 16px;
   text-align: left;
   border: 1px solid;
   backdrop-filter: blur(8px);
   transition: all 0.3s;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
 }
 
 .cs-header-card.gcash {
@@ -143,7 +143,7 @@
 
 .cs-header-title {
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 900;
   color: #fff;
   letter-spacing: -0.02em;
@@ -156,10 +156,10 @@
 .cs-header-title::after {
   content: '';
   display: block;
-  width: 36px;
-  height: 3px;
+  width: 30px;
+  height: 2.5px;
   border-radius: 99px;
-  margin-top: 6px;
+  margin-top: 5px;
   background: linear-gradient(90deg, var(--ocean-400), var(--ocean-300));
   box-shadow: 0 0 8px var(--glow-blue);
 }
@@ -170,10 +170,10 @@
 }
 
 .cs-header-subtitle {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: rgba(168, 223, 251, 0.45);
-  line-height: 1.5;
+  line-height: 1.4;
   margin: 0;
   letter-spacing: 0.01em;
 }
@@ -182,12 +182,12 @@
 .cs-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
+  gap: 8px;
 }
 
 .cs-stat-card {
-  padding: 16px;
-  border-radius: 16px;
+  padding: 10px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
   text-align: center;
@@ -210,17 +210,17 @@
 }
 
 .cs-stat-label {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 
 .cs-stat-value {
   font-family: 'Space Mono', monospace;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: #fff;
 }
@@ -229,7 +229,7 @@
 .cs-info-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .cs-info-row {
@@ -264,8 +264,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-radius: var(--radius-card);
+  padding: 9px 12px;
+  border-radius: 11px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
@@ -317,21 +317,27 @@
 .cs-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px;
+  gap: 8px;
+  padding: 12px 14px;
   background: rgba(255, 255, 255, 0.03);
-  border-radius: 20px;
+  border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cs-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
 .cs-form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .cs-form-label {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 900;
   color: #64748b;
   text-transform: uppercase;
@@ -343,11 +349,11 @@
   width: 100%;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-input);
-  padding: 12px 16px;
+  border-radius: 9px;
+  padding: 8px 11px;
   color: #fff;
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   outline: none;
   transition: all 0.2s;
@@ -368,8 +374,8 @@
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%2364748b' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 16px center;
-  padding-right: 40px;
+  background-position: right 12px center;
+  padding-right: 36px;
   cursor: pointer;
   color-scheme: dark;
 }
@@ -402,11 +408,11 @@
 /* ─── Navigation ─────────────────────────────────────────────────────────────── */
 .cs-nav {
   margin-top: auto;
-  padding-top: 24px;
+  padding-top: 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
 .cs-nav-buttons {
@@ -416,7 +422,7 @@
 
 .cs-nav-btn {
   flex: 1;
-  padding: 16px 24px;
+  padding: 13px 18px;
   border-radius: var(--radius-btn);
   font-family: var(--font-display);
   font-size: 10px;

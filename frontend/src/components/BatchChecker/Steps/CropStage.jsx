@@ -154,50 +154,56 @@ export default function CropStage({
           {/* Manual Input Form (Others only) */}
           {currentCategory === 'others' && (
             <div className="cs-form">
-              <div className="cs-form-group">
-                <label className="cs-form-label">Account</label>
-                <select
-                  value={currentAccount || ''}
-                  onChange={(e) => setCurrentAccount(e.target.value)}
-                  className="cs-form-select"
-                >
-                  <option value="">— Select Account —</option>
-                  {ACCOUNTS.map(acc => (
-                    <option key={acc} value={acc}>{acc}</option>
-                  ))}
-                </select>
+              {/* Row 1: Account and Amount */}
+              <div className="cs-form-row">
+                <div className="cs-form-group">
+                  <label className="cs-form-label">Account</label>
+                  <select
+                    value={currentAccount || ''}
+                    onChange={(e) => setCurrentAccount(e.target.value)}
+                    className="cs-form-select"
+                  >
+                    <option value="">— Select —</option>
+                    {ACCOUNTS.map(acc => (
+                      <option key={acc} value={acc}>{acc}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="cs-form-group">
+                  <label className="cs-form-label">Amount (₱)</label>
+                  <input 
+                    type="number" 
+                    value={manualAmount} 
+                    onChange={(e) => setManualAmount(e.target.value)}
+                    className="cs-form-input"
+                    placeholder="0.00"
+                  />
+                </div>
               </div>
 
-              <div className="cs-form-group">
-                <label className="cs-form-label">Amount (₱)</label>
-                <input 
-                  type="number" 
-                  value={manualAmount} 
-                  onChange={(e) => setManualAmount(e.target.value)}
-                  className="cs-form-input"
-                  placeholder="0.00"
-                />
-              </div>
+              {/* Row 2: Label and Date */}
+              <div className="cs-form-row">
+                <div className="cs-form-group">
+                  <label className="cs-form-label">Label</label>
+                  <input 
+                    type="text" 
+                    value={manualReference} 
+                    onChange={(e) => setManualReference(e.target.value)}
+                    className="cs-form-input"
+                    placeholder="e.g. Payment"
+                  />
+                </div>
 
-              <div className="cs-form-group">
-                <label className="cs-form-label">Label</label>
-                <input 
-                  type="text" 
-                  value={manualReference} 
-                  onChange={(e) => setManualReference(e.target.value)}
-                  className="cs-form-input"
-                  placeholder="e.g. Payment"
-                />
-              </div>
-
-              <div className="cs-form-group">
-                <label className="cs-form-label">Transaction Date</label>
-                <input 
-                  type="date" 
-                  value={manualDate} 
-                  onChange={(e) => setManualDate(e.target.value)}
-                  className="cs-form-input"
-                />
+                <div className="cs-form-group">
+                  <label className="cs-form-label">Date</label>
+                  <input 
+                    type="date" 
+                    value={manualDate} 
+                    onChange={(e) => setManualDate(e.target.value)}
+                    className="cs-form-input"
+                  />
+                </div>
               </div>
             </div>
           )}

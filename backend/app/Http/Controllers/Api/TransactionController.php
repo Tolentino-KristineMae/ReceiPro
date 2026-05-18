@@ -69,6 +69,28 @@ class TransactionController extends Controller
         return response()->json($transaction);
     }
 
+    public function update(Request $request, $id)
+    {
+        $transaction = Transaction::findOrFail($id);
+
+        $validated = $request->validate([
+            'transaction_date'  => 'sometimes|date',
+            'account'           => 'sometimes|string|in:Account 1,Account 2,Account 3',
+            'account_holder'    => 'sometimes|string|in:Babilyn,Nixie,Kristine',
+            'entry_type'        => 'sometimes|string|in:credit,debit',
+            'amount'            => 'sometimes|numeric|min:0',
+            'opening_balance'   => 'nullable|numeric',
+            'reference'         => 'nullable|string',
+            'label'             => 'nullable|string',
+            'source_type'       => 'sometimes|string|in:gcash,others',
+            'denominations'     => 'nullable|array',
+        ]);
+
+        $transaction->update($validated);
+
+        return response()->json($transaction->load(['receipts', 'batch']));
+    }
+
     public function destroy($id)
     {
         $transaction = Transaction::findOrFail($id);

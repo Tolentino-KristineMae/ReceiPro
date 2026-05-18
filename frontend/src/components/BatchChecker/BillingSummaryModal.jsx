@@ -106,17 +106,17 @@ const BillingSummaryModal = ({
   const deductionLabels = { royal: 'Cash in Royal Cable', bills: 'Bills', others: 'Others' };
   const deductionLabel = deductionLabels[deductionType] || null;
 
-  // Determine the most common account_holder among verified claims (for compact display)
-  const topVerifiedAccount = (() => {
-    if (!verifiedClaims || verifiedClaims.length === 0) return null;
+  // Get account holders with counts from verified claims
+  const accountHolderCounts = (() => {
+    if (!verifiedClaims || verifiedClaims.length === 0) return [];
     const counts = {};
     verifiedClaims.forEach(c => {
       const name = c.account_holder || (c.receipt && c.receipt.account_holder) || null;
-      if (!name) return;
-      counts[name] = (counts[name] || 0) + 1;
+      if (name) {
+        counts[name] = (counts[name] || 0) + 1;
+      }
     });
-    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-    return entries.length ? entries[0][0] : null;
+    return Object.entries(counts).map(([name, count]) => ({ name, count }));
   })();
 
   const captureCanvas = () =>
@@ -176,33 +176,37 @@ const BillingSummaryModal = ({
           position: 'fixed', inset: 0,
           background: 'rgba(10,22,40,0.55)',
           backdropFilter: 'blur(12px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 2000, padding: '24px',
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+          zIndex: 2000, padding: '12px',
+          overflowY: 'auto',
         }}
       >
         <div style={{
-          display: 'flex', flexDirection: 'column', gap: '14px',
-          maxHeight: '95vh', overflowY: 'auto', alignItems: 'center',
+          display: 'flex', flexDirection: 'column', gap: '10px',
+          alignItems: 'center',
           animation: 'bsModalIn 0.25s cubic-bezier(0.16,1,0.3,1)',
+          width: '100%',
+          paddingTop: '12px',
+          paddingBottom: '12px',
         }}>
 
           {/* ── Action Bar ── */}
-          <div style={{ display: 'flex', gap: '10px', width: '100%', maxWidth: '600px' }}>
+          <div style={{ display: 'flex', gap: '8px', width: '100%', maxWidth: '560px' }}>
             {/* Copy */}
             <button
               className="bs-btn"
               onClick={handleCopyImage}
               disabled={copying}
               style={{
-                flex: 1, padding: '12px 20px', borderRadius: '12px',
+                flex: 1, padding: '10px 16px', borderRadius: '10px',
                 background: copied ? '#eff6ff' : '#fff',
                 border: `1.5px solid ${copied ? '#7dd3fc' : '#dbeafe'}`,
                 color: copied ? '#1e5fa8' : '#0f2448',
                 fontFamily: "'DM Sans', sans-serif",
-                fontWeight: 700, fontSize: '11px',
+                fontWeight: 700, fontSize: '10px',
                 textTransform: 'uppercase', letterSpacing: '0.1em',
                 cursor: copying ? 'wait' : 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                 boxShadow: '0 1px 3px rgba(14,58,110,0.10)',
                 transition: 'all 0.15s',
               }}
@@ -210,7 +214,7 @@ const BillingSummaryModal = ({
               {copying ? (
                 <>
                   <span style={{
-                    width: '12px', height: '12px', display: 'inline-block',
+                    width: '11px', height: '11px', display: 'inline-block',
                     border: '2px solid currentColor', borderTopColor: 'transparent',
                     borderRadius: '50%', animation: 'bsSpin 0.6s linear infinite',
                   }} />
@@ -225,14 +229,14 @@ const BillingSummaryModal = ({
               onClick={handleDownload}
               disabled={copying}
               style={{
-                flex: 1, padding: '12px 20px', borderRadius: '12px',
+                flex: 1, padding: '10px 16px', borderRadius: '10px',
                 background: '#fff', border: '1.5px solid #dbeafe',
                 color: '#0f2448',
                 fontFamily: "'DM Sans', sans-serif",
-                fontWeight: 700, fontSize: '11px',
+                fontWeight: 700, fontSize: '10px',
                 textTransform: 'uppercase', letterSpacing: '0.1em',
                 cursor: copying ? 'wait' : 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                 boxShadow: '0 1px 3px rgba(14,58,110,0.10)',
                 transition: 'all 0.15s',
               }}
@@ -245,9 +249,9 @@ const BillingSummaryModal = ({
               className="bs-close"
               onClick={onClose}
               style={{
-                padding: '12px 16px', borderRadius: '12px',
+                padding: '10px 14px', borderRadius: '10px',
                 background: '#fff', border: '1.5px solid #dbeafe',
-                color: '#0a0a0aff', fontWeight: 700, fontSize: '14px',
+                color: '#0a0a0aff', fontWeight: 700, fontSize: '13px',
                 cursor: 'pointer', transition: 'all 0.15s',
                 boxShadow: '0 1px 3px rgba(14,58,110,0.10)',
               }}
@@ -258,10 +262,10 @@ const BillingSummaryModal = ({
 
           {/* ── Card ── */}
           <div ref={cardRef} style={{
-            width: 'min(600px, calc(100vw - 48px))',
-            maxWidth: '600px',
+            width: 'min(560px, calc(100vw - 24px))',
+            maxWidth: '560px',
             background: '#ffffff',
-            borderRadius: '24px',
+            borderRadius: '20px',
             border: '1px solid #dbeafe',
             overflow: 'hidden',
             fontFamily: "'DM Sans', sans-serif",
@@ -270,26 +274,26 @@ const BillingSummaryModal = ({
 
             {/* ── Header ── */}
             <div style={{
-              padding: '32px 36px 28px',
+              padding: '24px 28px 20px',
               background: 'linear-gradient(135deg, #0f2448 0%, #0e3a6e 60%, #1e5fa8 100%)',
               borderBottom: '1px solid #1e5fa8',
               display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
             }}>
               <div>
                 <div style={{
-                  fontSize: '9px', fontWeight: 700, color: '#7dd3fc',
-                  textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '8px',
+                  fontSize: '8px', fontWeight: 700, color: '#7dd3fc',
+                  textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '6px',
                 }}>
                   Billing Summary
                 </div>
                 <div style={{
-                  fontSize: '24px', fontWeight: 800, color: '#ffffff',
+                  fontSize: '20px', fontWeight: 800, color: '#ffffff',
                   letterSpacing: '-0.03em', lineHeight: 1.1,
                   fontFamily: "'DM Mono', monospace",
                 }}>
                   {finalBatchNumber || batchNumber}
                 </div>
-                <div style={{ fontSize: '11px', color: '#93c5fd', marginTop: '8px', fontWeight: 500 }}>
+                <div style={{ fontSize: '10px', color: '#93c5fd', marginTop: '6px', fontWeight: 500 }}>
                   {today}
                 </div>
               </div>
@@ -297,10 +301,10 @@ const BillingSummaryModal = ({
             </div>
 
             {/* ── Financial Summary ── */}
-            <div style={{ padding: '24px 36px', borderBottom: '1px solid #dbeafe' }}>
+            <div style={{ padding: '18px 28px', borderBottom: '1px solid #dbeafe' }}>
               <div style={{
-                fontSize: '9px', fontWeight: 700, color: '#93c5fd',
-                textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '4px',
+                fontSize: '8px', fontWeight: 700, color: '#93c5fd',
+                textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '3px',
               }}>
                 Financial Summary
               </div>
@@ -314,17 +318,17 @@ const BillingSummaryModal = ({
 
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                marginTop: '14px', paddingTop: '14px',
+                marginTop: '12px', paddingTop: '12px',
                 borderTop: '1.5px solid #bfdbfe',
               }}>
                 <span style={{
-                  fontSize: '12px', fontWeight: 700, color: '#0f2448',
+                  fontSize: '11px', fontWeight: 700, color: '#0f2448',
                   textTransform: 'uppercase', letterSpacing: '0.1em',
                 }}>
                   Net Amount Due
                 </span>
                 <span style={{
-                  fontSize: '26px', fontWeight: 800, color: '#1c7a48ff',
+                  fontSize: '22px', fontWeight: 800, color: '#1c7a48ff',
                   letterSpacing: '-0.03em', fontFamily: "'DM Mono', monospace",
                 }}>
                   ₱{fmt(netAmount)}
@@ -333,32 +337,32 @@ const BillingSummaryModal = ({
             </div>
 
             {/* ── Fund Allocation ── */}
-            <div style={{ padding: '24px 36px', borderBottom: '1px solid #dbeafe' }}>
+            <div style={{ padding: '18px 28px', borderBottom: '1px solid #dbeafe' }}>
               <div style={{
-                fontSize: '9px', fontWeight: 700, color: '#93c5fd',
-                textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '18px',
+                fontSize: '8px', fontWeight: 700, color: '#93c5fd',
+                textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '14px',
               }}>
                 Fund Allocation
               </div>
 
               {(billingMethod === 'cash' || billingMethod === 'both') && (
-                <div style={{ marginBottom: billingMethod === 'both' ? '20px' : '0' }}>
+                <div style={{ marginBottom: billingMethod === 'both' ? '16px' : '0' }}>
 
                   {/* Bills */}
                   {billDenoms.length > 0 && (
-                    <div style={{ marginBottom: coinDenoms.length > 0 ? '18px' : '0' }}>
+                    <div style={{ marginBottom: coinDenoms.length > 0 ? '14px' : '0' }}>
                       <div style={{
                         display: 'flex', justifyContent: 'space-between',
-                        alignItems: 'center', marginBottom: '10px',
+                        alignItems: 'center', marginBottom: '8px',
                       }}>
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#1e5fa8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                        <span style={{ fontSize: '9px', fontWeight: 700, color: '#1e5fa8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                           Bills
                         </span>
-                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e5fa8', fontFamily: "'DM Mono', monospace" }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#1e5fa8', fontFamily: "'DM Mono', monospace" }}>
                           ₱{fmt(billDenoms.reduce((s, v) => s + v * (cashDenominations[v] || 0), 0))}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
                         {billDenoms.map(v => (
                           <Chip key={v} label={'₱' + v} count={cashDenominations[v]} total={v * cashDenominations[v]} />
                         ))}
@@ -371,16 +375,16 @@ const BillingSummaryModal = ({
                     <div>
                       <div style={{
                         display: 'flex', justifyContent: 'space-between',
-                        alignItems: 'center', marginBottom: '10px',
+                        alignItems: 'center', marginBottom: '8px',
                       }}>
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#0891b2', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                        <span style={{ fontSize: '9px', fontWeight: 700, color: '#0891b2', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                           Coins
                         </span>
-                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#0891b2', fontFamily: "'DM Mono', monospace" }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#0891b2', fontFamily: "'DM Mono', monospace" }}>
                           ₱{fmt(coinDenoms.reduce((s, v) => s + v * (cashDenominations['c' + v] || 0), 0))}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
                         {coinDenoms.map(v => (
                           <Chip key={'c' + v} label={'₱' + v} count={cashDenominations['c' + v]} total={v * cashDenominations['c' + v]} coin />
                         ))}
@@ -392,20 +396,20 @@ const BillingSummaryModal = ({
                   {(billDenoms.length > 0 || coinDenoms.length > 0) && (
                     <div style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      marginTop: '14px', paddingTop: '14px',
+                      marginTop: '12px', paddingTop: '12px',
                       borderTop: '1px solid #dbeafe',
                     }}>
-                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      <span style={{ fontSize: '9px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                         Cash Total
                       </span>
-                      <span style={{ fontSize: '14px', fontWeight: 800, color: '#1e5fa8', fontFamily: "'DM Mono', monospace" }}>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: '#1e5fa8', fontFamily: "'DM Mono', monospace" }}>
                         ₱{fmt(cashTotal)}
                       </span>
                     </div>
                   )}
 
                   {billDenoms.length === 0 && coinDenoms.length === 0 && (
-                    <p style={{ fontSize: '11px', color: '#93c5fd', fontStyle: 'italic', margin: 0 }}>
+                    <p style={{ fontSize: '10px', color: '#93c5fd', fontStyle: 'italic', margin: 0 }}>
                       No cash denominations entered
                     </p>
                   )}
@@ -414,22 +418,22 @@ const BillingSummaryModal = ({
 
               {(billingMethod === 'bank' || billingMethod === 'both') && (
                 <>
-                  {billingMethod === 'both' && <Divider style={{ margin: '20px 0' }} />}
+                  {billingMethod === 'both' && <Divider style={{ margin: '16px 0' }} />}
                   <div style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '16px 20px', borderRadius: '14px',
+                    padding: '14px 18px', borderRadius: '12px',
                     background: 'linear-gradient(135deg, #0f2448 0%, #0e3a6e 100%)',
                     border: '1px solid #1e5fa8',
                   }}>
                     <div>
-                      <div style={{ fontSize: '10px', fontWeight: 700, color: '#7dd3fc', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      <div style={{ fontSize: '9px', fontWeight: 700, color: '#7dd3fc', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                         Bank Transfer
                       </div>
-                      <div style={{ fontSize: '9px', color: '#5ba4f5', marginTop: '3px', fontWeight: 500 }}>
+                      <div style={{ fontSize: '8px', color: '#5ba4f5', marginTop: '2px', fontWeight: 500 }}>
                         Electronic Settlement
                       </div>
                     </div>
-                    <span style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', fontFamily: "'DM Mono', monospace" }}>
+                    <span style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', fontFamily: "'DM Mono', monospace" }}>
                       ₱{fmt(bankTransferAmount)}
                     </span>
                   </div>
@@ -439,36 +443,52 @@ const BillingSummaryModal = ({
 
             {/* ── Verified Claims (compact, moved above Total Prepared) ── */}
             {verifiedClaims && verifiedClaims.length > 0 && (
-              <div style={{ padding: '18px 36px', borderBottom: '1px solid #dbeafe' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '9px', fontWeight: 700, color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '0.18em' }}>
-                      Verified Claims
-                    </div>
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f2448', marginTop: '8px' }}>
-                      {verifiedClaims.length} {topVerifiedAccount ? `— ${topVerifiedAccount}` : ''}
-                    </div>
+              <div style={{ padding: '14px 28px', borderBottom: '1px solid #dbeafe' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ fontSize: '8px', fontWeight: 700, color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '0.18em' }}>
+                    Verified Claims
                   </div>
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f2448' }}>
+                    {verifiedClaims.length} {verifiedClaims.length === 1 ? 'Claim' : 'Claims'}
+                  </div>
+                  {accountHolderCounts.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                      {accountHolderCounts.map((holder, idx) => (
+                        <div key={idx} style={{
+                          padding: '4px 10px',
+                          borderRadius: '8px',
+                          background: '#eff6ff',
+                          border: '1px solid #bfdbfe',
+                          fontSize: '9px',
+                          fontWeight: 600,
+                          color: '#1e5fa8',
+                          fontFamily: "'DM Sans', sans-serif",
+                        }}>
+                          {holder.name} ({holder.count})
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
             {/* ── Total Prepared ── */}
             <div style={{
-              padding: '20px 36px', borderBottom: '1px solid #dbeafe',
+              padding: '16px 28px', borderBottom: '1px solid #dbeafe',
               background: 'linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%)',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
               <div>
-                <div style={{ fontSize: '9px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '5px' }}>
+                <div style={{ fontSize: '8px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>
                   Total Prepared
                 </div>
-                <div style={{ fontSize: '22px', fontWeight: 800, color: '#0f2448', letterSpacing: '-0.03em', fontFamily: "'DM Mono', monospace" }}>
+                <div style={{ fontSize: '19px', fontWeight: 800, color: '#0f2448', letterSpacing: '-0.03em', fontFamily: "'DM Mono', monospace" }}>
                   ₱{fmt(totalPrepared)}
                 </div>
               </div>
               <Tag color="#0f2448" bg="#bfdbfe" border="#7dd3fc">
-                ✓ Balanced
+                ✓ Ready to Receive
               </Tag>
             </div>
 
@@ -476,15 +496,15 @@ const BillingSummaryModal = ({
 
             {/* ── Footer ── */}
             <div style={{
-              padding: '14px 36px',
+              padding: '12px 28px',
               borderTop: '1px solid #dbeafe',
               background: '#f0f9ff',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
-              <span style={{ fontSize: '8px', fontWeight: 600, color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
+              <span style={{ fontSize: '7px', fontWeight: 600, color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
                 Generated {today}
               </span>
-              <span style={{ fontSize: '8px', fontWeight: 600, color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
+              <span style={{ fontSize: '7px', fontWeight: 600, color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
                 Batch Checker System
               </span>
             </div>

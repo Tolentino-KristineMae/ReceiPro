@@ -37,8 +37,8 @@ const NAV = [
 
 const styles = {
   sidebar: {
-    width: '280px',
-    minWidth: '280px',
+    width: '200px',
+    minWidth: '200px',
     background: '#0f172a',
     display: 'flex',
     flexDirection: 'column',
@@ -51,8 +51,8 @@ const styles = {
     position: 'relative',
   },
   sidebarCollapsed: {
-    width: '80px',
-    minWidth: '80px',
+    width: '70px',
+    minWidth: '70px',
   },
   toggleBtn: {
     position: 'absolute',

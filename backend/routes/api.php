@@ -38,5 +38,7 @@ Route::prefix('transactions')->group(function () {
     Route::post('/', [TransactionController::class, 'store']);
     Route::get('/', [TransactionController::class, 'index']);
     Route::get('/{transaction}', [TransactionController::class, 'show']);
+    Route::patch('/{transaction}', [TransactionController::class, 'update']);
+    Route::put('/{transaction}', [TransactionController::class, 'update']);
     Route::delete('/{transaction}', [TransactionController::class, 'destroy']);
 });

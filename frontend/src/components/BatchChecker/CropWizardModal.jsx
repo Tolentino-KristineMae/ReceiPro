@@ -6,6 +6,8 @@ import WizardStepCrop from './Steps/WizardStepCrop';
 import BillingSummaryModal from './BillingSummaryModal';
 import SortingStage from './Steps/SortingStage';
 import CropStage from './Steps/CropStage';
+import ExtractionStage from './Steps/ExtractionStage';
+import VerificationStage from './Steps/VerificationStage';
 import { getApiUrl } from '../../apiConfig';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -155,9 +157,11 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   const [selections, setSelections] = useState({}); // { index: { category, account } } — used in crop phase
   const [crops, setCrops] = useState({}); // { index: dataUrl }
   const [isProcessingOcr, setIsProcessingOcr] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0); // Track OCR progress percentage
   const [isVerifying, setIsVerifying] = useState(initialPhase === 'verify');
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [ocrResults, setOcrResults] = useState(null);
+  const [ocrAccountFilter, setOcrAccountFilter] = useState('All'); // Filter for OCR results
   const [showOcrPreview, setShowOcrPreview] = useState(false);
   const [showVerifyPreview, setShowVerifyPreview] = useState(initialPhase === 'verify');
   const [finalizedBatch, setFinalizedBatch] = useState(null);
@@ -551,6 +555,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   const handleRunOcrExtraction = async () => {
     setIsProcessingOcr(true);
     setOcrResults(null);
+    setOcrProgress(0); // Initialize progress
     
     const worker = await createWorker('eng', 1, {
       logger: m => console.log(m),
@@ -562,9 +567,14 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       const failedReceipts = [];
       
       const receiptsToProcess = liveReceipts.filter(r => r.category && r.category !== 'unsorted');
+      const totalToProcess = receiptsToProcess.length;
       
-      for (const r of receiptsToProcess) {
+      for (let idx = 0; idx < receiptsToProcess.length; idx++) {
+        const r = receiptsToProcess[idx];
         const i = liveReceipts.indexOf(r);
+        
+        // Update progress
+        setOcrProgress(Math.round((idx / totalToProcess) * 100));
         
         // Skip OCR if it's 'Others' and already has manual data
         const sessionManual = manualEntries[i];
@@ -672,6 +682,12 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
         }
       }
 
+      // Set progress to 100% BEFORE showing results
+      setOcrProgress(100);
+      
+      // Small delay to ensure progress bar shows 100% before results appear
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       setOcrResults(results);
       setShowOcrPreview(true);
 
@@ -865,18 +881,103 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   Crop GCash receipts and input Others manually
                 </div>
               </div>
+            ) : phase === 'ocr' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {/* Stage pill */}
+                  <span style={{
+                    padding: '3px 10px', borderRadius: '100px',
+                    background: 'rgba(139,92,246,0.15)',
+                    border: '1px solid rgba(139,92,246,0.35)',
+                    color: '#c4b5fd',
+                    fontSize: '9px', fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.2em',
+                    fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                  }}>
+                    Stage 4 of 8
+                  </span>
+                </div>
+                {/* Title */}
+                <div style={{
+                  fontSize: '16px', fontWeight: 700,
+                  color: '#f1f5f9',
+                  letterSpacing: '-0.02em', lineHeight: 1.2,
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  OCR Extraction
+                </div>
+                {/* Subtitle */}
+                <div style={{
+                  fontSize: '10px', fontWeight: 500,
+                  color: '#64748b',
+                  letterSpacing: '0.04em',
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  Extract data from receipt images using OCR
+                </div>
+              </div>
+            ) : phase === 'verify' ? (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <div style={{
+                  padding: '8px 16px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <div style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    background: '#3b82f6'
+                  }} />
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: 900,
+                    color: '#3b82f6',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    fontFamily: "'Space Grotesk', sans-serif"
+                  }}>
+                    Stage 5 of 8
+                  </span>
+                </div>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: 900,
+                  color: '#fff',
+                  textTransform: 'uppercase',
+                  letterSpacing: '-0.02em',
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif"
+                }}>
+                  Verification Check
+                </div>
+              </div>
             ) : (
               <>
                 <div className="cw-title">
-                  {phase === 'ocr' && 'Stage 4: Extraction'}
-                  {phase === 'verify' && 'Stage 5: Run Check'}
                   {phase === 'finalize' && 'Stage 6: Finalize'}
                   {phase === 'summary' && 'Stage 7: Summary'}
                   {phase === 'billing' && 'Stage 8: Billing'}
                 </div>
             <div className="cw-subtitle">
-              {phase === 'ocr' && 'Analyzing batch receipts...'}
-              {phase === 'verify' && 'Verifying claims with transactions...'}
+              {phase === 'verify' && (
+                <div style={{
+                  fontSize: '10px',
+                  fontWeight: 500,
+                  color: '#64748b',
+                  letterSpacing: '0.04em',
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif"
+                }}>
+                  Verify extracted receipts against transaction records
+                </div>
+              )}
               {phase === 'finalize' && 'Stamping batch labels...'}
               {phase === 'summary' && 'Calculating total claims and deductions...'}
               {(phase !== 'ocr' && phase !== 'verify' && phase !== 'finalize' && phase !== 'summary') && (
@@ -963,113 +1064,300 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               )}
               {/* Phase 3 Preview */}
               {phase === 'ocr' && showOcrPreview && (
-                <div className="flex-1 flex flex-col p-10 overflow-hidden animate-in fade-in duration-500">
+                <div className="flex-1 flex flex-col overflow-hidden" style={{ 
+                  background: 'radial-gradient(ellipse 80% 50% at 10% -10%, rgba(18, 96, 164, 0.18) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 90% 100%, rgba(26, 127, 203, 0.12) 0%, transparent 55%), #020c18',
+                  padding: '40px'
+                }}>
                   {/* Header */}
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-2xl font-black text-white uppercase tracking-tight">Extracted Data Preview</h3>
-                    <span className="px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase tracking-widest border border-amber-500/20">
-                      {ocrResults?.length} Items Scanned
-                    </span>
+                  <div style={{ marginBottom: '32px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
+                      <div style={{
+                        padding: '10px 18px',
+                        borderRadius: '12px',
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%)',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px'
+                      }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                          <polyline points="22 4 12 14.01 9 11.01" />
+                        </svg>
+                        <span style={{ 
+                          color: '#10b981', 
+                          fontSize: '11px', 
+                          fontWeight: 900, 
+                          textTransform: 'uppercase', 
+                          letterSpacing: '0.1em',
+                          fontFamily: "'Space Grotesk', sans-serif"
+                        }}>
+                          Extraction Complete
+                        </span>
+                      </div>
+                      <div style={{
+                        padding: '8px 16px',
+                        borderRadius: '10px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <span style={{ 
+                          color: '#94a3b8', 
+                          fontSize: '11px', 
+                          fontWeight: 700,
+                          fontFamily: "'Space Grotesk', sans-serif"
+                        }}>
+                          {ocrResults?.length} receipts processed
+                        </span>
+                      </div>
+                    </div>
+                    <p style={{ 
+                      color: '#64748b', 
+                      fontSize: '13px', 
+                      fontWeight: 500,
+                      fontFamily: "'Space Grotesk', sans-serif",
+                      margin: 0
+                    }}>
+                      Review extracted data before proceeding to verification
+                    </p>
                   </div>
 
-                  {/* Account breakdown */}
+                  {/* Account breakdown with filter */}
                   {(() => {
                     const accounts = ['Babilyn', 'Nixie', 'Kristine'];
                     const colors = {
-                      Babilyn:  { bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.3)', text: '#a78bfa' },
-                      Nixie:    { bg: 'rgba(244,114,182,0.12)', border: 'rgba(244,114,182,0.3)', text: '#f472b6' },
-                      Kristine: { bg: 'rgba(56,189,248,0.12)',  border: 'rgba(56,189,248,0.3)',  text: '#38bdf8' },
+                      All:      { bg: 'rgba(100,116,139,0.12)', border: 'rgba(100,116,139,0.3)', text: '#94a3b8', count: '#64748b' },
+                      Babilyn:  { bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.3)', text: '#c4b5fd', count: '#a78bfa' },
+                      Nixie:    { bg: 'rgba(244,114,182,0.12)', border: 'rgba(244,114,182,0.3)', text: '#f9a8d4', count: '#f472b6' },
+                      Kristine: { bg: 'rgba(56,189,248,0.12)',  border: 'rgba(56,189,248,0.3)',  text: '#7dd3fc', count: '#38bdf8' },
                     };
+                    const allCount = ocrResults?.length || 0;
                     return (
-                      <div className="flex items-center gap-3 mb-6 flex-wrap">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px', flexWrap: 'wrap' }}>
+                        {/* All filter */}
+                        <div 
+                          onClick={() => setOcrAccountFilter('All')}
+                          style={{
+                            padding: '10px 16px',
+                            borderRadius: '12px',
+                            background: ocrAccountFilter === 'All' ? colors.All.bg : 'rgba(255, 255, 255, 0.03)',
+                            border: `1px solid ${ocrAccountFilter === 'All' ? colors.All.border : 'rgba(255, 255, 255, 0.1)'}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            transition: 'all 0.2s',
+                            cursor: 'pointer',
+                            opacity: ocrAccountFilter === 'All' ? 1 : 0.6
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = ocrAccountFilter === 'All' ? 1 : 0.6}
+                        >
+                          <span style={{ 
+                            color: colors.All.text, 
+                            fontSize: '11px', 
+                            fontWeight: 800, 
+                            textTransform: 'uppercase', 
+                            letterSpacing: '0.08em',
+                            fontFamily: "'Space Grotesk', sans-serif"
+                          }}>
+                            All
+                          </span>
+                          <span style={{
+                            background: 'rgba(0, 0, 0, 0.3)',
+                            color: colors.All.count,
+                            borderRadius: '8px',
+                            padding: '4px 10px',
+                            fontSize: '13px',
+                            fontWeight: 900,
+                            fontFamily: "'Space Mono', monospace",
+                            minWidth: '32px',
+                            textAlign: 'center'
+                          }}>{allCount}</span>
+                        </div>
+                        
+                        {/* Account filters */}
                         {accounts.map(acc => {
                           const count = ocrResults?.filter(r =>
                             (r.receipt?.account_holder || r.account_holder) === acc
                           ).length || 0;
                           const c = colors[acc];
                           return (
-                            <div key={acc} style={{
-                              padding: '6px 14px', borderRadius: '10px',
-                              background: c.bg, border: `1px solid ${c.border}`,
-                              color: c.text, fontSize: '10px', fontWeight: 900,
-                              textTransform: 'uppercase', letterSpacing: '0.12em',
-                              display: 'flex', alignItems: 'center', gap: '8px',
-                            }}>
-                              <span>{acc}</span>
+                            <div 
+                              key={acc}
+                              onClick={() => setOcrAccountFilter(acc)}
+                              style={{
+                                padding: '10px 16px',
+                                borderRadius: '12px',
+                                background: ocrAccountFilter === acc ? c.bg : 'rgba(255, 255, 255, 0.03)',
+                                border: `1px solid ${ocrAccountFilter === acc ? c.border : 'rgba(255, 255, 255, 0.1)'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                transition: 'all 0.2s',
+                                cursor: 'pointer',
+                                opacity: ocrAccountFilter === acc ? 1 : 0.6
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                              onMouseLeave={(e) => e.currentTarget.style.opacity = ocrAccountFilter === acc ? 1 : 0.6}
+                            >
+                              <span style={{ 
+                                color: c.text, 
+                                fontSize: '11px', 
+                                fontWeight: 800, 
+                                textTransform: 'uppercase', 
+                                letterSpacing: '0.08em',
+                                fontFamily: "'Space Grotesk', sans-serif"
+                              }}>
+                                {acc}
+                              </span>
                               <span style={{
-                                background: c.border, color: '#fff',
-                                borderRadius: '6px', padding: '1px 7px',
-                                fontSize: '11px', fontWeight: 800,
+                                background: 'rgba(0, 0, 0, 0.3)',
+                                color: c.count,
+                                borderRadius: '8px',
+                                padding: '4px 10px',
+                                fontSize: '13px',
+                                fontWeight: 900,
+                                fontFamily: "'Space Mono', monospace",
+                                minWidth: '32px',
+                                textAlign: 'center'
                               }}>{count}</span>
                             </div>
                           );
                         })}
-                        {(() => {
-                          const undetected = ocrResults?.filter(r =>
-                            !['Babilyn','Nixie','Kristine'].includes(r.receipt?.account_holder || r.account_holder)
-                          ).length || 0;
-                          return undetected > 0 ? (
-                            <div style={{
-                              padding: '6px 14px', borderRadius: '10px',
-                              background: 'rgba(100,116,139,0.12)', border: '1px solid rgba(100,116,139,0.3)',
-                              color: '#94a3b8', fontSize: '10px', fontWeight: 900,
-                              textTransform: 'uppercase', letterSpacing: '0.12em',
-                              display: 'flex', alignItems: 'center', gap: '8px',
-                            }}>
-                              <span>Undetected</span>
-                              <span style={{
-                                background: 'rgba(100,116,139,0.4)', color: '#fff',
-                                borderRadius: '6px', padding: '1px 7px',
-                                fontSize: '11px', fontWeight: 800,
-                              }}>{undetected}</span>
-                            </div>
-                          ) : null;
-                        })()}
                       </div>
                     );
                   })()}
 
-                  {/* Results list */}
-                  <div className="flex-1 overflow-y-auto pr-4 no-scrollbar">
-                    <div className="grid grid-cols-1 gap-3">
-                      {ocrResults?.map((res, i) => {
-                        const holder = res.receipt?.account_holder || res.account_holder;
-                        const acctColors = {
-                          Babilyn:  { bg: 'rgba(139,92,246,0.1)',  border: 'rgba(139,92,246,0.25)',  text: '#a78bfa' },
-                          Nixie:    { bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.25)', text: '#f472b6' },
-                          Kristine: { bg: 'rgba(56,189,248,0.1)',  border: 'rgba(56,189,248,0.25)',  text: '#38bdf8' },
-                        };
-                        const ac = acctColors[holder];
-                        return (
-                          <div key={i} className="bg-white/5 border border-white/5 rounded-2xl p-5 flex items-center justify-between hover:bg-white/10 transition-all">
-                            <div className="flex items-center gap-5">
-                              {/* Account badge */}
+                  {/* Results list with filtering and numbering */}
+                  <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+                      {(() => {
+                        const filteredResults = ocrAccountFilter === 'All' 
+                          ? ocrResults 
+                          : ocrResults?.filter(r => (r.receipt?.account_holder || r.account_holder) === ocrAccountFilter);
+                        
+                        return filteredResults?.map((res, i) => {
+                          const holder = res.receipt?.account_holder || res.account_holder;
+                          const acctColors = {
+                            Babilyn:  { bg: 'rgba(139,92,246,0.1)',  border: 'rgba(139,92,246,0.25)',  text: '#c4b5fd' },
+                            Nixie:    { bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.25)', text: '#f9a8d4' },
+                            Kristine: { bg: 'rgba(56,189,248,0.1)',  border: 'rgba(56,189,248,0.25)',  text: '#7dd3fc' },
+                          };
+                          const ac = acctColors[holder];
+                          return (
+                            <div key={i} style={{
+                              background: 'rgba(255, 255, 255, 0.03)',
+                              backdropFilter: 'blur(20px)',
+                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                              borderRadius: '14px',
+                              padding: '18px 20px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '20px',
+                              transition: 'all 0.2s',
+                              cursor: 'default'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                              e.currentTarget.style.transform = 'translateY(-2px)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                              e.currentTarget.style.transform = 'translateY(0)';
+                            }}>
+                              {/* Number */}
                               <div style={{
-                                minWidth: '80px', padding: '6px 12px', borderRadius: '10px', textAlign: 'center',
-                                background: ac ? ac.bg : 'rgba(100,116,139,0.1)',
-                                border: `1px solid ${ac ? ac.border : 'rgba(100,116,139,0.2)'}`,
-                                color: ac ? ac.text : '#64748b',
-                                fontSize: '10px', fontWeight: 900,
-                                textTransform: 'uppercase', letterSpacing: '0.1em',
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '10px',
+                                background: 'rgba(255, 255, 255, 0.05)',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0
                               }}>
-                                {holder || '—'}
+                                <span style={{
+                                  color: '#94a3b8',
+                                  fontSize: '14px',
+                                  fontWeight: 900,
+                                  fontFamily: "'Space Mono', monospace"
+                                }}>
+                                  {i + 1}
+                                </span>
                               </div>
-                              {/* Reference */}
-                              <div>
-                                <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Reference</div>
-                                <div className="text-sm font-bold text-white font-mono tracking-wider">{res.reference || '—'}</div>
+                              
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
+                                {/* Account badge */}
+                                <div style={{
+                                  minWidth: '95px',
+                                  padding: '10px 16px',
+                                  borderRadius: '11px',
+                                  textAlign: 'center',
+                                  background: ac ? ac.bg : 'rgba(100,116,139,0.1)',
+                                  border: `1px solid ${ac ? ac.border : 'rgba(100,116,139,0.25)'}`,
+                                  color: ac ? ac.text : '#94a3b8',
+                                  fontSize: '11px',
+                                  fontWeight: 800,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.06em',
+                                  fontFamily: "'Space Grotesk', sans-serif"
+                                }}>
+                                  {holder || 'Unknown'}
+                                </div>
+                                {/* Reference */}
+                                <div>
+                                  <div style={{ 
+                                    fontSize: '9px', 
+                                    fontWeight: 900, 
+                                    color: '#64748b', 
+                                    textTransform: 'uppercase', 
+                                    letterSpacing: '0.12em', 
+                                    marginBottom: '6px',
+                                    fontFamily: "'Space Grotesk', sans-serif"
+                                  }}>
+                                    Reference
+                                  </div>
+                                  <div style={{ 
+                                    fontSize: '14px', 
+                                    fontWeight: 700, 
+                                    color: '#e2e8f0', 
+                                    letterSpacing: '0.02em',
+                                    fontFamily: "'Space Mono', monospace"
+                                  }}>
+                                    {res.reference || '—'}
+                                  </div>
+                                </div>
+                              </div>
+                              {/* Amount */}
+                              <div style={{ textAlign: 'right' }}>
+                                <div style={{ 
+                                  fontSize: '9px', 
+                                  fontWeight: 900, 
+                                  color: '#64748b', 
+                                  textTransform: 'uppercase', 
+                                  letterSpacing: '0.12em', 
+                                  marginBottom: '6px',
+                                  fontFamily: "'Space Grotesk', sans-serif"
+                                }}>
+                                  Amount
+                                </div>
+                                <div style={{ 
+                                  fontSize: '20px', 
+                                  fontWeight: 900, 
+                                  color: '#10b981',
+                                  letterSpacing: '-0.01em',
+                                  fontFamily: "'Space Mono', monospace"
+                                }}>
+                                  ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                </div>
                               </div>
                             </div>
-                            {/* Amount */}
-                            <div className="text-right">
-                              <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Amount</div>
-                              <div className="text-lg font-black text-amber-400">
-                                ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -1077,49 +1365,237 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
               {/* Phase 4 Preview */}
               {phase === 'verify' && showVerifyPreview && (
-                <div className="flex-1 flex flex-col p-10 overflow-hidden animate-in fade-in duration-500">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-2xl font-black text-white uppercase tracking-tight">Verification Check</h3>
-                    <div className="flex items-center gap-3">
-                      <span className="px-4 py-1.5 rounded-full bg-green-500/10 text-green-400 text-[10px] font-black uppercase tracking-widest border border-green-500/20">
-                        {ocrResults?.filter(r => r.verification_status === 'verified').length} Verified
-                      </span>
-                      <span className="px-4 py-1.5 rounded-full bg-red-500/10 text-red-400 text-[10px] font-black uppercase tracking-widest border border-red-500/20">
-                        {ocrResults?.filter(r => r.verification_status !== 'verified').length} Not Found
-                      </span>
+                <div className="flex-1 flex flex-col overflow-hidden" style={{ 
+                  background: 'radial-gradient(ellipse 80% 50% at 10% -10%, rgba(18, 96, 164, 0.18) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 90% 100%, rgba(26, 127, 203, 0.12) 0%, transparent 55%), #020c18',
+                  padding: '40px'
+                }}>
+                  {/* Header */}
+                  <div style={{ marginBottom: '32px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{
+                          padding: '10px 18px',
+                          borderRadius: '12px',
+                          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%)',
+                          border: '1px solid rgba(59, 130, 246, 0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9 11l3 3L22 4" />
+                            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                          </svg>
+                          <span style={{ 
+                            color: '#3b82f6', 
+                            fontSize: '11px', 
+                            fontWeight: 900, 
+                            textTransform: 'uppercase', 
+                            letterSpacing: '0.1em',
+                            fontFamily: "'Space Grotesk', sans-serif"
+                          }}>
+                            Verification Check
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          padding: '8px 16px',
+                          borderRadius: '10px',
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          border: '1px solid rgba(16, 185, 129, 0.3)'
+                        }}>
+                          <span style={{ 
+                            color: '#10b981', 
+                            fontSize: '11px', 
+                            fontWeight: 800,
+                            fontFamily: "'Space Grotesk', sans-serif"
+                          }}>
+                            {ocrResults?.filter(r => r.verification_status === 'verified').length} Verified
+                          </span>
+                        </div>
+                        {ocrResults?.filter(r => r.verification_status !== 'verified').length > 0 && (
+                          <div style={{
+                            padding: '8px 16px',
+                            borderRadius: '10px',
+                            background: 'rgba(239, 68, 68, 0.12)',
+                            border: '1px solid rgba(239, 68, 68, 0.3)'
+                          }}>
+                            <span style={{ 
+                              color: '#ef4444', 
+                              fontSize: '11px', 
+                              fontWeight: 800,
+                              fontFamily: "'Space Grotesk', sans-serif"
+                            }}>
+                              {ocrResults?.filter(r => r.verification_status !== 'verified').length} Not Found
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    <p style={{ 
+                      color: '#64748b', 
+                      fontSize: '13px', 
+                      fontWeight: 500,
+                      fontFamily: "'Space Grotesk', sans-serif",
+                      margin: 0
+                    }}>
+                      All receipts have been verified against transaction records
+                    </p>
                   </div>
                   
-                  <div className="flex-1 overflow-y-auto pr-4 no-scrollbar">
-                    <div className="grid grid-cols-1 gap-4">
+                  {/* Results list */}
+                  <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                       {ocrResults?.sort((a, b) => {
-                        // Sort Not Found items to the top
                         if (a.verification_status !== 'verified' && b.verification_status === 'verified') return -1;
                         if (a.verification_status === 'verified' && b.verification_status !== 'verified') return 1;
                         return 0;
-                      }).map((res, i) => (
-                        <div key={i} className={`bg-white/5 border ${res.verification_status === 'verified' ? 'border-green-500/20' : 'border-red-500/20'} rounded-2xl p-6 flex items-center justify-between group transition-all`}>
-                          <div className="flex items-center gap-6">
-                            <div className="relative">
-                              <div className={`w-12 h-12 rounded-xl ${res.verification_status === 'verified' ? 'bg-green-500/10' : 'bg-red-500/10'} flex items-center justify-center text-xl border border-white/10`}>
-                                {res.verification_status === 'verified' ? '✅' : '❌'}
+                      }).map((res, i) => {
+                        const isVerified = res.verification_status === 'verified';
+                        const holder = res.receipt?.account_holder || res.account_holder;
+                        const acctColors = {
+                          Babilyn:  { bg: 'rgba(139,92,246,0.1)',  border: 'rgba(139,92,246,0.25)',  text: '#c4b5fd' },
+                          Nixie:    { bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.25)', text: '#f9a8d4' },
+                          Kristine: { bg: 'rgba(56,189,248,0.1)',  border: 'rgba(56,189,248,0.25)',  text: '#7dd3fc' },
+                        };
+                        const ac = acctColors[holder];
+                        
+                        return (
+                          <div key={i} style={{
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            backdropFilter: 'blur(20px)',
+                            border: `1px solid ${isVerified ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+                            borderRadius: '14px',
+                            padding: '18px 20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '20px',
+                            transition: 'all 0.2s',
+                            cursor: 'default'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                            e.currentTarget.style.borderColor = isVerified ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)';
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                            e.currentTarget.style.borderColor = isVerified ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                          }}>
+                            {/* Status Icon */}
+                            <div style={{
+                              width: '48px',
+                              height: '48px',
+                              borderRadius: '12px',
+                              background: isVerified ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                              border: `1px solid ${isVerified ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              fontSize: '20px'
+                            }}>
+                              {isVerified ? '✓' : '✕'}
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
+                              {/* Reference */}
+                              <div style={{ minWidth: '140px' }}>
+                                <div style={{ 
+                                  fontSize: '9px', 
+                                  fontWeight: 900, 
+                                  color: '#64748b', 
+                                  textTransform: 'uppercase', 
+                                  letterSpacing: '0.12em', 
+                                  marginBottom: '6px',
+                                  fontFamily: "'Space Grotesk', sans-serif"
+                                }}>
+                                  Reference
+                                </div>
+                                <div style={{ 
+                                  fontSize: '14px', 
+                                  fontWeight: 700, 
+                                  color: '#e2e8f0', 
+                                  letterSpacing: '0.02em',
+                                  fontFamily: "'Space Mono', monospace"
+                                }}>
+                                  {res.reference || '—'}
+                                </div>
+                              </div>
+                              
+                              {/* Status Message */}
+                              <div style={{ flex: 1 }}>
+                                <div style={{ 
+                                  fontSize: '9px', 
+                                  fontWeight: 900, 
+                                  color: '#64748b', 
+                                  textTransform: 'uppercase', 
+                                  letterSpacing: '0.12em', 
+                                  marginBottom: '6px',
+                                  fontFamily: "'Space Grotesk', sans-serif"
+                                }}>
+                                  Status
+                                </div>
+                                <div style={{ 
+                                  fontSize: '12px', 
+                                  fontWeight: 700, 
+                                  color: isVerified ? '#10b981' : '#ef4444',
+                                  fontFamily: "'Space Grotesk', sans-serif"
+                                }}>
+                                  {isVerified 
+                                    ? `Found in ${res.match_details?.bank || 'Database'}` 
+                                    : 'Not found in database'}
+                                </div>
+                              </div>
+                              
+                              {/* Account badge */}
+                              <div style={{
+                                minWidth: '95px',
+                                padding: '10px 16px',
+                                borderRadius: '11px',
+                                textAlign: 'center',
+                                background: ac ? ac.bg : 'rgba(100,116,139,0.1)',
+                                border: `1px solid ${ac ? ac.border : 'rgba(100,116,139,0.25)'}`,
+                                color: ac ? ac.text : '#94a3b8',
+                                fontSize: '11px',
+                                fontWeight: 800,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.06em',
+                                fontFamily: "'Space Grotesk', sans-serif"
+                              }}>
+                                {holder || 'Unknown'}
                               </div>
                             </div>
-                            <div>
-                              <div className="text-sm font-bold text-white font-mono tracking-wider mb-1">{res.reference || '—'}</div>
-                              <div className={`text-[9px] font-black uppercase tracking-widest ${res.verification_status === 'verified' ? 'text-green-500/70' : 'text-red-500/70'}`}>
-                                {res.verification_status === 'verified' 
-                                  ? `Found in ${res.match_details?.bank} at ${res.match_details?.timestamp}` 
-                                  : 'Error: Transaction not found in database'}
+                            
+                            {/* Amount */}
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ 
+                                fontSize: '9px', 
+                                fontWeight: 900, 
+                                color: '#64748b', 
+                                textTransform: 'uppercase', 
+                                letterSpacing: '0.12em', 
+                                marginBottom: '6px',
+                                fontFamily: "'Space Grotesk', sans-serif"
+                              }}>
+                                Amount
+                              </div>
+                              <div style={{ 
+                                fontSize: '20px', 
+                                fontWeight: 900, 
+                                color: isVerified ? '#10b981' : '#ef4444',
+                                letterSpacing: '-0.01em',
+                                fontFamily: "'Space Mono', monospace"
+                              }}>
+                                ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg font-black text-white mb-1">₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>
-                            <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{res.receipt.account_holder}</div>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -1355,36 +1831,84 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
               {/* Loading & Start States */}
               {((phase === 'ocr' && !showOcrPreview) || (phase === 'verify' && !showVerifyPreview) || (phase === 'finalize' && !finalizedBatch)) && (
-                <div className="flex-1 flex flex-col items-center justify-center p-20 text-center">
-                  <div className="relative mb-12">
-                    <div className={`w-32 h-32 rounded-full border-4 ${
-                      phase === 'ocr' ? (isProcessingOcr ? 'border-amber-500/10 border-t-amber-500 animate-spin' : 'border-amber-500/20') : 
-                      phase === 'verify' ? (isVerifying ? 'border-blue-500/10 border-t-blue-500 animate-spin' : 'border-blue-500/20') : 
-                      'border-green-500/10 border-t-green-500 animate-spin'
-                    }`} />
-                    <div className="absolute inset-0 flex items-center justify-center text-4xl">
-                      {phase === 'ocr' ? '🔍' : phase === 'verify' ? '⚖️' : '📦'}
-                    </div>
-                  </div>
-                  <h3 className="text-3xl font-black text-white uppercase tracking-tight mb-4">
-                    {phase === 'ocr' ? (isProcessingOcr ? 'Extracting Data' : 'Ready to Scan') : phase === 'verify' ? 'Verifying Claims' : 'Finalizing Batch'}
-                  </h3>
-                  <p className="text-slate-500 max-w-md mx-auto text-sm font-medium leading-relaxed mb-10">
-                    {phase === 'ocr' ? 
-                      (isProcessingOcr ? 'We are scanning your cropped images to extract amounts, dates, and 13-digit reference numbers.' : 'All receipts are sorted and cropped. Use the button in the sidebar to start the extraction.') : 
-                      phase === 'verify' ? 'We are matching extracted data with transaction records to verify claims.' : 
-                      'We are linking verified transactions to this batch and closing the record.'
-                    }
-                  </p>
+                <div className="flex-1 flex flex-col items-center justify-center p-20 text-center" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' }}>
                   
-                  {(isProcessingOcr || isVerifying || isFinalizing) && (
-                    <div className="w-full max-w-xs bg-white/5 h-2 rounded-full overflow-hidden">
-                      <div className={`h-full ${
-                        phase === 'ocr' ? 'bg-amber-500' : 
-                        phase === 'verify' ? 'bg-blue-500' : 
-                        'bg-green-500'
-                      } animate-pulse`} 
-                      style={{ width: '60%' }} />
+                  {/* Stage 4: OCR Extraction */}
+                  {phase === 'ocr' && (
+                    <div className="max-w-xl w-full">
+                      {/* Icon Circle */}
+                      <div className="relative mb-12 inline-block">
+                        <div className={`w-32 h-32 rounded-full flex items-center justify-center ${
+                          isProcessingOcr 
+                            ? 'bg-gradient-to-br from-amber-500/20 to-orange-500/20 border-4 border-amber-500/30' 
+                            : 'bg-gradient-to-br from-slate-700/30 to-slate-800/30 border-4 border-slate-600/30'
+                        } transition-all duration-500`}>
+                          {isProcessingOcr ? (
+                            <div className="relative">
+                              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
+                                <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" />
+                                <circle cx="12" cy="12" r="3" />
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-16 h-16 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
+                              </div>
+                            </div>
+                          ) : (
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="text-3xl font-black text-white uppercase tracking-tight mb-4" style={{ fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.02em' }}>
+                        {isProcessingOcr ? 'Extracting Data' : 'Ready to Extract'}
+                      </h3>
+
+                      {/* Description - Only when not processing */}
+                      {!isProcessingOcr && (
+                        <p className="text-base font-medium leading-relaxed mb-8" style={{ color: '#94a3b8', fontFamily: "'DM Sans', sans-serif" }}>
+                          Click "Start OCR Extraction" in the sidebar
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Stage 5: Verify */}
+                  {phase === 'verify' && (
+                    <div className="max-w-xl w-full">
+                      <div className="relative mb-12 inline-block">
+                        <div className={`w-32 h-32 rounded-full border-4 ${
+                          isVerifying ? 'border-indigo-500/10 border-t-indigo-500 animate-spin' : 'border-indigo-500/20'
+                        } flex items-center justify-center text-5xl`}>
+                          ⚖️
+                        </div>
+                      </div>
+                      <h3 className="text-3xl font-black text-white uppercase tracking-tight mb-4">
+                        Verifying Claims
+                      </h3>
+                      <p className="text-base font-medium leading-relaxed" style={{ color: '#94a3b8' }}>
+                        Matching with transaction records
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Stage 6: Finalize */}
+                  {phase === 'finalize' && (
+                    <div className="max-w-xl w-full">
+                      <div className="relative mb-12 inline-block">
+                        <div className="w-32 h-32 rounded-full border-4 border-green-500/10 border-t-green-500 animate-spin flex items-center justify-center text-5xl">
+                          📦
+                        </div>
+                      </div>
+                      <h3 className="text-3xl font-black text-white uppercase tracking-tight mb-4">
+                        Finalizing Batch
+                      </h3>
+                      <p className="text-base font-medium leading-relaxed" style={{ color: '#94a3b8' }}>
+                        Linking verified transactions
+                      </p>
                     </div>
                   )}
                 </div>
@@ -1445,82 +1969,22 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
           <div className="cw-sidebar">
 
             {phase === 'ocr' && (
-              <div className="flex flex-col gap-6 animate-in slide-in-from-right-4 duration-300">
-                <div className={`${isProcessingOcr ? 'bg-amber-500/10 border-amber-500/20' : ocrResults ? 'bg-green-500/10 border-green-500/20' : 'bg-white/5 border-white/10'} border rounded-[32px] p-8 text-center transition-colors duration-500`}>
-                  <div className="text-4xl mb-4">{isProcessingOcr ? '🔍' : ocrResults ? '✅' : '⏳'}</div>
-                  <h4 className="text-white font-black uppercase tracking-widest text-sm mb-2">
-                    {isProcessingOcr ? 'Stage 4: Extracting' : ocrResults ? 'Stage 4: Complete' : 'Stage 4: Extraction'}
-                  </h4>
-                  <p className="text-slate-400 text-[10px] font-medium leading-relaxed">
-                    {isProcessingOcr ? 'Our OCR engine is reading your cropped images...' : ocrResults ? 'Extraction successful! Data has been extracted from all receipts.' : 'Ready to begin scanning. Click the button to start extraction.'}
-                  </p>
-                </div>
-
-                {!isProcessingOcr && !ocrResults && (
-                  <button 
-                    onClick={handleRunOcrExtraction}
-                    className="w-full py-4 rounded-2xl bg-amber-500 text-black font-black text-[11px] uppercase tracking-widest hover:bg-amber-400 transition-all shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" />
-                    </svg>
-                    Start Scan
-                  </button>
-                )}
-
-                {!isProcessingOcr && ocrResults && (
-                  <div className="space-y-4">
-                    <div className="p-5 bg-white/5 rounded-2xl border border-white/5">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Processed</span>
-                        <span className="text-[10px] font-bold text-white uppercase tracking-widest">{ocrResults.length} Items</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Status</span>
-                        <span className="text-[10px] font-bold text-green-400 uppercase tracking-widest">Ready</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <ExtractionStage
+                isProcessingOcr={isProcessingOcr}
+                ocrResults={ocrResults}
+                onStartExtraction={handleRunOcrExtraction}
+                receiptsCount={receipts.length}
+                ocrProgress={ocrProgress}
+              />
             )}
 
             {phase === 'verify' && (
-              <div className="flex flex-col gap-6 animate-in slide-in-from-right-4 duration-300">
-                <div className={`${isVerifying ? 'bg-blue-500/10 border-blue-500/20' : 'bg-green-500/10 border-green-500/20'} border rounded-[32px] p-8 text-center transition-colors duration-500`}>
-                  <div className="text-4xl mb-4">{isVerifying ? '⚖️' : '✅'}</div>
-                  <h4 className="text-white font-black uppercase tracking-widest text-sm mb-2">
-                    {isVerifying ? 'Stage 5: Run Check' : 'Stage 5: Complete'}
-                  </h4>
-                  <p className="text-slate-400 text-[10px] font-medium leading-relaxed">
-                    {isVerifying ? 'Verifying claims with your transaction history...' : 'Verification complete! Check individual status in the final table.'}
-                  </p>
-                </div>
-
-                {!isVerifying && ocrResults && (
-                  <div className="space-y-4">
-                    <div className="p-5 bg-white/5 rounded-2xl border border-white/5">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Verification</span>
-                        <span className="text-[10px] font-bold text-white uppercase tracking-widest">
-                          {ocrResults.filter(r => r.verification_status === 'verified').length} / {ocrResults.length} Verified
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Status</span>
-                        <span className="text-[10px] font-bold text-green-400 uppercase tracking-widest">Done</span>
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={startFinalizePhase}
-                      className="w-full py-4 rounded-2xl bg-green-500 text-black font-black text-[11px] uppercase tracking-widest hover:bg-green-400 transition-all shadow-xl shadow-green-500/20 flex items-center justify-center gap-2"
-                    >
-                      Finalize Batch & Update Progress →
-                    </button>
-                  </div>
-                )}
-              </div>
+              <VerificationStage
+                isVerifying={isVerifying}
+                ocrResults={ocrResults}
+                onStartVerification={startVerifyPhase}
+                onFinalize={startFinalizePhase}
+              />
             )}
 
             {phase === 'finalize' && (
@@ -1631,81 +2095,119 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
               {/* Phase 3 -> 4 Transition */}
               {phase === 'ocr' && !isProcessingOcr && ocrResults && (
-                <div className="flex flex-col gap-3">
-                  <div className="flex gap-3">
+                <div style={{ 
+                  marginTop: 'auto',
+                  paddingTop: '24px',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                  padding: '24px 40px'
+                }}>
+                  <div style={{ display: 'flex', gap: '12px' }}>
                     <button 
-                      className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] hover:bg-white/10 hover:text-white transition-all active:scale-95"
-                      style={{ fontFamily: "'Inter', sans-serif" }}
+                      style={{
+                        flex: 1,
+                        padding: '16px 24px',
+                        borderRadius: '14px',
+                        fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                        fontSize: '10px',
+                        fontWeight: 900,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.15em',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: '#64748b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        whiteSpace: 'nowrap'
+                      }}
                       onClick={() => {
                         setPhase('crop');
                         setIndex(total - 1);
                       }}
-                    >
-                      ← Back to Crop
-                    </button>
-                    <div className="flex-[2]">
-                      <button 
-                        className="cw-btn-confirm" 
-                        onClick={startVerifyPhase}
-                        style={{ 
-                          width: '100%', 
-                          maxWidth: 'none',
-                          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                          boxShadow: '0 10px 25px rgba(37, 99, 235, 0.3)',
-                          padding: '16px 10px',
-                          fontSize: '10px',
-                          fontWeight: 900,
-                          letterSpacing: '0.15em',
-                          textTransform: 'uppercase',
-                          fontFamily: "'Inter', sans-serif",
-                          borderRadius: '16px'
-                        }}
-                      >
-                        Start Phase 4: Run Check →
-                      </button>
-                    </div>
-                  </div>
-                  <p className="text-[9px] font-black text-center text-slate-500 uppercase tracking-[0.2em]">Step 3 of 5: scanning</p>
-                </div>
-              )}
-
-              {/* Phase 4 -> 5 Transition */}
-              {phase === 'verify' && !isVerifying && ocrResults && (
-                <div className="flex flex-col gap-3">
-                  <div className="flex gap-3">
-                    <button 
-                      className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] hover:bg-white/10 hover:text-white transition-all active:scale-95"
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                      onClick={() => {
-                        setPhase('ocr');
-                        setShowOcrPreview(true);
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                        e.currentTarget.style.color = '#fff';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                        e.currentTarget.style.color = '#64748b';
                       }}
                     >
-                      ← Back
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                      </svg>
+                      Back to Crop
                     </button>
-                    <div className="flex-[2]">
-                      <button 
-                        className="cw-btn-confirm" 
-                        onClick={startFinalizePhase}
-                        style={{ 
-                          width: '100%', 
-                          maxWidth: 'none',
-                          background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
-                          boxShadow: '0 10px 25px rgba(139, 92, 246, 0.3)',
-                          padding: '16px 10px',
-                          fontSize: '10px',
-                          fontWeight: 900,
-                          letterSpacing: '0.15em',
-                          textTransform: 'uppercase',
-                          fontFamily: "'Inter', sans-serif",
-                          borderRadius: '16px'
-                        }}
-                      >
-                        Start Phase 5: Finalize →
-                      </button>
-                    </div>
+                    <button 
+                      style={{
+                        flex: 2,
+                        padding: '16px 24px',
+                        borderRadius: '14px',
+                        fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                        fontSize: '10px',
+                        fontWeight: 900,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.15em',
+                        border: '1px solid rgba(56, 168, 232, 0.35)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        background: 'linear-gradient(135deg, #1a7fcb 0%, #1260a4 60%, #0f4c91 100%)',
+                        color: '#fff',
+                        boxShadow: '0 6px 28px rgba(18, 96, 164, 0.45)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onClick={startVerifyPhase}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 12px 36px rgba(18, 96, 164, 0.55)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 6px 28px rgba(18, 96, 164, 0.45)';
+                      }}
+                      onMouseDown={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
+                      Start Verification Check
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                      </svg>
+                    </button>
                   </div>
-                  <p className="text-[9px] font-black text-center text-slate-500 uppercase tracking-[0.2em]">Step 4 of 5: verifying</p>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '12px',
+                    padding: '8px 0'
+                  }}>
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.05)' }} />
+                    <span style={{
+                      fontSize: '9px',
+                      fontWeight: 900,
+                      color: '#64748b',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.2em',
+                      whiteSpace: 'nowrap',
+                      fontFamily: "'Space Grotesk', system-ui, sans-serif"
+                    }}>
+                      Stage 4 of 8: OCR Extraction
+                    </span>
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.05)' }} />
+                  </div>
                 </div>
               )}
 

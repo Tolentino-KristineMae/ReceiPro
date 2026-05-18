@@ -3,6 +3,23 @@ import { getApiUrl } from '../../apiConfig';
 
 const ACCOUNTS = ['Babilyn', 'Nixie', 'Kristine'];
 
+// Batch color palette (5 colors cycling)
+const BATCH_COLORS = [
+  { bg: 'rgba(139, 92, 246, 0.15)', border: 'rgba(139, 92, 246, 0.4)', text: '#a78bfa' },  // Purple
+  { bg: 'rgba(59, 130, 246, 0.15)', border: 'rgba(59, 130, 246, 0.4)', text: '#60a5fa' },  // Blue
+  { bg: 'rgba(16, 185, 129, 0.15)', border: 'rgba(16, 185, 129, 0.4)', text: '#34d399' },  // Green
+  { bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.4)', text: '#fbbf24' },  // Amber
+  { bg: 'rgba(236, 72, 153, 0.15)', border: 'rgba(236, 72, 153, 0.4)', text: '#f472b6' },  // Pink
+];
+
+const getBatchColor = (batchNumber) => {
+  if (!batchNumber) return null;
+  // Extract numeric part from batch number (e.g., "B-001" -> 1)
+  const numMatch = batchNumber.match(/\d+/);
+  const num = numMatch ? parseInt(numMatch[0]) : 0;
+  return BATCH_COLORS[(num - 1) % 5];
+};
+
 const fmt = (n) =>
   Number(n ?? 0).toLocaleString('en-PH', {
     minimumFractionDigits: 2,
@@ -150,16 +167,51 @@ const CSS = `
     background: var(--bg-glass-hover);
   }
 
+  /* ── Print Button ── */
+  .print-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    letter-spacing: 0.025em;
+  }
+
+  .print-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  }
+
+  .print-button:active {
+    transform: translateY(0);
+  }
+
+  @media (max-width: 640px) {
+    .print-button {
+      padding: 8px 16px;
+      font-size: 12px;
+    }
+  }
+
   /* ── Main Layout ── */
   .main-layout {
     display: grid;
-    grid-template-columns: 340px 1fr;
-    gap: 1.5rem;
+    grid-template-columns: 300px 1fr;
+    gap: 1.25rem;
     align-items: start;
   }
 
   @media (max-width: 1280px) {
-    .main-layout { grid-template-columns: 300px 1fr; gap: 1.25rem; }
+    .main-layout { grid-template-columns: 280px 1fr; gap: 1rem; }
   }
 
   @media (max-width: 1024px) {
@@ -214,21 +266,21 @@ const CSS = `
   }
 
   .form-icon {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border-radius: var(--radius-md);
     background: var(--gradient-accent);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 18px;
+    font-size: 17px;
     box-shadow: var(--shadow-md);
     flex-shrink: 0;
   }
 
   .form-title-group h2 {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     font-weight: 800;
     background: var(--gradient-primary);
     -webkit-background-clip: text;
@@ -240,7 +292,7 @@ const CSS = `
 
   .form-subtitle {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
     margin-top: 0.15rem;
   }
@@ -265,7 +317,7 @@ const CSS = `
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
-    padding: 10px 14px;
+    padding: 10px 12px;
     font-size: 14px;
     color: var(--text-primary);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -300,9 +352,9 @@ const CSS = `
   }
 
   .amount-input {
-    padding-left: 36px;
+    padding-left: 34px;
     font-family: var(--font-mono);
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 600;
     letter-spacing: -0.02em;
   }
@@ -365,7 +417,7 @@ const CSS = `
 
   .preview-value {
     font-family: var(--font-mono);
-    font-size: 22px;
+    font-size: 21px;
     font-weight: 700;
     letter-spacing: -0.03em;
   }
@@ -555,10 +607,12 @@ const CSS = `
   .table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: auto;
+    white-space: nowrap;
   }
 
   .table th {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 0.5rem;
     text-align: left;
     font-size: 9px;
     font-weight: 700;
@@ -567,15 +621,18 @@ const CSS = `
     text-transform: uppercase;
     background: transparent;
     border: none;
+    white-space: nowrap;
   }
 
   .table th:last-child { text-align: right; }
 
   .table td {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 0.5rem;
     border-bottom: 1px solid var(--border-subtle);
     vertical-align: middle;
     transition: background 0.2s ease;
+    white-space: nowrap;
+    overflow: visible;
   }
 
   .table tr:hover td {
@@ -588,7 +645,7 @@ const CSS = `
 
   /* ── Table Elements ── */
   .date-display {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-primary);
     font-weight: 600;
     font-family: var(--font-mono);
@@ -598,13 +655,14 @@ const CSS = `
   .type-badge {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 10px;
+    gap: 3px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 9px;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .type-badge.credit {
@@ -628,10 +686,11 @@ const CSS = `
 
   .amount-display {
     font-family: var(--font-mono);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     text-align: right;
     letter-spacing: -0.02em;
+    white-space: nowrap;
   }
 
   .amount-display.credit { color: var(--success-primary); }
@@ -639,33 +698,138 @@ const CSS = `
 
   .balance-display {
     font-family: var(--font-mono);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     color: var(--text-primary);
     text-align: right;
     letter-spacing: -0.02em;
+    white-space: nowrap;
   }
 
   /* ── Batch Tag ── */
   .batch-tag {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
     color: var(--accent-primary);
     background: rgba(59, 130, 246, 0.1);
     border: 1px solid rgba(59, 130, 246, 0.2);
-    padding: 2px 8px;
+    padding: 2px 6px;
     border-radius: 6px;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    letter-spacing: 0.05em;
+    gap: 3px;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
   }
 
   .batch-none {
     color: var(--text-muted-alt);
     font-size: 12px;
     font-style: italic;
+    white-space: nowrap;
+  }
+
+  /* ── Edit Button ── */
+  .edit-button {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .edit-button:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-primary);
+    border-color: rgba(59, 130, 246, 0.3);
+    transform: scale(1.05);
+  }
+
+  @media (max-width: 768px) {
+    .edit-button { 
+      background: rgba(59, 130, 246, 0.05);
+      border-color: rgba(59, 130, 246, 0.1);
+      color: var(--accent-primary);
+    }
+  }
+
+  /* ── Inline Edit Inputs ── */
+  .inline-edit-input,
+  .inline-edit-select {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-family);
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .inline-edit-input:focus,
+  .inline-edit-select:focus {
+    border-color: var(--accent-primary);
+    background: rgba(59, 130, 246, 0.05);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .inline-edit-select {
+    cursor: pointer;
+  }
+
+  .editing-row {
+    background: rgba(59, 130, 246, 0.03) !important;
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+  }
+
+  /* ── Save/Cancel Buttons ── */
+  .save-button {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .save-button:hover {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-primary);
+    border-color: rgba(16, 185, 129, 0.3);
+    transform: scale(1.05);
+  }
+
+  .cancel-button {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cancel-button:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-primary);
+    border-color: rgba(239, 68, 68, 0.3);
+    transform: scale(1.05);
   }
 
   /* ── Delete Button ── */
@@ -680,7 +844,6 @@ const CSS = `
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto;
   }
 
   .delete-button:hover {
@@ -695,7 +858,6 @@ const CSS = `
       background: rgba(239, 68, 68, 0.05);
       border-color: rgba(239, 68, 68, 0.1);
       color: var(--danger-primary);
-      margin: 0;
     }
   }
 
@@ -885,6 +1047,12 @@ const Icon = {
       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
       <line x1="10" y1="11" x2="10" y2="17" />
       <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  ),
+  Edit: ({ className = "w-5 h-5" }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
     </svg>
   ),
   Alert: ({ className = "w-5 h-5" }) => (
@@ -1093,6 +1261,8 @@ export default function TransactionsPage() {
   const [forms, setForms] = useState(() => Object.fromEntries(ACCOUNTS.map(a => [a, EMPTY_FORM()])));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [editingTransaction, setEditingTransaction] = useState(null);
+  const [allAccountsData, setAllAccountsData] = useState({});
 
   const form = forms[activeAccount] || EMPTY_FORM();
   const setForm = (updater) => setForms(prev => {
@@ -1120,6 +1290,26 @@ export default function TransactionsPage() {
   useEffect(() => {
     fetchTransactions();
   }, [activeAccount]);
+
+  // Fetch all accounts data to check for completed batches
+  useEffect(() => {
+    const fetchAllAccountsData = async () => {
+      const data = {};
+      for (const account of ACCOUNTS) {
+        try {
+          const response = await fetch(getApiUrl(`/api/transactions?account_holder=${account}&t=${Date.now()}`), { 
+            cache: 'no-store' 
+          });
+          const transactions = await response.json();
+          data[account] = Array.isArray(transactions) ? transactions : [];
+        } catch {
+          data[account] = [];
+        }
+      }
+      setAllAccountsData(data);
+    };
+    fetchAllAccountsData();
+  }, [transactions]); // Re-fetch when transactions change
 
   const openingBalance = transactions.length > 0
     ? parseFloat(transactions[0].opening_balance ?? 0)
@@ -1193,6 +1383,298 @@ export default function TransactionsPage() {
     }
   };
 
+  const handleEdit = (transaction) => {
+    setEditingTransaction(transaction);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTransaction(null);
+  };
+
+  const handleSaveEdit = async (transactionId, updatedData) => {
+    try {
+      const res = await fetch(getApiUrl(`/api/transactions/${transactionId}`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData),
+      });
+      
+      if (res.ok) {
+        const updated = await res.json();
+        setTransactions(prev => prev.map(t => t.id === updated.id ? updated : t));
+        setEditingTransaction(null);
+      } else {
+        throw new Error('Failed to update transaction');
+      }
+    } catch (err) {
+      alert('Failed to update transaction: ' + err.message);
+    }
+  };
+
+  const handleUpdateTransaction = async (updatedData) => {
+    await handleSaveEdit(editingTransaction.id, updatedData);
+  };
+
+  // Check if we have 5 or more completed batches
+  const getCompletedBatches = () => {
+    const batchSet = new Set();
+    Object.values(allAccountsData).forEach(transactions => {
+      transactions.forEach(t => {
+        if (t.batch?.final_batch_number) {
+          batchSet.add(t.batch.final_batch_number);
+        }
+      });
+    });
+    return Array.from(batchSet).sort();
+  };
+
+  const completedBatches = getCompletedBatches();
+  const canPrint = completedBatches.length >= 5;
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    const printContent = generatePrintContent();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
+  };
+
+  const generatePrintContent = () => {
+    let html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Transaction Report - All Accounts</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+          
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          
+          body {
+            font-family: 'Inter', sans-serif;
+            padding: 40px;
+            background: white;
+            color: #1e293b;
+          }
+          
+          .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #0f172a;
+            padding-bottom: 20px;
+          }
+          
+          .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 8px;
+          }
+          
+          .header p {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 600;
+          }
+          
+          .account-section {
+            margin-bottom: 50px;
+            page-break-inside: avoid;
+          }
+          
+          .account-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            background: #f1f5f9;
+            border-left: 4px solid #3b82f6;
+          }
+          
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+          }
+          
+          th {
+            background: #0f172a;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+          }
+          
+          td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 13px;
+          }
+          
+          tr:hover {
+            background: #f8fafc;
+          }
+          
+          .batch-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.05em;
+          }
+          
+          .credit { color: #059669; font-weight: 600; }
+          .debit { color: #dc2626; font-weight: 600; }
+          
+          .summary {
+            margin-top: 20px;
+            padding: 16px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+          }
+          
+          .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 14px;
+          }
+          
+          .summary-row.total {
+            border-top: 2px solid #0f172a;
+            margin-top: 8px;
+            padding-top: 12px;
+            font-weight: 700;
+            font-size: 16px;
+          }
+          
+          @media print {
+            body { padding: 20px; }
+            .account-section { page-break-after: always; }
+            .account-section:last-child { page-break-after: auto; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Transaction Report</h1>
+          <p>All Accounts - Generated on ${new Date().toLocaleDateString('en-PH', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          })}</p>
+        </div>
+    `;
+
+    ACCOUNTS.forEach(account => {
+      const accountTransactions = allAccountsData[account] || [];
+      if (accountTransactions.length === 0) return;
+
+      const totalCredit = accountTransactions
+        .filter(t => t.entry_type === 'credit')
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+      
+      const totalDebit = accountTransactions
+        .filter(t => t.entry_type === 'debit')
+        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+      
+      const openingBalance = accountTransactions.length > 0
+        ? parseFloat(accountTransactions[0].opening_balance ?? 0)
+        : 0;
+      
+      const currentBalance = openingBalance + totalCredit - totalDebit;
+
+      html += `
+        <div class="account-section">
+          <div class="account-title">${account}</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Label</th>
+                <th>Batch</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      let running = openingBalance;
+      accountTransactions.forEach(t => {
+        const amt = parseFloat(t.amount || 0);
+        running = t.entry_type === 'credit' ? running + amt : running - amt;
+        const batchLabel = t.batch?.final_batch_number || t.batch?.batch_number || '—';
+        
+        // For debit transactions, show descriptive word instead of batch number
+        const displayLabel = t.entry_type === 'debit' 
+          ? (t.label || 'Deduction')
+          : batchLabel;
+        
+        const color = t.entry_type === 'debit'
+          ? { bg: 'rgba(239, 68, 68, 0.1)', border: 'rgba(239, 68, 68, 0.3)', text: '#ef4444' }
+          : getBatchColor(batchLabel);
+        
+        const batchStyle = color 
+          ? `background: ${color.bg}; border: 1px solid ${color.border}; color: ${color.text};`
+          : 'background: #f1f5f9; border: 1px solid #cbd5e1; color: #64748b;';
+
+        html += `
+          <tr>
+            <td>${fmtDate(t.transaction_date)}</td>
+            <td><span class="${t.entry_type}">${t.entry_type === 'credit' ? 'Credit (+)' : 'Debit (−)'}</span></td>
+            <td>₱${fmt(amt)}</td>
+            <td>${t.label || '—'}</td>
+            <td><span class="batch-tag" style="${batchStyle}">${displayLabel}</span></td>
+            <td>₱${fmt(running)}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+            </tbody>
+          </table>
+          <div class="summary">
+            <div class="summary-row">
+              <span>Opening Balance:</span>
+              <span>₱${fmt(openingBalance)}</span>
+            </div>
+            <div class="summary-row">
+              <span>Total Credits:</span>
+              <span class="credit">+₱${fmt(totalCredit)}</span>
+            </div>
+            <div class="summary-row">
+              <span>Total Debits:</span>
+              <span class="debit">−₱${fmt(totalDebit)}</span>
+            </div>
+            <div class="summary-row total">
+              <span>Current Balance:</span>
+              <span>₱${fmt(currentBalance)}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `
+      </body>
+      </html>
+    `;
+
+    return html;
+  };
+
   const fmtDate = (raw) => {
     if (!raw) return '—';
     const d = new Date(raw);
@@ -1219,6 +1701,21 @@ export default function TransactionsPage() {
               </button>
             ))}
           </div>
+          
+          {canPrint && (
+            <button
+              onClick={handlePrint}
+              className="print-button"
+              title={`Print report for ${completedBatches.length} completed batches`}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9" />
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                <rect x="6" y="14" width="12" height="8" />
+              </svg>
+              Print Report ({completedBatches.length} Batches)
+            </button>
+          )}
         </div>
 
         <div className="main-layout">
@@ -1425,7 +1922,126 @@ export default function TransactionsPage() {
                           const d = fmtDate(t.transaction_date);
                           const batch = t.batch;
                           const batchLabel = batch?.final_batch_number || batch?.batch_number;
+                          
+                          // For debit transactions, show descriptive word instead of batch number
+                          const displayLabel = t.entry_type === 'debit' 
+                            ? (t.label || 'Deduction')
+                            : batchLabel;
+                          
+                          const isEditing = editingTransaction?.id === t.id;
 
+                          if (isEditing) {
+                            // Inline edit mode
+                            return (
+                              <tr key={t.id} className="editing-row">
+                                <td data-label="Date">
+                                  <input
+                                    type="date"
+                                    defaultValue={t.transaction_date}
+                                    className="inline-edit-input"
+                                    id={`edit-date-${t.id}`}
+                                  />
+                                </td>
+                                <td data-label="Type">
+                                  <select
+                                    defaultValue={t.entry_type}
+                                    className="inline-edit-select"
+                                    id={`edit-type-${t.id}`}
+                                  >
+                                    <option value="credit">Credit</option>
+                                    <option value="debit">Debit</option>
+                                  </select>
+                                </td>
+                                <td data-label="Batch">
+                                  {t.entry_type === 'debit' ? (
+                                    <span 
+                                      className="batch-tag" 
+                                      style={{
+                                        background: 'rgba(239, 68, 68, 0.1)',
+                                        borderColor: 'rgba(239, 68, 68, 0.3)',
+                                        color: '#ef4444'
+                                      }}
+                                    >
+                                      {displayLabel}
+                                    </span>
+                                  ) : batchLabel ? (
+                                    <span 
+                                      className="batch-tag" 
+                                      title={batch?.batch_number}
+                                      style={(() => {
+                                        const color = getBatchColor(batchLabel);
+                                        return color ? {
+                                          background: color.bg,
+                                          borderColor: color.border,
+                                          color: color.text
+                                        } : {};
+                                      })()}
+                                    >
+                                      {batchLabel}
+                                    </span>
+                                  ) : (
+                                    <span className="batch-none">—</span>
+                                  )}
+                                </td>
+                                <td data-label="Ref / Label">
+                                  <input
+                                    type="text"
+                                    defaultValue={t.label || ''}
+                                    placeholder="Label"
+                                    className="inline-edit-input"
+                                    id={`edit-label-${t.id}`}
+                                  />
+                                </td>
+                                <td data-label="Amount">
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    defaultValue={amt}
+                                    className="inline-edit-input"
+                                    id={`edit-amount-${t.id}`}
+                                  />
+                                </td>
+                                <td data-label="Balance">
+                                  <div className="balance-display">
+                                    ₱{fmt(running)}
+                                  </div>
+                                </td>
+                                <td data-label="Actions" style={{ textAlign: 'center' }}>
+                                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                    <button 
+                                      className="save-button" 
+                                      onClick={() => {
+                                        const updatedData = {
+                                          transaction_date: document.getElementById(`edit-date-${t.id}`).value,
+                                          entry_type: document.getElementById(`edit-type-${t.id}`).value,
+                                          amount: document.getElementById(`edit-amount-${t.id}`).value,
+                                          label: document.getElementById(`edit-label-${t.id}`).value,
+                                        };
+                                        handleSaveEdit(t.id, updatedData);
+                                      }}
+                                      title="Save changes"
+                                    >
+                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                      </svg>
+                                    </button>
+                                    <button 
+                                      className="cancel-button" 
+                                      onClick={handleCancelEdit}
+                                      title="Cancel editing"
+                                    >
+                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          }
+
+                          // Normal display mode
                           return (
                             <tr key={t.id}>
                               <td data-label="Date">
@@ -1438,20 +2054,40 @@ export default function TransactionsPage() {
                                 </div>
                               </td>
                               <td data-label="Batch">
-                                {batchLabel
-                                  ? <span className="batch-tag" title={batch?.batch_number}>{batchLabel}</span>
-                                  : <span className="batch-none">—</span>
-                                }
+                                {t.entry_type === 'debit' ? (
+                                  <span 
+                                    className="batch-tag" 
+                                    style={{
+                                      background: 'rgba(239, 68, 68, 0.1)',
+                                      borderColor: 'rgba(239, 68, 68, 0.3)',
+                                      color: '#ef4444'
+                                    }}
+                                  >
+                                    {displayLabel}
+                                  </span>
+                                ) : batchLabel ? (
+                                  <span 
+                                    className="batch-tag" 
+                                    title={batch?.batch_number}
+                                    style={(() => {
+                                      const color = getBatchColor(batchLabel);
+                                      return color ? {
+                                        background: color.bg,
+                                        borderColor: color.border,
+                                        color: color.text
+                                      } : {};
+                                    })()}
+                                  >
+                                    {batchLabel}
+                                  </span>
+                                ) : (
+                                  <span className="batch-none">—</span>
+                                )}
                               </td>
                               <td data-label="Ref / Label">
-                                <div style={{ fontWeight: 600, fontSize: '15px' }}>
+                                <div style={{ fontWeight: 600, fontSize: '13px', whiteSpace: 'nowrap', overflow: 'visible' }}>
                                   {t.label || t.reference || '—'}
                                 </div>
-                                {t.label && t.reference && t.label !== t.reference && (
-                                  <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontSize: '12px', marginTop: '2px' }}>
-                                    {t.reference}
-                                  </div>
-                                )}
                               </td>
                               <td data-label="Amount">
                                 <div className={`amount-display ${t.entry_type}`}>
@@ -1464,13 +2100,22 @@ export default function TransactionsPage() {
                                 </div>
                               </td>
                               <td data-label="Actions" style={{ textAlign: 'center' }}>
-                                <button 
-                                  className="delete-button" 
-                                  onClick={() => handleDelete(t.id)}
-                                  title="Delete transaction"
-                                >
-                                  <Icon.Trash />
-                                </button>
+                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                  <button 
+                                    className="edit-button" 
+                                    onClick={() => handleEdit(t)}
+                                    title="Edit transaction"
+                                  >
+                                    <Icon.Edit />
+                                  </button>
+                                  <button 
+                                    className="delete-button" 
+                                    onClick={() => handleDelete(t.id)}
+                                    title="Delete transaction"
+                                  >
+                                    <Icon.Trash />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -1499,6 +2144,8 @@ export default function TransactionsPage() {
           </div>
         </div>
       </div>
+
+      {/* Removed EditTransactionModal - using inline editing instead */}
     </>
   );
 }
