@@ -8,6 +8,7 @@ import SortingStage from './Steps/SortingStage';
 import CropStage from './Steps/CropStage';
 import ExtractionStage from './Steps/ExtractionStage';
 import VerificationStage from './Steps/VerificationStage';
+import FinalizeStage from './Steps/FinalizeStage';
 import { getApiUrl } from '../../apiConfig';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -917,68 +918,82 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 </div>
               </div>
             ) : phase === 'verify' ? (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}>
-                <div style={{
-                  padding: '8px 16px',
-                  borderRadius: '10px',
-                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%)',
-                  border: '1px solid rgba(59, 130, 246, 0.3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <div style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    background: '#3b82f6'
-                  }} />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {/* Stage pill */}
                   <span style={{
-                    fontSize: '10px',
-                    fontWeight: 900,
-                    color: '#3b82f6',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    fontFamily: "'Space Grotesk', sans-serif"
+                    padding: '3px 10px', borderRadius: '100px',
+                    background: 'rgba(59,130,246,0.15)',
+                    border: '1px solid rgba(59,130,246,0.35)',
+                    color: '#60a5fa',
+                    fontSize: '9px', fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.2em',
+                    fontFamily: "'Space Grotesk', system-ui, sans-serif",
                   }}>
                     Stage 5 of 8
                   </span>
                 </div>
+                {/* Title */}
                 <div style={{
-                  fontSize: '18px',
-                  fontWeight: 900,
-                  color: '#fff',
-                  textTransform: 'uppercase',
-                  letterSpacing: '-0.02em',
-                  fontFamily: "'Space Grotesk', system-ui, sans-serif"
+                  fontSize: '16px', fontWeight: 700,
+                  color: '#f1f5f9',
+                  letterSpacing: '-0.02em', lineHeight: 1.2,
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
                   Verification Check
+                </div>
+                {/* Subtitle */}
+                <div style={{
+                  fontSize: '10px', fontWeight: 500,
+                  color: '#64748b',
+                  letterSpacing: '0.04em',
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  Verify extracted receipts against transaction records
+                </div>
+              </div>
+            ) : phase === 'finalize' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {/* Stage pill */}
+                  <span style={{
+                    padding: '3px 10px', borderRadius: '100px',
+                    background: 'rgba(16,185,129,0.15)',
+                    border: '1px solid rgba(16,185,129,0.35)',
+                    color: '#10b981',
+                    fontSize: '9px', fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.2em',
+                    fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                  }}>
+                    Stage 6 of 8
+                  </span>
+                </div>
+                {/* Title */}
+                <div style={{
+                  fontSize: '16px', fontWeight: 700,
+                  color: '#f1f5f9',
+                  letterSpacing: '-0.02em', lineHeight: 1.2,
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  Finalize Batch
+                </div>
+                {/* Subtitle */}
+                <div style={{
+                  fontSize: '10px', fontWeight: 500,
+                  color: '#64748b',
+                  letterSpacing: '0.04em',
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  Complete batch processing and link transactions
                 </div>
               </div>
             ) : (
               <>
                 <div className="cw-title">
-                  {phase === 'finalize' && 'Stage 6: Finalize'}
                   {phase === 'summary' && 'Stage 7: Summary'}
                   {phase === 'billing' && 'Stage 8: Billing'}
                 </div>
             <div className="cw-subtitle">
-              {phase === 'verify' && (
-                <div style={{
-                  fontSize: '10px',
-                  fontWeight: 500,
-                  color: '#64748b',
-                  letterSpacing: '0.04em',
-                  fontFamily: "'Space Grotesk', system-ui, sans-serif"
-                }}>
-                  Verify extracted receipts against transaction records
-                </div>
-              )}
-              {phase === 'finalize' && 'Stamping batch labels...'}
               {phase === 'summary' && 'Calculating total claims and deductions...'}
               {(phase !== 'ocr' && phase !== 'verify' && phase !== 'finalize' && phase !== 'summary') && (
                 <div className="flex items-center gap-3">
@@ -1984,46 +1999,26 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 ocrResults={ocrResults}
                 onStartVerification={startVerifyPhase}
                 onFinalize={startFinalizePhase}
+                onBack={() => {
+                  setPhase('ocr');
+                  setShowOcrPreview(true);
+                }}
               />
             )}
 
             {phase === 'finalize' && (
-              <div className="flex flex-col gap-6 animate-in slide-in-from-right-4 duration-300">
-                <div className={`${isFinalizing ? 'bg-green-500/10 border-green-500/20' : 'bg-green-500/20 border-green-500/40'} border rounded-[32px] p-8 text-center transition-colors duration-500`}>
-                  <div className="text-4xl mb-4">{isFinalizing ? '📦' : '🏆'}</div>
-                  <h4 className="text-white font-black uppercase tracking-widest text-sm mb-2">
-                    {isFinalizing ? 'Finalizing' : 'Finalized'}
-                  </h4>
-                  <p className="text-slate-400 text-[10px] font-medium leading-relaxed">
-                    {isFinalizing ? 'Stamping batch labels on transactions...' : 'Batch finalized! Transactions are now linked and claimed.'}
-                  </p>
-                </div>
-
-                {finalizedBatch && (
-                  <div className="space-y-4">
-                    <div className="p-5 bg-white/5 rounded-2xl border border-white/5">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Batch Number</span>
-                        <span className="text-[10px] font-bold text-white uppercase tracking-widest">{finalizedBatch.final_batch_number || finalizedBatch.batch_number}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Transactions</span>
-                        <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Linked</span>
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={onDone}
-                      className="w-full py-4 rounded-2xl bg-white text-black font-black text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl flex items-center justify-center gap-2 mt-6"
-                    >
-                      Return to Batch Details
-                    </button>
-                  </div>
-                )}
-              </div>
+              <FinalizeStage
+                isFinalizing={isFinalizing}
+                finalizedBatch={finalizedBatch}
+                ocrResults={ocrResults}
+                onDone={onDone}
+                onViewSummary={() => {
+                  setPhase('summary');
+                }}
+              />
             )}
 
-            <div className="mt-auto pt-12 flex flex-col gap-5 border-t border-white/5">
+            <div className="mt-auto pt-12 flex flex-col gap-5">
               {(phase !== 'ocr' && phase !== 'verify' && phase !== 'finalize' && phase !== 'summary' && phase !== 'billing' && phase !== 'categorize') && (
                 <>
                   <div className="flex flex-col gap-2">
