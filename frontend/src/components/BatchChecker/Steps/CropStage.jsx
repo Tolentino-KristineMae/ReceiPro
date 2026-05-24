@@ -27,6 +27,8 @@ export default function CropStage({
   onPrev,
   onNext,
   onRecategorize,
+  onChangeToGCash, // NEW PROP
+  onChangeToOthers, // NEW PROP
   index,
   total,
   gcashProcessed,
@@ -126,6 +128,43 @@ export default function CropStage({
               </div>
             )}
           </div>
+
+          {/* Category Change Buttons - NEW */}
+          {currentCategory && currentCategory !== 'unsorted' && (
+            <div className="cs-category-change">
+              <div className="cs-category-change-info">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M7 7h10v10" />
+                  <path d="M7 17 17 7" />
+                </svg>
+                <span>Wrong Category?</span>
+              </div>
+              
+              {currentCategory === 'gcash' && (
+                <button 
+                  onClick={onChangeToOthers}
+                  className="cs-category-change-btn others"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                  Change to Others
+                </button>
+              )}
+              
+              {currentCategory === 'others' && (
+                <button 
+                  onClick={onChangeToGCash}
+                  className="cs-category-change-btn gcash"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                  Change to GCash
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Rotate Button */}
           <button onClick={rotateImage} className="cs-rotate-btn">

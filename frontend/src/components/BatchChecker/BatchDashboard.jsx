@@ -59,7 +59,6 @@ export default function BatchDashboard({
                 type="file"
                 multiple
                 ref={fileInputRef}
-                accept="image/*"
                 onChange={(e) => setFileCount(e.target.files?.length || 0)}
               />
               <div className="drop-icon">📁</div>

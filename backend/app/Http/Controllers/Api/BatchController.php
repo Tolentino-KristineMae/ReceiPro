@@ -13,7 +13,15 @@ class BatchController extends Controller
     /** List all batches with their receipts */
     public function index()
     {
-        $batches = Batch::with(['receipts'])->orderBy('created_at', 'desc')->get();
+        $batches = Batch::with(['receipts' => function ($query) {
+            $query->orderBy('created_at', 'asc');
+        }])->orderBy('created_at', 'desc')->get();
+        
+        // Debug logging
+        foreach ($batches as $batch) {
+            \Log::info("Batch {$batch->id}: {$batch->receipts->count()} receipts");
+        }
+        
         return response()->json($batches);
     }
 
@@ -35,7 +43,9 @@ class BatchController extends Controller
     /** Show a single batch with all receipts */
     public function show(Batch $batch)
     {
-        return response()->json($batch->load('receipts'));
+        return response()->json($batch->load(['receipts' => function ($query) {
+            $query->orderBy('created_at', 'asc');
+        }]));
     }
 
     /** Update checker_status: open → claiming → verified → finalized → summarized → billing_ready */
@@ -65,7 +75,9 @@ class BatchController extends Controller
             $batch->update($data);
 
             // For each receipt in this batch, find a matching transaction and stamp it
-            $batch->load('receipts');
+            $batch->load(['receipts' => function ($query) {
+                $query->orderBy('created_at', 'asc');
+            }]);
             foreach ($batch->receipts as $receipt) {
                 $ref    = $receipt->ocr_data['reference'] ?? null;
                 $amount = isset($receipt->ocr_data['amount'])
@@ -96,7 +108,9 @@ class BatchController extends Controller
                 }
             }
 
-            return response()->json($batch->fresh()->load('receipts'));
+            return response()->json($batch->fresh()->load(['receipts' => function ($query) {
+                $query->orderBy('created_at', 'asc');
+            }]));
         }
 
         $batch->update($data);
@@ -107,7 +121,9 @@ class BatchController extends Controller
                 ->update(['status' => 'completed']);
         }
 
-        return response()->json($batch->fresh()->load('receipts'));
+        return response()->json($batch->fresh()->load(['receipts' => function ($query) {
+            $query->orderBy('created_at', 'asc');
+        }]));
     }
 
     /** Update source_label on a receipt (for manual Others entries) */
@@ -145,7 +161,9 @@ class BatchController extends Controller
     /** Run verification check and match with transactions using existing OCR data */
     public function process(Batch $batch)
     {
-        $batch->load('receipts');
+        $batch->load(['receipts' => function ($query) {
+            $query->orderBy('created_at', 'asc');
+        }]);
         
         $results = [];
         foreach ($batch->receipts as $receipt) {

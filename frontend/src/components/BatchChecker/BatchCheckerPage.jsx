@@ -38,9 +38,22 @@ export default function BatchCheckerPage() {
   // Polling for real-time updates when a batch is active or processing
   useEffect(() => {
     let interval;
-    if (batchId || isRunningCheck || isCreating) {
+    if ((batchId || isRunningCheck || isCreating) && !isCreating) {
+      // Only poll if not in the middle of creating/uploading
       interval = setInterval(() => {
-        fetchBatches(true); // silent fetch
+        if (!batchId) {
+          // Dashboard view - fetch all batches
+          fetchBatches(true);
+        } else {
+          // Batch detail view - fetch only this specific batch to avoid losing receipts
+          fetch(getApiUrl(`/api/batches/${batchId}?t=${Date.now()}`), { cache: 'no-store' })
+            .then(r => r.json())
+            .then(batch => {
+              setBatches(prev => prev.map(b => b.id === batch.id ? batch : b));
+              setSelectedBatch(batch);
+            })
+            .catch(console.error);
+        }
       }, 3000);
     }
     return () => clearInterval(interval);
@@ -61,7 +74,20 @@ export default function BatchCheckerPage() {
   useEffect(() => {
     if (batches.length > 0 && batchId) {
       const batch = batches.find(b => String(b.id) === String(batchId));
-      if (batch) setSelectedBatch(batch);
+      if (batch) {
+        console.log(`Batch ${batchId} found with ${batch.receipts?.length || 0} receipts`);
+        setSelectedBatch(batch);
+      } else {
+        // If batch not found in list, fetch it directly
+        console.log(`Batch ${batchId} not in list, fetching directly...`);
+        fetch(getApiUrl(`/api/batches/${batchId}?t=${Date.now()}`), { cache: 'no-store' })
+          .then(r => r.json())
+          .then(batch => {
+            console.log(`Fetched batch ${batchId} with ${batch.receipts?.length || 0} receipts`);
+            setSelectedBatch(batch);
+          })
+          .catch(console.error);
+      }
     } else if (!batchId) {
       setSelectedBatch(null);
     }
@@ -94,11 +120,22 @@ export default function BatchCheckerPage() {
         if (uploadRes.ok) {
           const updatedBatch = await uploadRes.json();
           setBatches(prev => [updatedBatch, ...prev.filter(b => b.id !== updatedBatch.id)]);
+          
+          // Properly clear file input - reset form and state
           setFileCount(0);
-          if (fileInputRef.current) fileInputRef.current.value = '';
-          navigate(`/batch/${updatedBatch.id}`);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+            // Reset the form element itself
+            if (fileInputRef.current.form) {
+              fileInputRef.current.form.reset();
+            }
+          }
+          
+          // Set selected batch immediately with all receipts
           setSelectedBatch(updatedBatch);
-          // Removed openProcessor('categorize') to show batch details first
+          
+          // Navigate after state updates
+          navigate(`/batch/${updatedBatch.id}`);
         }
       }
     } catch (e) { console.error(e); } 

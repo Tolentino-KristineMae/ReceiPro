@@ -7,6 +7,7 @@ import { TransactionEntryModal as TransactionModal } from './components/Transact
 import Sidebar from './components/Sidebar';
 import TransactionsPage from './components/Transactions/TransactionsPage';
 import BatchCheckerPage from './components/BatchChecker/BatchCheckerPage';
+import SettingsPage from './pages/SettingsPage';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { getApiUrl } from './apiConfig';
 
@@ -77,6 +78,7 @@ function App() {
                   <Route path="/transactions" element={<TransactionsPage />} />
                   <Route path="/batch" element={<BatchCheckerPage />} />
                   <Route path="/batch/:batchId" element={<BatchCheckerPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/messages" element={<div className="text-white p-10">Messages coming soon...</div>} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

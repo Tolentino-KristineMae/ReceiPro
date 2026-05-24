@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
+import { getApiUrl } from '../../apiConfig';
 
 const fmt = (n) =>
   Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -78,8 +79,7 @@ const BillingSummaryModal = ({
   finalBatchNumber,
   grossAmount,
   serviceFee,
-  deductionType,
-  deductionAmount,
+  deductions = [], // Array of { type: string, amount: number }
   netAmount,
   billingMethod,
   cashDenominations,
@@ -90,6 +90,37 @@ const BillingSummaryModal = ({
   const cardRef = useRef(null);
   const [copying, setCopying] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [deductionTypes, setDeductionTypes] = useState([]);
+
+  // Fetch deduction types to get labels
+  useEffect(() => {
+    const fetchDeductionTypes = async () => {
+      try {
+        const response = await fetch(getApiUrl('/api/settings/deduction-types'));
+        if (response.ok) {
+          const data = await response.json();
+          setDeductionTypes(data.deduction_types || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch deduction types:', error);
+      }
+    };
+    fetchDeductionTypes();
+  }, []);
+
+  // Debug: Log deductions when component mounts or deductions change
+  useEffect(() => {
+    console.log('=== BillingSummaryModal Debug ===');
+    console.log('Deductions received:', deductions);
+    console.log('Deductions length:', deductions?.length);
+    console.log('Deduction types loaded:', deductionTypes);
+  }, [deductions, deductionTypes]);
+
+  // Get label for deduction type
+  const getDeductionLabel = (key) => {
+    const deduction = deductionTypes.find(d => d.key === key);
+    return deduction ? deduction.label : key;
+  };
 
   const today = new Date().toLocaleDateString('en-PH', {
     year: 'numeric', month: 'long', day: 'numeric',
@@ -102,9 +133,6 @@ const BillingSummaryModal = ({
 
   const billDenoms = [1000, 500, 200, 100, 50, 20].filter(v => (cashDenominations?.[v] || 0) > 0);
   const coinDenoms = [20, 10, 5, 1].filter(v => (cashDenominations?.['c' + v] || 0) > 0);
-
-  const deductionLabels = { royal: 'Cash in Royal Cable', bills: 'Bills', others: 'Others' };
-  const deductionLabel = deductionLabels[deductionType] || null;
 
   // Get account holders with counts from verified claims
   const accountHolderCounts = (() => {
@@ -312,8 +340,25 @@ const BillingSummaryModal = ({
               <Row label="Gross Claims Amount" value={'₱' + fmt(grossAmount)} valueColor="#0a1628" />
               <Divider />
               <Row label="Service Fee" value={'− ₱' + fmt(serviceFee)} valueColor="#ef4444" />
-              {deductionLabel && Number(deductionAmount) > 0 && (
-                <Row label={deductionLabel} value={'− ₱' + fmt(deductionAmount)} valueColor="#f97316" />
+              
+              {/* Debug: Always show this to verify rendering */}
+              {console.log('Rendering deductions section:', { deductions, hasDeductions: deductions && deductions.length > 0 })}
+              
+              {/* Render deductions */}
+              {deductions && deductions.length > 0 ? (
+                deductions.map((deduction, index) => {
+                  console.log(`Rendering deduction ${index}:`, deduction);
+                  return (
+                    <Row 
+                      key={index}
+                      label={getDeductionLabel(deduction.type)} 
+                      value={'− ₱' + fmt(deduction.amount)} 
+                      valueColor="#f97316" 
+                    />
+                  );
+                })
+              ) : (
+                console.log('No deductions to render')
               )}
 
               <div style={{

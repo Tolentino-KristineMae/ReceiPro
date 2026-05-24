@@ -1360,7 +1360,7 @@ export default function TransactionsPage() {
       
       if (res.ok) {
         const saved = await res.json();
-        setTransactions(prev => [saved, ...prev]);
+        setTransactions(prev => [...prev, saved]);
         setForm(f => ({ ...f, amount: '', reference: '', label: '' }));
       } else {
         const data = await res.json();

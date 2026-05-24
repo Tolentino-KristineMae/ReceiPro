@@ -37,8 +37,8 @@ class ReceiptController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'receipts' => 'required|array|max:50',
-            'receipts.*' => 'image|max:5000'
+            'receipts' => 'required|array',
+            'receipts.*' => 'required|file'
         ]);
 
         // Determine which batch to use: either existing or create a new one
@@ -64,7 +64,12 @@ class ReceiptController extends Controller
             ProcessReceiptOcr::dispatch($receipt);
         }
 
-        return response()->json($batch->load('receipts'), 201);
+        // Force reload batch with all receipts (no limit)
+        $batch = Batch::with(['receipts' => function ($query) {
+            $query->orderBy('created_at', 'asc');
+        }])->find($batch->id);
+
+        return response()->json($batch, 201);
     }
 
     public function destroy(Receipt $receipt)

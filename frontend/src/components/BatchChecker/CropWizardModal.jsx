@@ -9,6 +9,7 @@ import CropStage from './Steps/CropStage';
 import ExtractionStage from './Steps/ExtractionStage';
 import VerificationStage from './Steps/VerificationStage';
 import FinalizeStage from './Steps/FinalizeStage';
+import SummaryStage from './Steps/SummaryStage';
 import { getApiUrl } from '../../apiConfig';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -170,6 +171,8 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   // Stage 7: Summary State
   const [deductionType, setDeductionType] = useState('none');
   const [manualDeduction, setManualDeduction] = useState('');
+  const [savedDeductions, setSavedDeductions] = useState([]); // Store saved deductions from batch
+  const [finalNetAmount, setFinalNetAmount] = useState(0); // Store the final calculated net amount from Stage 7
 
   // Stage 8: Billing State
   const [billingMethod, setBillingMethod] = useState('both'); // 'cash', 'bank', 'both'
@@ -186,7 +189,24 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   const verifiedClaims = ocrResults?.filter(r => r.verification_status === 'verified') || [];
   const totalClaimsAmount = verifiedClaims.reduce((sum, r) => sum + Number(r.amount || 0), 0);
   const serviceFee = Math.floor(totalClaimsAmount / 1000) * 10;
-  const netAmount = totalClaimsAmount - serviceFee - Number(manualDeduction || 0);
+  
+  // Calculate total deductions from savedDeductions array
+  const totalDeductionsAmount = savedDeductions.reduce((sum, d) => sum + Number(d.amount || 0), 0);
+  
+  // Calculate net amount: if finalNetAmount is set and valid, use it; otherwise calculate fresh
+  // Only use finalNetAmount if it's been explicitly set (greater than 0 or if we're in billing phase)
+  const calculatedNet = totalClaimsAmount - serviceFee - totalDeductionsAmount;
+  const netAmount = (finalNetAmount > 0 && phase === 'billing') ? finalNetAmount : calculatedNet;
+  
+  console.log('=== Net Amount Calculation ===');
+  console.log('Total Claims:', totalClaimsAmount);
+  console.log('Service Fee:', serviceFee);
+  console.log('Saved Deductions:', savedDeductions);
+  console.log('Total Deductions Amount:', totalDeductionsAmount);
+  console.log('Calculated Net:', calculatedNet);
+  console.log('Final Net Amount:', finalNetAmount);
+  console.log('Using Net Amount:', netAmount);
+  console.log('Phase:', phase);
 
   // Billing Calculations
   const cashTotal = Object.entries(cashDenominations).reduce((sum, [key, count]) => {
@@ -220,6 +240,58 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       triggerProcess();
     }
   }, [initialPhase, batchId]);
+
+  // Load saved deductions when entering summary or billing phase
+  useEffect(() => {
+    if ((phase === 'summary' || phase === 'billing') && batchId) {
+      const loadBatchData = async () => {
+        console.log('=== Loading batch data ===');
+        console.log('Phase:', phase);
+        console.log('Batch ID:', batchId);
+        
+        try {
+          const res = await fetch(getApiUrl(`/api/batches/${batchId}`));
+          console.log('Batch fetch response status:', res.status);
+          
+          if (res.ok) {
+            const batch = await res.json();
+            console.log('Batch data loaded:', batch);
+            console.log('Batch summary_data:', batch.summary_data);
+            console.log('Batch deductions:', batch.summary_data?.deductions);
+            
+            // Store the full batch info for the billing summary modal
+            setSavedBatchInfo(batch);
+            
+            if (batch.summary_data) {
+              if (batch.summary_data.deductions) {
+                console.log('Setting savedDeductions:', batch.summary_data.deductions);
+                setSavedDeductions(batch.summary_data.deductions);
+              }
+              if (batch.summary_data.net_amount) {
+                setFinalNetAmount(batch.summary_data.net_amount);
+              }
+            }
+            
+            // Load billing data if in billing phase
+            if (phase === 'billing' && batch.billing_data) {
+              if (batch.billing_data.method) {
+                setBillingMethod(batch.billing_data.method);
+              }
+              if (batch.billing_data.cash_denominations) {
+                setCashDenominations(batch.billing_data.cash_denominations);
+              }
+              if (batch.billing_data.bank_transfer_amount) {
+                setBankTransferAmount(batch.billing_data.bank_transfer_amount);
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Failed to load batch data', e);
+        }
+      };
+      loadBatchData();
+    }
+  }, [phase, batchId]);
   
   // Track manual data for all items in the wizard session
   const [manualEntries, setManualEntries] = useState({}); // { index: { amount, reference, date } }
@@ -398,6 +470,51 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     }
   };
 
+  // Handle receipt card click - navigate to specific receipt's crop/input stage
+  const handleReceiptClick = (receipt) => {
+    console.log('=== Receipt Click Handler Called ===');
+    console.log('Receipt:', receipt);
+    
+    // Find the index of the clicked receipt
+    const receiptIndex = receipts.findIndex(r => r.id === receipt.id);
+    
+    if (receiptIndex === -1) {
+      console.error('Receipt not found:', receipt.id);
+      alert(`Receipt ID ${receipt.id} not found in receipts array`);
+      return;
+    }
+
+    console.log('Receipt index found:', receiptIndex);
+    console.log('Navigating to crop phase...');
+
+    // Navigate to crop phase with the specific receipt
+    setPhase('crop');
+    setIndex(receiptIndex);
+    
+    // Set the category and account from the receipt
+    setCurrentCategory(receipt.category);
+    setCurrentAccount(receipt.account_holder);
+    
+    // Reset crop state
+    setCrop(null);
+    setCompletedCrop(null);
+    setImageRotation(0);
+    
+    // If it's Others, load the existing manual data
+    if (receipt.category === 'others') {
+      const ocrData = receipt.ocr_data 
+        ? (typeof receipt.ocr_data === 'string' ? JSON.parse(receipt.ocr_data) : receipt.ocr_data)
+        : null;
+      
+      setManualAmount(String(ocrData?.amount || ''));
+      setManualReference(ocrData?.reference || '');
+      setManualDate(ocrData?.date || new Date().toISOString().split('T')[0]);
+    }
+    
+    console.log('Navigation complete!');
+  };
+
+
   // Proceed from review to crop phase
   const handleProceedToCrop = () => {
     const newSelections = {};
@@ -417,6 +534,188 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     setPhase('categorize');
   };
 
+  // Handle category change from GCash to Others
+  const handleChangeToOthers = async () => {
+    if (!current) return;
+    
+    // Update the category
+    setCurrentCategory('others');
+    setSelections(prev => ({
+      ...prev,
+      [index]: { ...prev[index], category: 'others' }
+    }));
+    
+    // Clear crop if it exists
+    setCrops(prev => {
+      const newCrops = { ...prev };
+      delete newCrops[index];
+      return newCrops;
+    });
+    
+    // Reset crop state
+    setCrop(null);
+    setCompletedCrop(null);
+    
+    // Update the receipt category in the database
+    try {
+      await fetch(getApiUrl(`/api/receipts/${current.id}`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category: 'others' }),
+      });
+    } catch (e) {
+      console.error('Failed to update category', e);
+    }
+    
+    // Automatically proceed to next GCash receipt (skip this one, will see it later in Others section)
+    // Find next GCash receipt that needs cropping
+    const nextGcashIndex = liveReceipts.findIndex((r, i) => 
+      i > index && r.category === 'gcash' && !r.cropped_image
+    );
+    
+    if (nextGcashIndex !== -1) {
+      // Move to next GCash receipt
+      setIndex(nextGcashIndex);
+      setCrop(null);
+      setCompletedCrop(null);
+      setImageRotation(0);
+    } else {
+      // No more GCash receipts, find first Others receipt that needs input
+      const firstOthersIndex = liveReceipts.findIndex((r, i) => 
+        r.category === 'others' && !r.ocr_data?.manual
+      );
+      
+      if (firstOthersIndex !== -1) {
+        setIndex(firstOthersIndex);
+        setCrop(null);
+        setCompletedCrop(null);
+        setImageRotation(0);
+      } else {
+        // All done, proceed to OCR
+        startOcrPhase();
+      }
+    }
+  };
+
+  // Handle category change from Others to GCash
+  const handleChangeToGCash = async () => {
+    if (!current) return;
+    
+    // Update the category
+    setCurrentCategory('gcash');
+    setSelections(prev => ({
+      ...prev,
+      [index]: { ...prev[index], category: 'gcash' }
+    }));
+    
+    // Clear manual entry if it exists
+    setManualEntries(prev => {
+      const newEntries = { ...prev };
+      delete newEntries[index];
+      return newEntries;
+    });
+    
+    // Reset manual input fields
+    setManualAmount('');
+    setManualReference('');
+    setManualDate(new Date().toISOString().split('T')[0]);
+    
+    // Update the receipt category in the database
+    try {
+      await fetch(getApiUrl(`/api/receipts/${current.id}`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category: 'gcash' }),
+      });
+    } catch (e) {
+      console.error('Failed to update category', e);
+    }
+    
+    // Automatically proceed to next Others receipt (skip this one, will see it later in GCash section)
+    // Find next Others receipt that needs input
+    const nextOthersIndex = liveReceipts.findIndex((r, i) => 
+      i > index && r.category === 'others' && !r.ocr_data?.manual
+    );
+    
+    if (nextOthersIndex !== -1) {
+      // Move to next Others receipt
+      setIndex(nextOthersIndex);
+      setCrop(null);
+      setCompletedCrop(null);
+      setImageRotation(0);
+    } else {
+      // No more Others receipts, check if there are GCash receipts that need cropping
+      const firstGcashIndex = liveReceipts.findIndex((r, i) => 
+        r.category === 'gcash' && !r.cropped_image
+      );
+      
+      if (firstGcashIndex !== -1) {
+        setIndex(firstGcashIndex);
+        setCrop(null);
+        setCompletedCrop(null);
+        setImageRotation(0);
+      } else {
+        // All done, proceed to OCR
+        startOcrPhase();
+      }
+    }
+  };
+
+  // Handle re-crop/re-input from finalize stage
+  const handleReCrop = useCallback((result, resultIndex) => {
+    // The result object has a 'receipt' property containing the full receipt object
+    const receipt = result.receipt;
+    
+    if (!receipt || !receipt.id) {
+      console.error('Invalid receipt data:', result);
+      return;
+    }
+    
+    // Find the receipt index in the receipts array
+    const receiptIndex = receipts.findIndex(r => r.id === receipt.id);
+    
+    if (receiptIndex === -1) {
+      console.error('Receipt not found in receipts array:', receipt.id);
+      return;
+    }
+    
+    // Go back to crop phase
+    setPhase('crop');
+    setIndex(receiptIndex);
+    
+    // Set the category and account
+    setCurrentCategory(receipt.category);
+    setCurrentAccount(receipt.account_holder || result.account_holder);
+    
+    // Reset image rotation
+    setImageRotation(0);
+    
+    // If it's a GCash receipt, load existing crop or allow re-cropping
+    if (receipt.category === 'gcash') {
+      // Don't clear the crop - let them see the existing crop
+      // They can adjust it if needed
+      setCrop(null);
+      setCompletedCrop(null);
+    }
+    
+    // If it's Others, load the existing manual data
+    if (receipt.category === 'others') {
+      const ocrData = receipt.ocr_data 
+        ? (typeof receipt.ocr_data === 'string' ? JSON.parse(receipt.ocr_data) : receipt.ocr_data)
+        : null;
+      
+      // Load from result or ocrData
+      setManualAmount(String(result.amount || ocrData?.amount || ''));
+      setManualReference(result.reference || ocrData?.reference || '');
+      setManualDate(result.date || ocrData?.date || new Date().toISOString().split('T')[0]);
+    }
+    
+    // Reset OCR results to allow re-extraction after editing
+    setOcrResults(null);
+    setShowOcrPreview(false);
+    setShowVerifyPreview(false);
+  }, [receipts]);
+
   const handleNextCrop = async () => {
     if (!current) return;
 
@@ -428,6 +727,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
         return;
       }
     }
+
+    // Check if we're re-cropping (coming from extraction results)
+    const isReCropping = ocrResults && ocrResults.length > 0;
 
     // 1. Get cropped data and save locally
     const dataUrl = getCroppedDataUrl();
@@ -477,11 +779,134 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       return;
     }
     
-    // Find next item that needs crop/input
-    const nextNeedsCrop = liveReceipts.findIndex((r, i) => i > index && (
-      (r.category === 'gcash' && !r.cropped_image) || 
-      (r.category === 'others' && !r.ocr_data?.manual)
-    ));
+    // If re-cropping from extraction results, re-run OCR for this specific receipt
+    if (isReCropping && currentCategory === 'gcash' && dataUrl) {
+      console.log('Re-cropping detected, running OCR extraction for receipt:', current.id);
+      
+      try {
+        // Show loading state
+        setIsProcessingOcr(true);
+        
+        // Create worker for single receipt
+        const worker = await createWorker('eng', 1, {
+          logger: m => console.log(m),
+        });
+        
+        // Run OCR on the new crop
+        const bitmap = await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          const timeout = setTimeout(() => {
+            img.src = '';
+            reject(new Error(`Image load timeout for receipt #${current.id}`));
+          }, 15000);
+          img.onload = () => {
+            clearTimeout(timeout);
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            resolve(canvas);
+          };
+          img.onerror = () => {
+            clearTimeout(timeout);
+            reject(new Error(`Failed to load image for receipt #${current.id}`));
+          };
+          img.src = dataUrl;
+        });
+
+        const { data: { text } } = await worker.recognize(bitmap);
+        const extracted = extractFields(text);
+
+        // Update the receipt with new OCR data
+        const patchRes = await fetch(getApiUrl(`/api/receipts/${current.id}`), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            ocr_status: 'completed',
+            ocr_data: {
+              amount: extracted.amount || 0,
+              reference: extracted.reference || null,
+              date: extracted.date || null,
+              raw_text: text,
+              confidence: 99
+            },
+            ...(extracted.account_holder ? { account_holder: extracted.account_holder } : {}),
+          }),
+        });
+
+        if (!patchRes.ok) throw new Error(`Save failed for receipt #${current.id}`);
+
+        const updatedReceipt = await patchRes.json();
+        
+        // Update the ocrResults array with the new data
+        setOcrResults(prevResults => {
+          const newResults = [...prevResults];
+          const resultIndex = newResults.findIndex(r => r.receipt?.id === current.id);
+          if (resultIndex !== -1) {
+            newResults[resultIndex] = {
+              receipt: updatedReceipt,
+              amount: extracted.amount || 0,
+              reference: extracted.reference || null,
+              date: extracted.date || null,
+              confidence: 99,
+              manualEntry: false,
+              account_holder: extracted.account_holder || updatedReceipt.account_holder,
+            };
+          }
+          return newResults;
+        });
+
+        await worker.terminate();
+        setIsProcessingOcr(false);
+        
+        // Go back to extraction results
+        setPhase('ocr');
+        setShowOcrPreview(true);
+        
+        alert(`✅ Re-extraction complete!\n\nAmount: ₱${extracted.amount || 0}\nReference: ${extracted.reference || 'N/A'}`);
+        
+        return; // Exit early, don't proceed to next receipt
+      } catch (e) {
+        console.error('Re-extraction failed:', e);
+        alert(`Re-extraction failed: ${e.message}. The crop was saved but OCR failed.`);
+        setIsProcessingOcr(false);
+        
+        // Go back to extraction results anyway
+        setPhase('ocr');
+        setShowOcrPreview(true);
+        return;
+      }
+    }
+    
+    // If re-cropping Others receipt, just go back to results
+    if (isReCropping) {
+      setPhase('ocr');
+      setShowOcrPreview(true);
+      alert('✅ Manual data updated successfully!');
+      return;
+    }
+    
+    // Find next item that needs crop/input (normal flow)
+    const nextNeedsCrop = liveReceipts.findIndex((r, i) => {
+      if (i <= index) return false; // Skip current and previous
+      
+      const receiptIndex = receipts.findIndex(rec => rec.id === r.id);
+      
+      // For GCash: needs crop if no cropped_image AND no crop in session
+      if (r.category === 'gcash') {
+        return !r.cropped_image && !crops[receiptIndex];
+      }
+      
+      // For Others: needs input if no manual data in DB AND no manual entry in session
+      if (r.category === 'others') {
+        const hasManualInDb = r.ocr_data?.manual;
+        const hasManualInSession = manualEntries[receiptIndex];
+        return !hasManualInDb && !hasManualInSession;
+      }
+      
+      return false;
+    });
 
     if (nextNeedsCrop !== -1) {
       setIndex(nextNeedsCrop);
@@ -987,14 +1412,82 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   Complete batch processing and link transactions
                 </div>
               </div>
+            ) : phase === 'summary' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {/* Stage pill */}
+                  <span style={{
+                    padding: '3px 10px', borderRadius: '100px',
+                    background: 'rgba(168,85,247,0.15)',
+                    border: '1px solid rgba(168,85,247,0.35)',
+                    color: '#a855f7',
+                    fontSize: '9px', fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.2em',
+                    fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                  }}>
+                    Stage 7 of 8
+                  </span>
+                </div>
+                {/* Title */}
+                <div style={{
+                  fontSize: '16px', fontWeight: 700,
+                  color: '#f1f5f9',
+                  letterSpacing: '-0.02em', lineHeight: 1.2,
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  Claims Summary
+                </div>
+                {/* Subtitle */}
+                <div style={{
+                  fontSize: '10px', fontWeight: 500,
+                  color: '#64748b',
+                  letterSpacing: '0.04em',
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  Calculate total claims and deductions
+                </div>
+              </div>
+            ) : phase === 'billing' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {/* Stage pill */}
+                  <span style={{
+                    padding: '3px 10px', borderRadius: '100px',
+                    background: 'rgba(59,130,246,0.15)',
+                    border: '1px solid rgba(59,130,246,0.35)',
+                    color: '#3b82f6',
+                    fontSize: '9px', fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.2em',
+                    fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                  }}>
+                    Stage 8 of 8
+                  </span>
+                </div>
+                {/* Title */}
+                <div style={{
+                  fontSize: '16px', fontWeight: 700,
+                  color: '#f1f5f9',
+                  letterSpacing: '-0.02em', lineHeight: 1.2,
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  Billing & Payment
+                </div>
+                {/* Subtitle */}
+                <div style={{
+                  fontSize: '10px', fontWeight: 500,
+                  color: '#64748b',
+                  letterSpacing: '0.04em',
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  Prepare funds and complete payment
+                </div>
+              </div>
             ) : (
               <>
                 <div className="cw-title">
-                  {phase === 'summary' && 'Stage 7: Summary'}
-                  {phase === 'billing' && 'Stage 8: Billing'}
+                  Stage {phase}
                 </div>
             <div className="cw-subtitle">
-              {phase === 'summary' && 'Calculating total claims and deductions...'}
               {(phase !== 'ocr' && phase !== 'verify' && phase !== 'finalize' && phase !== 'summary') && (
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5">
@@ -1075,6 +1568,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   isSavingSorting={isSavingSorting}
                   onApply={handleApplySorting}
                   onProceed={handleProceedToCrop}
+                  onReceiptClick={handleReceiptClick}
                 />
               )}
               {/* Phase 3 Preview */}
@@ -1253,6 +1747,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                         
                         return filteredResults?.map((res, i) => {
                           const holder = res.receipt?.account_holder || res.account_holder;
+                          const receiptId = res.receipt?.id;
                           const acctColors = {
                             Babilyn:  { bg: 'rgba(139,92,246,0.1)',  border: 'rgba(139,92,246,0.25)',  text: '#c4b5fd' },
                             Nixie:    { bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.25)', text: '#f9a8d4' },
@@ -1270,18 +1765,52 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                               alignItems: 'center',
                               gap: '20px',
                               transition: 'all 0.2s',
-                              cursor: 'default'
+                              cursor: 'pointer',
+                              position: 'relative'
+                            }}
+                            onClick={() => {
+                              console.log('Receipt card clicked:', receiptId);
+                              if (res.receipt) {
+                                handleReceiptClick(res.receipt);
+                              } else {
+                                console.error('No receipt object found in result');
+                              }
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                              e.currentTarget.style.borderColor = 'rgba(56, 168, 232, 0.4)';
                               e.currentTarget.style.transform = 'translateY(-2px)';
+                              e.currentTarget.style.boxShadow = '0 8px 24px rgba(18, 96, 164, 0.3)';
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
                               e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
                               e.currentTarget.style.transform = 'translateY(0)';
-                            }}>
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                            title={`Receipt ID: ${receiptId} - Click to edit crop/input`}>
+                              {/* Receipt ID Badge */}
+                              <div style={{
+                                position: 'absolute',
+                                top: '10px',
+                                right: '10px',
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                background: 'rgba(2, 12, 24, 0.85)',
+                                border: '1px solid rgba(255, 255, 255, 0.15)',
+                                backdropFilter: 'blur(6px)'
+                              }}>
+                                <span style={{
+                                  color: '#94a3b8',
+                                  fontSize: '9px',
+                                  fontWeight: 700,
+                                  letterSpacing: '0.08em',
+                                  fontFamily: "'Space Mono', monospace"
+                                }}>
+                                  #{receiptId}
+                                </span>
+                              </div>
+                              
                               {/* Number */}
                               <div style={{
                                 width: '36px',
@@ -1670,79 +2199,83 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               {phase === 'summary' && (
                 <div className="flex-1 flex flex-col p-10 overflow-hidden animate-in slide-in-from-left duration-500 text-left">
                   <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-3xl font-black text-white uppercase tracking-tight">Claims Summary</h3>
-                    <div className="flex items-center gap-3">
-                      <span className="px-4 py-1.5 rounded-full bg-green-500/10 text-green-400 text-[10px] font-black uppercase tracking-widest border border-green-500/20">
-                        {verifiedClaims.length} Verified Claims
-                      </span>
+                    <h3 className="text-3xl font-black text-white uppercase tracking-tight">Financial Summary</h3>
+                    <div className="px-6 py-2 rounded-full bg-purple-500/10 text-purple-400 border-purple-500/20 text-[12px] font-black uppercase tracking-[0.2em] border">
+                      {verifiedClaims.length} VERIFIED CLAIMS
                     </div>
                   </div>
                   
                   <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
-                    <div className="grid grid-cols-1 gap-6">
-                      {/* Detailed Breakdown Table */}
-                      <div className="bg-white/5 rounded-[32px] border border-white/10 overflow-hidden">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="border-b border-white/5">
-                              <th className="px-8 py-6 text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">Description</th>
-                              <th className="px-8 py-6 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest">Amount</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                              <td className="px-8 py-6">
-                                <div className="text-sm font-bold text-white">Total Gross Claims</div>
-                                <div className="text-[10px] text-slate-500 font-medium uppercase mt-1">Sum of all verified receipts</div>
-                              </td>
-                              <td className="px-8 py-6 text-right">
-                                <div className="text-lg font-black text-white">₱{totalClaimsAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>
-                              </td>
-                            </tr>
-                            <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                              <td className="px-8 py-6">
-                                <div className="text-sm font-bold text-red-400">System Service Fee</div>
-                                <div className="text-[10px] text-slate-500 font-medium uppercase mt-1">₱10.00 per ₱1,000.00</div>
-                              </td>
-                              <td className="px-8 py-6 text-right">
-                                <div className="text-lg font-black text-red-400">- ₱{serviceFee.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>
-                              </td>
-                            </tr>
-                            {deductionType !== 'none' && (
-                              <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                                <td className="px-8 py-6">
-                                  <div className="text-sm font-bold text-orange-400">
-                                    {deductionType === 'royal' ? 'Cash in Royal Cable' : deductionType === 'bills' ? 'Bills' : 'Other Deduction'}
-                                  </div>
-                                  <div className="text-[10px] text-slate-500 font-medium uppercase mt-1">Manual Deduction</div>
-                                </td>
-                                <td className="px-8 py-6 text-right">
-                                  <div className="text-lg font-black text-orange-400">- ₱{Number(manualDeduction || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>
-                                </td>
-                              </tr>
-                            )}
-                            <tr className="bg-green-500/5">
-                              <td className="px-8 py-8">
-                                <div className="text-base font-black text-green-400 uppercase tracking-tight">Total Net Amount</div>
-                                <div className="text-[10px] text-green-500/60 font-bold uppercase mt-1">Final amount for billing</div>
-                              </td>
-                              <td className="px-8 py-8 text-right">
-                                <div className="text-3xl font-black text-green-400 tracking-tighter">
-                                  ₱{netAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
+                    <div className="grid grid-cols-1 gap-8">
+                      {/* Summary Cards - Only show Gross and Service Fee, not Net (calculated in sidebar) */}
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="p-8 bg-white/5 rounded-[32px] border border-white/10 text-center">
+                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Gross Claims</div>
+                          <div className="text-3xl font-black text-green-400 tracking-tighter">
+                            ₱{totalClaimsAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                          </div>
+                          <div className="text-[9px] text-slate-500 font-medium uppercase mt-2">
+                            Sum of all verified receipts
+                          </div>
+                        </div>
+                        <div className="p-8 bg-white/5 rounded-[32px] border border-white/10 text-center">
+                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Service Fee</div>
+                          <div className="text-3xl font-black text-red-400 tracking-tighter">
+                            − ₱{serviceFee.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                          </div>
+                          <div className="text-[9px] text-slate-500 font-medium uppercase mt-2">
+                            ₱10.00 per ₱1,000.00
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Summary Help Text */}
-                      <div className="p-6 bg-amber-500/5 rounded-2xl border border-amber-500/10 flex gap-4 items-start">
-                        <div className="text-xl">ℹ️</div>
-                        <div className="text-[11px] text-amber-200/60 leading-relaxed font-medium">
-                          The system has calculated a service fee of <span className="text-amber-400 font-bold">₱{serviceFee.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span> based on the total claims. 
-                          You can add additional deductions using the dropdown in the sidebar. 
-                          Once finalized, this batch will move to Stage 8: Billing.
+                      {/* Breakdown Visualization */}
+                      <div className="bg-white/5 rounded-[40px] border border-white/10 p-10">
+                        <h4 className="text-sm font-black text-white uppercase tracking-widest mb-8">Claims Breakdown</h4>
+                        
+                        <div className="space-y-6">
+                          {/* Account Holder Summary */}
+                          {(() => {
+                            const accountSummary = {};
+                            verifiedClaims.forEach(claim => {
+                              const holder = claim.receipt?.account_holder || claim.account_holder || 'Unknown';
+                              if (!accountSummary[holder]) {
+                                accountSummary[holder] = { count: 0, total: 0 };
+                              }
+                              accountSummary[holder].count++;
+                              accountSummary[holder].total += Number(claim.amount || 0);
+                            });
+
+                            return Object.entries(accountSummary).map(([holder, data]) => (
+                              <div key={holder} className="flex items-center justify-between p-6 bg-white/[0.02] rounded-2xl border border-white/5 hover:bg-white/[0.04] transition-all">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                                    <span className="text-xl">👤</span>
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-bold text-white">{holder}</div>
+                                    <div className="text-[10px] text-slate-500 font-medium uppercase mt-1">
+                                      {data.count} {data.count === 1 ? 'Claim' : 'Claims'}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-lg font-black text-white">
+                                    ₱{data.total.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                  </div>
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Info Box */}
+                      <div className="p-6 bg-purple-500/5 rounded-2xl border border-purple-500/10 flex gap-4 items-start">
+                        <div className="text-xl">💡</div>
+                        <div className="text-[11px] text-purple-200/60 leading-relaxed font-medium">
+                          Review the claims breakdown and add any additional deductions in the sidebar on the right. 
+                          The final net amount will be calculated automatically and used for billing in the next stage.
                         </div>
                       </div>
                     </div>
@@ -1754,7 +2287,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               {phase === 'billing' && (
                 <div className="flex-1 flex flex-col p-10 overflow-hidden animate-in slide-in-from-left duration-500 text-left">
                   <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-3xl font-black text-white uppercase tracking-tight">Billing Dashboard</h3>
+                    <h3 className="text-3xl font-black text-white uppercase tracking-tight">Payment Details</h3>
                     <div className={`px-6 py-2 rounded-full ${isBillingBalanced ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'} text-[12px] font-black uppercase tracking-[0.2em] border transition-all`}>
                       {isBillingBalanced ? '✓ FUNDS BALANCED' : `₱${Math.abs(billingDiff).toLocaleString()} REMAINING`}
                     </div>
@@ -1769,59 +2302,88 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                           <div className="text-3xl font-black text-white tracking-tighter">
                             ₱{netAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                           </div>
+                          <div className="text-[9px] text-slate-500 font-medium uppercase mt-2">
+                            Target amount
+                          </div>
                         </div>
                         <div className="p-8 bg-white/5 rounded-[32px] border border-white/10 text-center">
                           <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Total Prepared</div>
                           <div className={`text-3xl font-black ${isBillingBalanced ? 'text-green-400' : 'text-amber-400'} tracking-tighter`}>
                             ₱{billingTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                           </div>
+                          <div className="text-[9px] text-slate-500 font-medium uppercase mt-2">
+                            Cash + Bank
+                          </div>
                         </div>
                         <div className="p-8 bg-white/5 rounded-[32px] border border-white/10 text-center">
                           <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Difference</div>
                           <div className={`text-3xl font-black ${billingDiff === 0 ? 'text-green-400' : 'text-red-400'} tracking-tighter`}>
-                            {billingDiff === 0 ? '—' : `₱${billingDiff.toLocaleString()}`}
+                            {billingDiff === 0 ? '✓' : `₱${Math.abs(billingDiff).toLocaleString()}`}
+                          </div>
+                          <div className="text-[9px] text-slate-500 font-medium uppercase mt-2">
+                            {billingDiff === 0 ? 'Balanced' : billingDiff > 0 ? 'Short' : 'Over'}
                           </div>
                         </div>
                       </div>
 
-                      {/* Visual Allocation */}
+                      {/* QR Code Payment Section */}
                       <div className="bg-white/5 rounded-[40px] border border-white/10 p-10">
-                        <div className="flex items-center justify-between mb-8">
-                          <h4 className="text-sm font-black text-white uppercase tracking-widest">Fund Allocation</h4>
-                          <div className="flex items-center gap-6">
-                            <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Cash</span>
-                            <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Bank</span>
+                        <h4 className="text-sm font-black text-white uppercase tracking-widest mb-8">GCash Payment</h4>
+                        
+                        <div className="flex flex-col items-center justify-center gap-6">
+                          {/* QR Code Image */}
+                          <div className="p-6 bg-white rounded-3xl shadow-2xl">
+                            <img 
+                              src="/src/assets/qr-jonarld.jpg" 
+                              alt="GCash QR Code" 
+                              className="w-64 h-64 object-contain"
+                            />
+                          </div>
+                          
+                          {/* Payment Instructions */}
+                          <div className="text-center space-y-2">
+                            <div className="text-lg font-black text-white">
+                              Scan to Pay via GCash
+                            </div>
+                            <div className="text-sm text-slate-400 font-medium">
+                              Send ₱{netAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })} to complete the transaction
+                            </div>
+                          </div>
+
+                          {/* Payment Details */}
+                          <div className="w-full max-w-md space-y-3 mt-4">
+                            <div className="flex items-center justify-between p-4 bg-white/[0.02] rounded-xl border border-white/5">
+                              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Account Name</span>
+                              <span className="text-sm font-black text-white">Jonarld</span>
+                            </div>
+                            <div className="flex items-center justify-between p-4 bg-white/[0.02] rounded-xl border border-white/5">
+                              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Payment Method</span>
+                              <span className="text-sm font-black text-blue-400">GCash</span>
+                            </div>
                           </div>
                         </div>
+                      </div>
 
-                        <div className="space-y-12">
-                          {/* Cash Breakdown */}
-                          {(billingMethod === 'cash' || billingMethod === 'both') && (
-                            <div className="space-y-6">
-                              <div className="grid grid-cols-5 gap-4">
-                                {Object.entries(cashDenominations)
-                                  .filter(([_, count]) => count > 0)
-                                  .map(([key, count]) => {
-                                    const isCoin = key.startsWith('c');
-                                    const val = isCoin ? Number(key.substring(1)) : Number(key);
-                                    return (
-                                      <div key={key} className="p-4 bg-black/40 rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-1 group hover:border-amber-500/30 transition-all">
-                                        <div className="text-[10px] font-black text-amber-500 uppercase tracking-widest">₱{val} {isCoin ? 'Coin' : 'Bill'}</div>
-                                        <div className="text-xl font-black text-white">×{count}</div>
-                                        <div className="text-[9px] font-bold text-slate-500">₱{(val * count).toLocaleString()}</div>
-                                      </div>
-                                    );
-                                  })}
-                                {Object.values(cashDenominations).every(c => c === 0) && (
+                      {/* Info Box */}
+                      <div className="p-6 bg-blue-500/5 rounded-2xl border border-blue-500/10 flex gap-4 items-start">
+                        <div className="text-xl">💳</div>
+                        <div className="text-[11px] text-blue-200/60 leading-relaxed font-medium">
+                          Scan the QR code using your GCash app to send the payment. 
+                          You can also enter cash denominations and bank transfer details in the sidebar to track the funds received.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+                              {Object.values(cashDenominations).every(c => c === 0) && (
                                   <div className="col-span-5 p-8 border-2 border-dashed border-white/5 rounded-3xl text-center text-[11px] font-black text-slate-600 uppercase tracking-widest">
                                     No Cash Allocated
                                   </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
+                              )}
 
-                          {/* Bank Transfer Bar */}
+                              {/* Bank Transfer Bar */}
                           {(billingMethod === 'bank' || billingMethod === 'both') && (
                             <div className="p-8 bg-blue-500/5 rounded-3xl border border-blue-500/10 flex items-center justify-between">
                               <div className="flex items-center gap-6">
@@ -1837,12 +2399,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                               </div>
                             </div>
                           )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Loading & Start States */}
               {((phase === 'ocr' && !showOcrPreview) || (phase === 'verify' && !showVerifyPreview) || (phase === 'finalize' && !finalizedBatch)) && (
@@ -1957,6 +2513,8 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 setCrop(null);
                 setCompletedCrop(null);
               }}
+              onChangeToGCash={handleChangeToGCash}
+              onChangeToOthers={handleChangeToOthers}
               index={index}
               total={total}
               gcashProcessed={gcashProcessed}
@@ -2015,6 +2573,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 onViewSummary={() => {
                   setPhase('summary');
                 }}
+                onReCrop={handleReCrop}
               />
             )}
 
@@ -2206,106 +2765,46 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 </div>
               )}
 
-              {/* Phase 5 Finish */}
-              {phase === 'finalize' && !isFinalizing && finalizedBatch && (
-                <div className="flex flex-col gap-3">
-                  <button 
-                    className="cw-btn-confirm" 
-                    onClick={() => setPhase('summary')}
-                    style={{ 
-                      width: '100%', 
-                      maxWidth: 'none',
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                      boxShadow: '0 10px 25px rgba(16, 185, 129, 0.3)'
-                    }}
-                  >
-                    Complete & View Summary ✨
-                  </button>
-                  <p className="text-[9px] font-black text-center text-slate-500 uppercase tracking-[0.2em]">Step 5 of 5: finalizing</p>
-                </div>
-              )}
-
-              {/* Stage 7 Summary Actions */}
+              {/* Stage 7 Summary */}
               {phase === 'summary' && (
-              <div className="flex flex-col gap-6 animate-in slide-in-from-right-4 duration-300">
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-[32px] p-8 text-center">
-                  <div className="text-4xl mb-4">💰</div>
-                  <h4 className="text-white font-black uppercase tracking-widest text-sm mb-2">Adjust Deductions</h4>
-                  <p className="text-slate-400 text-[10px] font-medium leading-relaxed">
-                    Select any additional deductions that apply to this batch.
-                  </p>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="p-6 bg-white/5 rounded-[24px] border border-white/5">
-                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4 block text-left">Deduction Type</label>
-                    <select 
-                      value={deductionType} 
-                      onChange={(e) => setDeductionType(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold focus:border-amber-500 outline-none transition-all mb-4 appearance-none"
-                      style={{ colorScheme: 'dark' }}
-                    >
-                      <option value="none">No Additional Deduction</option>
-                      <option value="royal">Cash in Royal Cable</option>
-                      <option value="bills">Bills</option>
-                      <option value="others">Others</option>
-                    </select>
+                <SummaryStage
+                  verifiedClaims={verifiedClaims}
+                  totalClaimsAmount={totalClaimsAmount}
+                  serviceFee={serviceFee}
+                  deductionType={deductionType}
+                  setDeductionType={setDeductionType}
+                  manualDeduction={manualDeduction}
+                  setManualDeduction={setManualDeduction}
+                  netAmount={netAmount}
+                  savedDeductions={savedDeductions}
+                  onProceed={async (deductions, calculatedNetAmount) => {
+                    // Store the calculated net amount for use in billing stage
+                    setFinalNetAmount(calculatedNetAmount);
                     
-                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4 block text-left">Deduction Amount</label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">₱</span>
-                      <input 
-                        type="number" 
-                        value={manualDeduction} 
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          if (v === '' || Number(v) >= 0) setManualDeduction(v);
-                        }}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white text-sm font-bold focus:border-red-500 outline-none transition-all"
-                        placeholder="0.00"
-                        min="0"
-                      />
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={async () => {
-                      try {
-                        const res = await fetch(`http://localhost:8000/api/batches/${batchId}/status`, {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ 
-                            checker_status: 'summarized',
-                            summary_data: {
-                              gross_amount: totalClaimsAmount,
-                              service_fee: serviceFee,
-                              other_deduction_type: deductionType,
-                              other_deduction_amount: Number(manualDeduction || 0),
-                              net_amount: netAmount
-                            }
-                          }),
-                        });
-                        if (!res.ok) throw new Error(`Server error ${res.status}`);
-                        setPhase('billing');
-                      } catch (e) {
-                        console.error('Summary save failed', e);
-                        alert(`Failed to save summary: ${e.message}. Please try again.`);
-                      }
-                    }}
-                    className="w-full py-5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-black font-black text-[11px] uppercase tracking-[0.2em] hover:scale-[1.02] transition-all shadow-2xl shadow-amber-500/20 flex items-center justify-center gap-3"
-                  >
-                    Finalize Summary & Billing →
-                  </button>
-                  
-                  <button 
-                    onClick={() => setPhase('finalize')}
-                    className="w-full py-3 text-[9px] font-black text-slate-600 uppercase tracking-widest hover:text-white transition-colors"
-                  >
-                    ← Back to Finalize
-                  </button>
-                </div>
-              </div>
-            )}
+                    try {
+                      const res = await fetch(getApiUrl(`/api/batches/${batchId}/status`), {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                          checker_status: 'summarized',
+                          summary_data: {
+                            gross_amount: totalClaimsAmount,
+                            service_fee: serviceFee,
+                            deductions: deductions, // Array of { type, amount }
+                            net_amount: calculatedNetAmount
+                          }
+                        }),
+                      });
+                      if (!res.ok) throw new Error(`Server error ${res.status}`);
+                      setPhase('billing');
+                    } catch (e) {
+                      console.error('Summary save failed', e);
+                      alert(`Failed to save summary: ${e.message}. Please try again.`);
+                    }
+                  }}
+                  onBack={() => setPhase('finalize')}
+                />
+              )}
 
             {phase === 'billing' && (
               <div className="flex flex-col gap-6 animate-in slide-in-from-right-4 duration-300">
@@ -2394,13 +2893,12 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ 
                             checker_status: 'billing_ready',
-                            // Re-send summary_data so both are stored together
+                            // Re-send summary_data so both are stored together (keep existing deductions array)
                             summary_data: {
                               gross_amount: totalClaimsAmount,
                               service_fee: serviceFee,
-                              other_deduction_type: deductionType,
-                              other_deduction_amount: Number(manualDeduction || 0),
-                              net_amount: netAmount
+                              deductions: savedDeductions, // Use the saved deductions array
+                              net_amount: finalNetAmount || netAmount
                             },
                             billing_data: {
                               method: billingMethod,
@@ -2452,29 +2950,35 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
     {/* Billing Summary Modal */}
     {showBillingSummaryModal && (
-      <BillingSummaryModal
-        onClose={() => {
-          setShowBillingSummaryModal(false);
-          onDone();
-        }}
-        batchNumber={savedBatchInfo?.batch_number || batchId}
-        finalBatchNumber={savedBatchInfo?.final_batch_number}
-        grossAmount={totalClaimsAmount}
-        serviceFee={serviceFee}
-        deductionType={deductionType}
-        deductionAmount={Number(manualDeduction || 0)}
-        netAmount={netAmount}
-        billingMethod={billingMethod}
-        cashDenominations={cashDenominations}
-        bankTransferAmount={bankTransferAmount}
-        totalPrepared={billingTotal}
-        verifiedClaims={verifiedClaims.map(r => ({
-          account_holder: r.receipt?.account_holder || r.account_holder,
-          amount: r.amount,
-          reference: r.reference,
-          source_label: r.receipt?.source_label || r.source_label,
-        }))}
-      />
+      <>
+        {console.log('=== Opening BillingSummaryModal ===')}
+        {console.log('savedBatchInfo:', savedBatchInfo)}
+        {console.log('savedBatchInfo?.summary_data:', savedBatchInfo?.summary_data)}
+        {console.log('savedBatchInfo?.summary_data?.deductions:', savedBatchInfo?.summary_data?.deductions)}
+        {console.log('savedDeductions state:', savedDeductions)}
+        <BillingSummaryModal
+          onClose={() => {
+            setShowBillingSummaryModal(false);
+            onDone();
+          }}
+          batchNumber={savedBatchInfo?.batch_number || batchId}
+          finalBatchNumber={savedBatchInfo?.final_batch_number}
+          grossAmount={totalClaimsAmount}
+          serviceFee={serviceFee}
+          deductions={savedBatchInfo?.summary_data?.deductions || savedDeductions || []}
+          netAmount={netAmount}
+          billingMethod={billingMethod}
+          cashDenominations={cashDenominations}
+          bankTransferAmount={bankTransferAmount}
+          totalPrepared={billingTotal}
+          verifiedClaims={verifiedClaims.map(r => ({
+            account_holder: r.receipt?.account_holder || r.account_holder,
+            amount: r.amount,
+            reference: r.reference,
+            source_label: r.receipt?.source_label || r.source_label,
+          }))}
+        />
+      </>
     )}
     </>
   );

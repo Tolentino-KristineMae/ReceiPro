@@ -4,12 +4,23 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\TransactionController;
+use App\Http\Controllers\Api\BatchController;
+use App\Http\Controllers\Api\SettingsController;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-use App\Http\Controllers\Api\BatchController;
+// Settings routes
+Route::prefix('settings')->group(function () {
+    Route::get('/accounts', [SettingsController::class, 'getAccounts']);
+    Route::post('/accounts', [SettingsController::class, 'addAccount']);
+    Route::delete('/accounts/{accountName}', [SettingsController::class, 'deleteAccount']);
+    
+    Route::get('/deduction-types', [SettingsController::class, 'getDeductionTypes']);
+    Route::post('/deduction-types', [SettingsController::class, 'addDeductionType']);
+    Route::delete('/deduction-types/{key}', [SettingsController::class, 'deleteDeductionType']);
+});
 
 // Batch routes
 Route::prefix('batches')->group(function () {

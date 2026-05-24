@@ -668,8 +668,7 @@ export default function BatchDetail({
         const grossAmount   = sd.gross_amount   ?? grossFallback;
         const serviceFee    = sd.service_fee    ?? feeFallback;
         const netAmount     = sd.net_amount     ?? netFallback;
-        const deductionType = sd.other_deduction_type   || 'none';
-        const deductionAmt  = sd.other_deduction_amount || 0;
+        const deductions    = sd.deductions     || []; // Use deductions array
 
         // Fallback billing: if billing_data missing, show cash total from denominations
         const billingMethod      = bd.method              || 'both';
@@ -684,8 +683,7 @@ export default function BatchDetail({
             finalBatchNumber={batch.final_batch_number}
             grossAmount={grossAmount}
             serviceFee={serviceFee}
-            deductionType={deductionType}
-            deductionAmount={deductionAmt}
+            deductions={deductions}
             netAmount={netAmount}
             billingMethod={billingMethod}
             cashDenominations={cashDenoms}

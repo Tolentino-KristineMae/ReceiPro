@@ -258,6 +258,86 @@
 .cs-info-value.gcash { color: var(--ocean-300); }
 .cs-info-value.others { color: var(--amber-400); }
 
+/* ─── Category Change Buttons ────────────────────────────────────────────────── */
+.cs-category-change {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 8px;
+}
+
+.cs-category-change-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.cs-category-change-info svg {
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+
+.cs-category-change-btn {
+  width: 100%;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  border: 1px solid;
+}
+
+.cs-category-change-btn.gcash {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
+.cs-category-change-btn.gcash:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.15) 100%);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2);
+}
+
+.cs-category-change-btn.others {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+}
+
+.cs-category-change-btn.others:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.15) 100%);
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.2);
+}
+
+.cs-category-change-btn:active {
+  transform: translateY(0);
+}
+
+.cs-category-change-btn svg {
+  flex-shrink: 0;
+}
+
 /* ─── Rotate Button ──────────────────────────────────────────────────────────── */
 .cs-rotate-btn {
   width: 100%;

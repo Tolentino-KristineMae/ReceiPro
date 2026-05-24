@@ -7,6 +7,7 @@ export default function ExtractionStage({
   onStartExtraction,
   receiptsCount,
   ocrProgress = 0,
+  onReExtract, // NEW PROP
 }) {
   return (
     <div className="es-root">
@@ -84,7 +85,7 @@ export default function ExtractionStage({
         )}
       </div>
 
-      {/* Action Button */}
+      {/* Action Buttons */}
       {!isProcessingOcr && !ocrResults && (
         <button className="es-action-btn" onClick={onStartExtraction}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -92,6 +93,27 @@ export default function ExtractionStage({
           </svg>
           Start OCR Extraction
         </button>
+      )}
+
+      {/* Re-Extract Button - NEW */}
+      {!isProcessingOcr && ocrResults && onReExtract && (
+        <div className="es-reextract-section">
+          <div className="es-reextract-info">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+            <span>Not satisfied with the extraction results?</span>
+          </div>
+          <button className="es-reextract-btn" onClick={onReExtract}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+            Re-Extract All Receipts
+          </button>
+        </div>
       )}
 
       {/* Processing Indicator */}

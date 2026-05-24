@@ -262,6 +262,26 @@
   box-sizing: border-box;
 }
 
+.fs-receipts-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #60a5fa;
+  letter-spacing: 0.02em;
+}
+
+.fs-receipts-header svg {
+  flex-shrink: 0;
+  color: #3b82f6;
+}
+
 .fs-receipts-card::-webkit-scrollbar { width: 4px; }
 .fs-receipts-card::-webkit-scrollbar-track { background: transparent; }
 .fs-receipts-card::-webkit-scrollbar-thumb {
@@ -277,19 +297,31 @@
 
 .fs-receipt-item {
   display: grid;
-  grid-template-columns: 32px 1fr auto auto;
+  grid-template-columns: 32px 1fr auto auto 24px;
   gap: 12px;
   align-items: center;
   padding: 12px 14px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
 }
 
 .fs-receipt-item:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateX(4px);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
+}
+
+.fs-receipt-item:hover .fs-receipt-edit {
+  opacity: 1;
+}
+
+.fs-receipt-item:active {
+  transform: translateX(2px);
 }
 
 .fs-receipt-status {
@@ -339,6 +371,18 @@
   color: #10b981;
   font-family: var(--font-mono);
   white-space: nowrap;
+}
+
+.fs-receipt-edit {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #60a5fa;
+  opacity: 0;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
 }
 
 /* ─── Batch Info ─────────────────────────────────────────────────────────── */

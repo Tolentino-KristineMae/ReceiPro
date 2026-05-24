@@ -12,6 +12,7 @@ export default function SortingStage({
   isSavingSorting,
   onApply,
   onProceed,
+  onReceiptClick, // New prop for handling receipt card clicks
 }) {
   const gcashCount  = receipts.length - checkedForOthers.size;
   const othersCount = checkedForOthers.size;
@@ -132,7 +133,22 @@ export default function SortingStage({
               </div>
               <div className="ss-col-grid">
                 {gcashReceipts.map(r => (
-                  <div key={r.id} className="ss-col-card gcash">
+                  <div 
+                    key={r.id} 
+                    className="ss-col-card gcash"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('GCash receipt clicked:', r.id);
+                      if (onReceiptClick) {
+                        onReceiptClick(r);
+                      } else {
+                        console.warn('onReceiptClick handler not provided');
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
+                    title={`Receipt ID: ${r.id} - Click to edit`}
+                  >
+                    <div className="ss-receipt-id">#{r.id}</div>
                     <img src={`${API_BASE}/api/receipts/${r.id}/image`} alt="" crossOrigin="anonymous" />
                   </div>
                 ))}
@@ -154,7 +170,22 @@ export default function SortingStage({
               </div>
               <div className="ss-col-grid">
                 {othersReceipts.map(r => (
-                  <div key={r.id} className="ss-col-card others">
+                  <div 
+                    key={r.id} 
+                    className="ss-col-card others"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('Others receipt clicked:', r.id);
+                      if (onReceiptClick) {
+                        onReceiptClick(r);
+                      } else {
+                        console.warn('onReceiptClick handler not provided');
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
+                    title={`Receipt ID: ${r.id} - Click to edit`}
+                  >
+                    <div className="ss-receipt-id">#{r.id}</div>
                     <img src={`${API_BASE}/api/receipts/${r.id}/image`} alt="" crossOrigin="anonymous" />
                   </div>
                 ))}
