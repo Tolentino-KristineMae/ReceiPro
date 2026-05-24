@@ -31,6 +31,7 @@ export default function BatchDashboard({
   setFileCount, 
   fileInputRef, 
   isCreating, 
+  uploadProgress,
   handleCreateAndUpload, 
   handleDeleteBatch, 
   navigate 
@@ -86,7 +87,9 @@ export default function BatchDashboard({
             {isCreating ? (
               <>
                 <div className="spinner-modern" />
-                Creating...
+                {uploadProgress.total > 0 
+                  ? `Uploading ${uploadProgress.current}/${uploadProgress.total}...`
+                  : 'Creating...'}
               </>
             ) : (
               <>

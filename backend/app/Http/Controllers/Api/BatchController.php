@@ -149,6 +149,26 @@ class BatchController extends Controller
         return response()->json($receipt->fresh());
     }
 
+    /** Manually verify a receipt and link to a transaction */
+    public function manualVerify(Request $request, Batch $batch, Receipt $receipt)
+    {
+        $request->validate([
+            'transaction_id' => 'required|exists:transactions,id'
+        ]);
+
+        $transaction = \App\Models\Transaction::findOrFail($request->transaction_id);
+
+        $receipt->update([
+            'match_status' => 'verified',
+            'transaction_id' => $transaction->id
+        ]);
+
+        // Link the transaction to this batch
+        $transaction->update(['batch_id' => $batch->id]);
+
+        return response()->json($receipt->fresh());
+    }
+
     public function destroy(Batch $batch)
     {
         // Delete all associated receipts first
@@ -232,7 +252,35 @@ class BatchController extends Controller
                     $isVerified = true;
                     $matchDetails = [
                         'bank' => $receipt->category === 'gcash' ? 'GCash' : ($receipt->source_label ?? 'Bank'),
-                        'timestamp' => $transaction->transaction_date ? $transaction->transaction_date->format('H:i') : now()->format('H:i')
+                        'timestamp' => $transaction->transaction_date ? $transaction->transaction_date->format('H:i') : now()->format('H:i'),
+                        'transaction' => $transaction
+                    ];
+                } else {
+                    // Find recommended transactions (no batch record)
+                    // Priority 1: Match reference and specific labels (like "Int")
+                    // Priority 2: Match amount and partial reference
+                    $potentialMatches = \App\Models\Transaction::whereNull('batch_id')
+                        ->where(function($q) use ($reference, $ocrData) {
+                            // Match by reference
+                            $q->where('reference', $reference)
+                              ->orWhere('label', 'like', '%Int%') // Check for "Int" (Inbound Transfer)
+                              ->orWhere('label', 'like', '%' . $reference . '%');
+                            
+                            // Also include matches by amount as fallback in the query
+                            if (isset($ocrData['amount']) && $ocrData['amount'] > 0) {
+                                $q->orWhere('amount', $ocrData['amount']);
+                            }
+                        })
+                        ->orderByRaw("CASE 
+                            WHEN reference = ? THEN 1 
+                            WHEN label LIKE '%Int%' AND ABS(amount - ?) < 0.01 THEN 2
+                            WHEN ABS(amount - ?) < 0.01 THEN 3
+                            ELSE 4 END", [$reference, $ocrData['amount'] ?? 0, $ocrData['amount'] ?? 0])
+                        ->limit(5)
+                        ->get();
+                    
+                    $matchDetails = [
+                        'potential_matches' => $potentialMatches
                     ];
                 }
             }

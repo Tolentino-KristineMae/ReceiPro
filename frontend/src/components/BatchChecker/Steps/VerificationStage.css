@@ -208,6 +208,215 @@
   overflow-wrap: break-word;
 }
 
+/* ─── Results List ──────────────────────────────────────────────────────────── */
+.vs-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+  padding-bottom: 20px;
+}
+
+.vs-result-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.vs-result-item.verified {
+  border-left: 4px solid #10b981;
+}
+
+.vs-result-item.flagged {
+  border-left: 4px solid #ef4444;
+}
+
+.vs-result-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.vs-receipt-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vs-receipt-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #000;
+}
+
+.vs-receipt-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.vs-receipt-amount {
+  font-family: 'Space Mono', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.vs-receipt-ref {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
+}
+
+.vs-status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.vs-status-badge.verified {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.vs-status-badge.flagged {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* ─── Comparison View ───────────────────────────────────────────────────────── */
+.vs-comparison {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vs-comparison-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #60a5fa;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.vs-comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.vs-comp-side {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.vs-comp-side.transaction {
+  border: 1px solid rgba(96, 165, 250, 0.2);
+}
+
+.vs-comp-side.receipt {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vs-comp-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.vs-comp-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.vs-comp-key {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.vs-comp-val {
+  color: #fff;
+  font-family: 'Space Mono', monospace;
+}
+
+.vs-potential-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vs-match-card {
+  background: rgba(96, 165, 250, 0.05);
+  border: 1px solid rgba(96, 165, 250, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vs-match-card:hover {
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+.vs-match-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vs-match-ref {
+  font-size: 11px;
+  color: #fff;
+}
+
+.vs-match-date {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.vs-manual-verify {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.vs-manual-verify input {
+  cursor: pointer;
+}
+
+.vs-manual-verify span {
+  font-size: 11px;
+  font-weight: 700;
+  color: #10b981;
+}
+
 /* ─── Stats Grid ─────────────────────────────────────────────────────────────── */
 .vs-stats-grid {
   display: grid;

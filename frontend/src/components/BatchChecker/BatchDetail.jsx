@@ -52,6 +52,8 @@ export default function BatchDetail({
   handleRunExtraction,
   handleRunFinalCheck, 
   isRunningCheck, 
+  isCreating,
+  uploadProgress,
   setShowProcessor, 
   navigate 
 }) {
@@ -274,11 +276,19 @@ export default function BatchDetail({
             />
             <button
               className="btn-icon-modern"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => !isCreating && fileInputRef.current?.click()}
               title="Add More Receipts"
-              style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+              style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', width: isCreating ? 'auto' : '40px', padding: isCreating ? '0 1rem' : '0' }}
+              disabled={isCreating}
             >
-              <Icon.Plus />
+              {isCreating ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: 800 }}>
+                  <div className="spinner-modern" style={{ width: '14px', height: '14px' }} />
+                  {uploadProgress.total > 0 ? `${uploadProgress.current}/${uploadProgress.total}` : '...'}
+                </div>
+              ) : (
+                <Icon.Plus />
+              )}
             </button>
 
             <button
@@ -673,7 +683,7 @@ export default function BatchDetail({
         // Fallback billing: if billing_data missing, show cash total from denominations
         const billingMethod      = bd.method              || 'both';
         const cashDenoms         = bd.cash_denominations  || {};
-        const bankAmt            = bd.bank_transfer_amount || 0;
+        const bankTransfers      = bd.bank_transfers      || []; // Updated to array
         const totalPrepared      = bd.total_prepared       || netAmount;
 
         return (
@@ -687,7 +697,7 @@ export default function BatchDetail({
             netAmount={netAmount}
             billingMethod={billingMethod}
             cashDenominations={cashDenoms}
-            bankTransferAmount={bankAmt}
+            bankTransfers={bankTransfers} // Updated prop name and value
             totalPrepared={totalPrepared}
             verifiedClaims={verifiedReceipts}
           />
