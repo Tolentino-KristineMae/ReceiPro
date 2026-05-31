@@ -606,6 +606,8 @@ export default function BatchDetail({
                   parseOCRData={parseOCRData} 
                   onDelete={() => setReceiptToDelete(receipt)}
                   isBillingDone={batch.checker_status === 'billing_ready'}
+                  batchId={batch.id}
+                  batchNumber={batch.batch_number}
                 />
               ))}
           </div>
@@ -707,7 +709,7 @@ export default function BatchDetail({
   );
 }
 
-function ReceiptCard({ receipt, parseOCRData, onDelete, isBillingDone }) {
+function ReceiptCard({ receipt, parseOCRData, onDelete, isBillingDone, batchId, batchNumber }) {
   const getStatus = () => {
     const ocr = parseOCRData(receipt.ocr_data);
     const mStatus = receipt.match_status?.toLowerCase();
@@ -749,6 +751,25 @@ function ReceiptCard({ receipt, parseOCRData, onDelete, isBillingDone }) {
       className={`receipt-card ${status.className === 'danger' ? 'is-not-found' : ''}`}
       style={isBillingDone ? { outline: '2px solid rgba(16,185,129,0.4)', outlineOffset: '-2px' } : {}}
     >
+      {/* Notice: linked transaction already claimed/completed */}
+      {receipt.transaction && receipt.transaction.batch_id && receipt.transaction.batch_id !== batchId && (
+        <button onClick={() => window.location.href = `/batch/${receipt.transaction.batch_id}`} style={{
+          position: 'absolute', top: '8px', right: '8px', zIndex: 20,
+          background: 'rgba(255,165,0,0.95)', color: '#000', padding: '6px 8px', borderRadius: '10px', fontWeight: 800, fontSize: '11px',
+          border: 'none', cursor: 'pointer'
+        }} title={`View Batch ${receipt.transaction.batch_id}`}>
+          Claimed in Batch {receipt.transaction.batch_id}
+        </button>
+      )}
+
+      {receipt.transaction && receipt.transaction.status === 'completed' && (
+        <div style={{
+          position: 'absolute', top: '8px', right: '8px', zIndex: 20,
+          background: 'rgba(16,185,129,0.95)', color: '#fff', padding: '6px 8px', borderRadius: '10px', fontWeight: 800, fontSize: '11px'
+        }}>
+          Transaction Completed
+        </div>
+      )}
       <button 
         className="receipt-delete-btn"
         onClick={(e) => { e.stopPropagation(); onDelete(); }}

@@ -64,9 +64,9 @@ class ReceiptController extends Controller
             ProcessReceiptOcr::dispatch($receipt);
         }
 
-        // Force reload batch with all receipts (no limit)
+        // Force reload batch with all receipts (no limit) and include linked transactions
         $batch = Batch::with(['receipts' => function ($query) {
-            $query->orderBy('created_at', 'asc');
+            $query->orderBy('created_at', 'asc')->with('transaction');
         }])->find($batch->id);
 
         return response()->json($batch, 201);

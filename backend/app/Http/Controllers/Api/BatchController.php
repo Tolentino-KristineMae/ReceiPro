@@ -74,7 +74,7 @@ class BatchController extends Controller
 
         // 3. Return final list in descending order for the dashboard
         $batches = Batch::with(['receipts' => function ($query) {
-            $query->orderBy('created_at', 'asc');
+            $query->orderBy('created_at', 'asc')->with('transaction');
         }])->orderBy('created_at', 'desc')->get();
         
         return response()->json($batches);
@@ -108,7 +108,7 @@ class BatchController extends Controller
     public function show(Batch $batch)
     {
         return response()->json($batch->load(['receipts' => function ($query) {
-            $query->orderBy('created_at', 'asc');
+            $query->orderBy('created_at', 'asc')->with('transaction');
         }]));
     }
 
@@ -200,7 +200,7 @@ class BatchController extends Controller
             }
 
             return response()->json($batch->fresh()->load(['receipts' => function ($query) {
-                $query->orderBy('created_at', 'asc');
+                $query->orderBy('created_at', 'asc')->with('transaction');
             }]));
         }
 
@@ -213,7 +213,7 @@ class BatchController extends Controller
         }
 
         return response()->json($batch->fresh()->load(['receipts' => function ($query) {
-            $query->orderBy('created_at', 'asc');
+            $query->orderBy('created_at', 'asc')->with('transaction');
         }]));
     }
 
@@ -249,12 +249,20 @@ class BatchController extends Controller
 
         $transaction = \App\Models\Transaction::findOrFail($request->transaction_id);
 
+        // Prevent linking a transaction that's already claimed by another batch
+        if ($transaction->batch_id && $transaction->batch_id != $batch->id) {
+            return response()->json([
+                'error' => 'Transaction already claimed by another batch',
+                'claimed_batch_id' => $transaction->batch_id
+            ], 409);
+        }
+
         $receipt->update([
             'match_status' => 'verified',
             'transaction_id' => $transaction->id
         ]);
 
-        // Link the transaction to this batch
+        // Link the transaction to this batch (idempotent)
         $transaction->update(['batch_id' => $batch->id]);
 
         return response()->json($receipt->fresh());
@@ -340,6 +348,7 @@ class BatchController extends Controller
                 \Log::info("Verification attempt for receipt {$receipt->id}: ref='{$reference}', amount={$ocrData['amount']}, category={$receipt->category}, account_holder=" . ($receipt->account_holder ?? 'null') . ", source_label=" . ($receipt->source_label ?? 'null'));
 
                 $query = \App\Models\Transaction::where('amount', $ocrData['amount'])
+                    ->whereNull('batch_id') // only consider unlinked transactions
                     ->where(function($subQuery) use ($reference, $partialMatches, $receipt) {
                         // Match reference or label with OCR reference (trimmed full value)
                         $subQuery->where('reference', $reference)
@@ -373,12 +382,19 @@ class BatchController extends Controller
                         'transaction' => $transaction
                     ];
 
-                    // Link immediately if perfect match found
-                    $receipt->update([
-                        'transaction_id' => $transaction->id,
-                        'match_status'   => 'verified'
-                    ]);
-                    $transaction->update(['batch_id' => $batch->id]);
+                    // Link immediately if perfect match found (only if still unlinked)
+                    if (!$transaction->batch_id) {
+                        $receipt->update([
+                            'transaction_id' => $transaction->id,
+                            'match_status'   => 'verified'
+                        ]);
+                        $transaction->update(['batch_id' => $batch->id]);
+                    } else {
+                        // Transaction already claimed in another batch
+                        $matchDetails['already_claimed'] = true;
+                        $matchDetails['claimed_batch_id'] = $transaction->batch_id;
+                        \Log::warning("Receipt {$receipt->id} matched to already-claimed transaction {$transaction->id} (batch {$transaction->batch_id})");
+                    }
                 } else {
                     // Find recommended transactions (no batch record)
                     // Priority 1: Match reference and specific labels (like "Int")
