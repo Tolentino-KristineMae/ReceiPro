@@ -1126,7 +1126,7 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
     setSubmitting(true);
     const payload = { 
       ...formData, 
-      reference: null, // Combine into label
+      reference: formData.label || null, // Sync label to reference for consistency
       receipt_id: receipt?.id 
     };
     try {
@@ -1346,7 +1346,7 @@ export default function TransactionsPage() {
       entry_type:       form.entry_type,
       amount:           parseFloat(form.amount),
       opening_balance:  ob,
-      reference:        null, // Combined into label
+      reference:        form.label     || null, // Set both to the same value for better matching
       label:            form.label     || null,
       source_type:      'gcash',
     };
@@ -1921,10 +1921,11 @@ export default function TransactionsPage() {
                           
                           const d = fmtDate(t.transaction_date);
                           const batch = t.batch;
-                          const batchLabel = batch?.final_batch_number || batch?.batch_number;
+                          const batchLabel = batch?.final_batch_number || batch?.name;
                           
                           // For debit transactions, show descriptive word instead of batch number
-                          const displayLabel = t.entry_type === 'debit' 
+                          // BUT if it's explicitly linked to a batch (like deduction from total), show batch label
+                          const displayLabel = (t.entry_type === 'debit' && !batch)
                             ? (t.label || 'Deduction')
                             : batchLabel;
                           
@@ -1986,8 +1987,8 @@ export default function TransactionsPage() {
                                 <td data-label="Ref / Label">
                                   <input
                                     type="text"
-                                    defaultValue={t.label || ''}
-                                    placeholder="Label"
+                                    defaultValue={t.label || t.reference || ''}
+                                    placeholder="Reference / Label"
                                     className="inline-edit-input"
                                     id={`edit-label-${t.id}`}
                                   />
@@ -2011,11 +2012,13 @@ export default function TransactionsPage() {
                                     <button 
                                       className="save-button" 
                                       onClick={() => {
+                                        const val = document.getElementById(`edit-label-${t.id}`).value;
                                         const updatedData = {
                                           transaction_date: document.getElementById(`edit-date-${t.id}`).value,
                                           entry_type: document.getElementById(`edit-type-${t.id}`).value,
                                           amount: document.getElementById(`edit-amount-${t.id}`).value,
-                                          label: document.getElementById(`edit-label-${t.id}`).value,
+                                          label: val,
+                                          reference: val, // Update both fields
                                         };
                                         handleSaveEdit(t.id, updatedData);
                                       }}

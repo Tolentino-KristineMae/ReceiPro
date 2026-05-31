@@ -689,7 +689,7 @@ export default function BatchDetail({
         return (
           <BillingSummaryModal
             onClose={() => setShowSummaryModal(false)}
-            batchNumber={batch.batch_number}
+            batchNumber={batch.name}
             finalBatchNumber={batch.final_batch_number}
             grossAmount={grossAmount}
             serviceFee={serviceFee}

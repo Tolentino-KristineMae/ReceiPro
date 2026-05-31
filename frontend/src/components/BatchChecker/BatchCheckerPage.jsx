@@ -173,11 +173,14 @@ export default function BatchCheckerPage() {
     e.stopPropagation();
     if (!window.confirm('Delete this batch?')) return;
     try {
-      await fetch(getApiUrl(`/api/batches/${id}`), { method: 'DELETE' });
-      setBatches(prev => prev.filter(b => b.id !== id));
-      if (String(selectedBatch?.id) === String(id)) {
-        navigate('/batch');
-        setSelectedBatch(null);
+      const res = await fetch(getApiUrl(`/api/batches/${id}`), { method: 'DELETE' });
+      if (res.ok) {
+        // Re-fetch all batches to get the updated sequences from the server
+        await fetchBatches(true);
+        if (String(selectedBatch?.id) === String(id)) {
+          navigate('/batch');
+          setSelectedBatch(null);
+        }
       }
     } catch (e) { console.error(e); }
   };

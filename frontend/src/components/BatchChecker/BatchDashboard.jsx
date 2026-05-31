@@ -36,8 +36,12 @@ export default function BatchDashboard({
   handleDeleteBatch, 
   navigate 
 }) {
-  const nextBatchNumber = batches.length + 1;
-  const nextBatchName = `Batch #${String(nextBatchNumber).padStart(3, '0')}`;
+  // Robust next number: find max existing Batch # and add 1
+  const maxNum = batches.reduce((max, b) => {
+    const match = b.name?.match(/Batch #(\d+)/);
+    return match ? Math.max(max, parseInt(match[1])) : max;
+  }, 0);
+  const nextBatchName = `Batch #${String(maxNum + 1).padStart(3, '0')}`;
 
   return (
     <div className="bcp-layout">
@@ -193,7 +197,7 @@ function BatchCard({ batch, onClick, onDelete, delay = 0 }) {
           fontWeight: 800,
           marginBottom: 'auto'
         }}>
-          Batch {batch.name || 'Unnamed'}
+          {batch.name || 'Unnamed'}
         </div>
         
         <div style={{ marginTop: '1.5rem' }}>
