@@ -2,35 +2,35 @@ export const BATCH_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
   :root {
-    --bg-primary:        #0a0e1a;
-    --bg-secondary:      #111827;
-    --bg-tertiary:       #1f2937;
-    --bg-glass:          rgba(255,255,255,0.02);
-    --bg-glass-hover:    rgba(255,255,255,0.05);
+    --bg-primary:        #fffbf5;
+    --bg-secondary:      #ffffff;
+    --bg-tertiary:       #fff7ed;
+    --bg-glass:          rgba(255, 255, 255, 0.7);
+    --bg-glass-hover:    rgba(251, 146, 60, 0.08);
     
-    --border-subtle:     rgba(255,255,255,0.08);
-    --border-strong:     rgba(255,255,255,0.15);
-    --border-accent:     rgba(59,130,246,0.3);
+    --border-subtle:     rgba(251, 146, 60, 0.15);
+    --border-strong:     rgba(251, 146, 60, 0.25);
+    --border-accent:     rgba(249, 115, 22, 0.2);
     
-    --accent-primary:    #3b82f6;
-    --accent-secondary:  #60a5fa;
-    --success-primary:   #10b981;
-    --danger-primary:    #ef4444;
-    --warning-primary:   #f59e0b;
+    --accent-primary:    #f97316;
+    --accent-secondary:  #fb923c;
+    --success-primary:   #15803d;
+    --danger-primary:    #b91c1c;
+    --warning-primary:   #ea580c;
     
-    --gradient-primary:  linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --gradient-accent:   linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    --gradient-success:  linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --gradient-primary:  linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    --gradient-accent:   linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+    --gradient-success:  linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
     
-    --text-primary:      #f8fafc;
-    --text-secondary:    #e2e8f0;
-    --text-muted:        #94a3b8;
-    --text-muted-alt:    #64748b;
+    --text-primary:      #431407;
+    --text-secondary:    #7c2d12;
+    --text-muted:        #9a3412;
+    --text-muted-alt:    #c2410c;
     
-    --shadow-sm:         0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md:         0 4px 6px -1px rgb(0 0 0 / 0.1);
-    --shadow-lg:         0 10px 15px -3px rgb(0 0 0 / 0.1);
-    --shadow-xl:         0 20px 25px -5px rgb(0 0 0 / 0.1);
+    --shadow-sm:         0 1px 2px 0 rgba(249, 115, 22, 0.05);
+    --shadow-md:         0 4px 6px -1px rgba(249, 115, 22, 0.1);
+    --shadow-lg:         0 10px 15px -3px rgba(249, 115, 22, 0.1);
+    --shadow-xl:         0 20px 25px -5px rgba(249, 115, 22, 0.15);
     
     --radius-sm:         8px;
     --radius-md:         12px;

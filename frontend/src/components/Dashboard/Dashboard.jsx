@@ -9,43 +9,43 @@ const SHORT = { Babilyn: 'BAB', Nixie: 'NIX', Kristine: 'KRI' };
 
 const ACCOUNT_THEMES = {
   Babilyn: {
-    gradient: 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%)',
-    glow: 'rgba(167,139,250,0.4)',
-    pill: 'rgba(167,139,250,0.15)',
-    pillText: '#e9d5ff',
-    dot: '#a78bfa',
-    label: '#e9d5ff',
-    activeBg: 'rgba(167,139,250,0.2)',
-    activeBorder: 'rgba(167,139,250,0.4)',
-    topLine: '#a78bfa',
-    chipBg: 'rgba(167,139,250,0.25)',
-    shimmer: 'rgba(167,139,250,0.3)',
+    gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+    glow: 'rgba(249,115,22,0.2)',
+    pill: '#fff7ed',
+    pillText: '#c2410c',
+    dot: '#f97316',
+    label: '#9a3412',
+    activeBg: 'rgba(249,115,22,0.1)',
+    activeBorder: 'rgba(249,115,22,0.3)',
+    topLine: '#f97316',
+    chipBg: '#fff7ed',
+    shimmer: 'rgba(249,115,22,0.15)',
   },
   Nixie: {
-    gradient: 'linear-gradient(135deg, #f472b6 0%, #ec4899 50%, #db2777 100%)',
-    glow: 'rgba(244,114,182,0.4)',
-    pill: 'rgba(244,114,182,0.15)',
-    pillText: '#fce7f3',
-    dot: '#f472b6',
-    label: '#fce7f3',
-    activeBg: 'rgba(244,114,182,0.2)',
-    activeBorder: 'rgba(244,114,182,0.4)',
-    topLine: '#f472b6',
-    chipBg: 'rgba(244,114,182,0.25)',
-    shimmer: 'rgba(244,114,182,0.3)',
+    gradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+    glow: 'rgba(139,92,246,0.2)',
+    pill: '#f5f3ff',
+    pillText: '#6d28d9',
+    dot: '#8b5cf6',
+    label: '#5b21b6',
+    activeBg: 'rgba(139,92,246,0.1)',
+    activeBorder: 'rgba(139,92,246,0.3)',
+    topLine: '#8b5cf6',
+    chipBg: '#f5f3ff',
+    shimmer: 'rgba(139,92,246,0.15)',
   },
   Kristine: {
-    gradient: 'linear-gradient(135deg, #34d399 0%, #10b981 50%, #059669 100%)',
-    glow: 'rgba(52,211,153,0.4)',
-    pill: 'rgba(52,211,153,0.15)',
-    pillText: '#d1fae5',
-    dot: '#34d399',
-    label: '#d1fae5',
-    activeBg: 'rgba(52,211,153,0.2)',
-    activeBorder: 'rgba(52,211,153,0.4)',
-    topLine: '#34d399',
-    chipBg: 'rgba(52,211,153,0.25)',
-    shimmer: 'rgba(52,211,153,0.3)',
+    gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    glow: 'rgba(16,185,129,0.2)',
+    pill: '#ecfdf5',
+    pillText: '#047857',
+    dot: '#10b981',
+    label: '#065f46',
+    activeBg: 'rgba(16,185,129,0.1)',
+    activeBorder: 'rgba(16,185,129,0.3)',
+    topLine: '#10b981',
+    chipBg: '#ecfdf5',
+    shimmer: 'rgba(16,185,129,0.15)',
   },
 };
 
@@ -57,30 +57,30 @@ const ULTRA_MODERN_CSS = `
     --f: 'Plus Jakarta Sans', -apple-system, sans-serif;
     --fm: 'IBM Plex Mono', 'SF Mono', monospace;
     
-    /* Ultra-modern dark palette */
-    --bg-primary:        #05060a;
-    --bg-secondary:      #0a0e18;
-    --bg-glass:          rgba(255,255,255,0.015);
-    --bg-glass-hover:    rgba(255,255,255,0.03);
-    --surface-primary:   #111727;
-    --surface-secondary: #1e293b;
+    /* Energetic Light Palette */
+    --bg-primary:        #fffbf5;
+    --bg-secondary:      #ffffff;
+    --bg-glass:          rgba(255, 255, 255, 0.7);
+    --bg-glass-hover:    rgba(251, 146, 60, 0.08);
+    --surface-primary:   #ffffff;
+    --surface-secondary: #fff7ed;
     
     /* Enhanced borders */
-    --border-subtle:     rgba(255,255,255,0.08);
-    --border-hover:      rgba(255,255,255,0.15);
-    --border-glow:       rgba(255,255,255,0.25);
+    --border-subtle:     rgba(251, 146, 60, 0.15);
+    --border-hover:      rgba(251, 146, 60, 0.25);
+    --border-glow:       rgba(249, 115, 22, 0.2);
     
     /* Text hierarchy */
-    --text-primary:      #f8fafc;
-    --text-secondary:    #e2e8f0;
-    --text-muted:        #94a3b8;
-    --text-faint:        #64748b;
+    --text-primary:      #431407;
+    --text-secondary:    #7c2d12;
+    --text-muted:        #9a3412;
+    --text-faint:        #c2410c;
     
     /* Shadows */
-    --shadow-sm:         0 1px 3px 0 rgb(0 0 0 / 0.3);
-    --shadow-md:         0 10px 25px -5px rgb(0 0 0 / 0.3), 0 4px 6px -2px rgb(0 0 0 / 0.2);
-    --shadow-lg:         0 20px 40px -10px rgb(0 0 0 / 0.4), 0 8px 16px -8px rgb(0 0 0 / 0.25);
-    --shadow-xl:         0 35px 60px -20px rgb(0 0 0 / 0.45);
+    --shadow-sm:         0 1px 3px 0 rgba(249, 115, 22, 0.1);
+    --shadow-md:         0 10px 25px -5px rgba(249, 115, 22, 0.1), 0 4px 6px -2px rgba(249, 115, 22, 0.05);
+    --shadow-lg:         0 20px 40px -10px rgba(249, 115, 22, 0.15), 0 8px 16px -8px rgba(249, 115, 22, 0.1);
+    --shadow-xl:         0 35px 60px -20px rgba(249, 115, 22, 0.2);
     
     /* Radii */
     --radius-sm:         10px;
@@ -154,7 +154,7 @@ const ULTRA_MODERN_CSS = `
     font-weight: 500;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    background: linear-gradient(135deg, #a78bfa, #f472b6);
+    background: linear-gradient(135deg, #f97316, #ea580c);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -162,10 +162,10 @@ const ULTRA_MODERN_CSS = `
   }
 
   .dash-title {
-    font-size: 2.25rem;
+    font-size: 1.5rem;
     font-weight: 800;
     letter-spacing: -0.03em;
-    background: linear-gradient(135deg, var(--text-primary) 0%, #e2e8f0 100%);
+    background: linear-gradient(135deg, var(--text-primary) 0%, #7c2d12 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -1338,35 +1338,11 @@ export default function EnhancedDashboard({
     };
   }, []);
 
-  const columns = [
-    { id: 'unsorted', title: '📥 Unsorted' },
-    { id: 'gcash', title: '💳 GCash' },
-    { id: 'others', title: '📄 Others' },
-  ];
-
-  const columnReceipts = {
-    unsorted: receipts.filter(r => !r.category || r.category === 'unsorted'),
-    gcash: receipts.filter(r => r.category === 'gcash'),
-    others: receipts.filter(r => r.category === 'others'),
-  };
-
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="dash-root">
         <DashboardHeader />
         <DashboardStats receipts={receipts} />
-        <div className="cols-grid">
-          {columns.map(col => (
-            <ReceiptColumn
-              key={col.id}
-              column={col}
-              receipts={columnReceipts[col.id]}
-              onMoveReceipt={onMoveReceipt}
-              onSelectReceipt={onSelectReceipt}
-              onAccountAssigned={onAccountAssigned}
-            />
-          ))}
-        </div>
       </div>
     </DndProvider>
   );

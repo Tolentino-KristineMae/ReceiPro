@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getApiUrl } from '../../apiConfig';
+import { playTransactionSound } from '../../utils/sound';
 
 const ACCOUNTS = ['Babilyn', 'Nixie', 'Kristine'];
 
-// Batch color palette (5 colors cycling)
+// Batch color palette (5 colors cycling - Light mode friendly)
 const BATCH_COLORS = [
-  { bg: 'rgba(139, 92, 246, 0.15)', border: 'rgba(139, 92, 246, 0.4)', text: '#a78bfa' },  // Purple
-  { bg: 'rgba(59, 130, 246, 0.15)', border: 'rgba(59, 130, 246, 0.4)', text: '#60a5fa' },  // Blue
-  { bg: 'rgba(16, 185, 129, 0.15)', border: 'rgba(16, 185, 129, 0.4)', text: '#34d399' },  // Green
-  { bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.4)', text: '#fbbf24' },  // Amber
-  { bg: 'rgba(236, 72, 153, 0.15)', border: 'rgba(236, 72, 153, 0.4)', text: '#f472b6' },  // Pink
+  { bg: '#fdf4ff', border: '#f5d0fe', text: '#a21caf' },  // Fuchsia
+  { bg: '#eff6ff', border: '#dbeafe', text: '#1d4ed8' },  // Blue
+  { bg: '#f0fdf4', border: '#dcfce7', text: '#15803d' },  // Green
+  { bg: '#fff7ed', border: '#ffedd5', text: '#c2410c' },  // Orange
+  { bg: '#fff1f2', border: '#ffe4e6', text: '#be123c' },  // Rose
 ];
 
 const getBatchColor = (batchNumber) => {
@@ -39,29 +40,29 @@ const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
   :root {
-    --bg-primary:        #0a0e1a;
-    --bg-secondary:      #111827;
-    --bg-tertiary:       #1f2937;
-    --bg-glass:          rgba(255,255,255,0.02);
-    --bg-glass-hover:    rgba(255,255,255,0.05);
-    --border-subtle:     rgba(255,255,255,0.08);
-    --border-strong:     rgba(255,255,255,0.15);
-    --border-glow:       rgba(59,130,246,0.3);
+    --bg-primary:        #fffbf5;
+    --bg-secondary:      #ffffff;
+    --bg-tertiary:       #fff7ed;
+    --bg-glass:          rgba(255, 255, 255, 0.7);
+    --bg-glass-hover:    rgba(251, 146, 60, 0.08);
+    --border-subtle:     rgba(251, 146, 60, 0.15);
+    --border-strong:     rgba(251, 146, 60, 0.25);
+    --border-glow:       rgba(249, 115, 22, 0.2);
     
-    --gradient-primary:  linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --gradient-accent:   linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    --gradient-success:  linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --gradient-primary:  linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+    --gradient-accent:   linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    --gradient-success:  linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
     --gradient-danger:   linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     
-    --text-primary:      #f8fafc;
-    --text-secondary:    #e2e8f0;
-    --text-muted:        #94a3b8;
-    --text-muted-alt:    #64748b;
+    --text-primary:      #431407;
+    --text-secondary:    #7c2d12;
+    --text-muted:        #9a3412;
+    --text-muted-alt:    #c2410c;
     
-    --accent-primary:    #3b82f6;
-    --accent-secondary:  #60a5fa;
-    --success-primary:   #10b981;
-    --danger-primary:    #ef4444;
+    --accent-primary:    #f97316;
+    --accent-secondary:  #fb923c;
+    --success-primary:   #15803d;
+    --danger-primary:    #b91c1c;
     
     --shadow-sm:         0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md:         0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -122,49 +123,43 @@ const CSS = `
 
   .account-tabs {
     display: flex;
-    background: var(--bg-glass);
-    backdrop-filter: blur(20px);
+    background: #fff7ed;
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
-    padding: 3px;
-    box-shadow: var(--shadow-md);
-    overflow-x: auto;
-    scrollbar-width: none;
+    padding: 4px;
+    gap: 4px;
   }
-
-  .account-tabs::-webkit-scrollbar { display: none; }
 
   .account-tab {
-    padding: 8px 18px;
-    border: none;
+    padding: 10px 24px;
+    border: 1px solid transparent;
     background: transparent;
     color: var(--text-muted);
-    font-weight: 600;
+    font-weight: 700;
     font-size: 13px;
-    border-radius: var(--radius-md);
+    border-radius: calc(var(--radius-lg) - 4px);
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    min-width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     position: relative;
-    letter-spacing: 0.025em;
-    white-space: nowrap;
-    flex: 1;
-    min-width: 100px;
-  }
-
-  @media (max-width: 480px) {
-    .account-tab { padding: 6px 14px; font-size: 12px; min-width: 80px; }
   }
 
   .account-tab.active {
-    background: var(--gradient-accent);
-    color: white;
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-2px);
+    background: white;
+    color: var(--accent-primary);
+    box-shadow: var(--shadow-sm), 0 1px 2px rgba(249, 115, 22, 0.05);
+    border: 1px solid var(--border-subtle);
   }
 
   .account-tab:hover:not(.active) {
-    color: var(--text-secondary);
-    background: var(--bg-glass-hover);
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.5);
   }
 
   /* ── Print Button ── */
@@ -220,29 +215,18 @@ const CSS = `
 
   /* ── Glass Panels ── */
   .glass-panel {
-    background: var(--bg-glass);
-    backdrop-filter: blur(20px);
+    background: #ffffff;
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
     padding: 1.5rem;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-sm);
     position: relative;
     overflow: hidden;
+    transition: box-shadow 0.3s ease;
   }
 
-  @media (max-width: 640px) {
-    .glass-panel { padding: 1.25rem; }
-  }
-
-  .glass-panel::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: var(--gradient-accent);
-    opacity: 0.5;
+  .glass-panel:hover {
+    box-shadow: var(--shadow-md);
   }
 
   .glass-panel.sticky {
@@ -314,8 +298,8 @@ const CSS = `
 
   .input-field {
     width: 100%;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-subtle);
+    background: #ffffff;
+    border: 1px solid var(--border-strong);
     border-radius: var(--radius-md);
     padding: 10px 12px;
     font-size: 14px;
@@ -328,7 +312,7 @@ const CSS = `
     outline: none;
     border-color: var(--accent-primary);
     box-shadow: 0 0 0 3px var(--border-glow);
-    background: var(--bg-tertiary);
+    background: #ffffff;
   }
 
   .input-field::placeholder {
@@ -362,7 +346,7 @@ const CSS = `
   /* ── Toggle Buttons ── */
   .toggle-group {
     display: flex;
-    background: var(--bg-secondary);
+    background: #fff7ed;
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     overflow: hidden;
@@ -511,6 +495,11 @@ const CSS = `
     margin: 0 !important;
   }
 
+  .metric-icon.neutral { background: #fff7ed; color: #f97316; }
+  .metric-icon.success { background: #f0fdf4; color: #16a34a; }
+  .metric-icon.danger  { background: #fef2f2; color: #dc2626; }
+  .metric-icon.accent  { background: #fff7ed; color: #ea580c; }
+
   .metric-label {
     font-size: 10px;
     color: var(--text-muted);
@@ -567,72 +556,72 @@ const CSS = `
     backdrop-filter: blur(20px);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
-    overflow: hidden;
     box-shadow: var(--shadow-lg);
-  }
-
-  @media (max-width: 768px) {
-    .table-container { background: transparent; border: none; box-shadow: none; overflow: visible; }
-    .table thead { display: none; }
-    .table tbody { display: grid; gap: 0.75rem; }
-    .table tr { 
-      display: block; 
-      background: var(--bg-glass); 
-      border: 1px solid var(--border-subtle); 
-      border-radius: var(--radius-md);
-      padding: 1rem;
-      position: relative;
-    }
-    .table td { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      padding: 0.5rem 0; 
-      border: none;
-      text-align: right;
-    }
-    .table td:not(:last-child) { border-bottom: 1px solid var(--border-subtle); }
-    .table td::before {
-      content: attr(data-label);
-      font-size: 9px;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      text-align: left;
-    }
-    .table tr:hover td { background: transparent; }
+    max-height: 550px;
+    overflow-y: auto;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
   }
 
   .table {
     width: 100%;
     border-collapse: collapse;
     table-layout: auto;
-    white-space: nowrap;
+  }
+
+  .table-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .table-container::-webkit-scrollbar-thumb {
+    background-color: var(--border-strong);
+    border-radius: 10px;
+  }
+
+  .table-container::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .table-container::-webkit-scrollbar-thumb {
+    background-color: var(--border-strong);
+    border-radius: 10px;
+  }
+
+  .table-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg-secondary);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
 
   .table th {
-    padding: 0.75rem 0.5rem;
+    padding: 1rem 1rem;
     text-align: left;
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--text-muted);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    background: transparent;
-    border: none;
+    background: #fffbf5;
+    border-bottom: 2px solid var(--border-strong);
     white-space: nowrap;
   }
 
-  .table th:last-child { text-align: right; }
+  .table th:last-child { text-align: center; }
 
   .table td {
-    padding: 0.75rem 0.5rem;
+    padding: 1rem 1rem;
     border-bottom: 1px solid var(--border-subtle);
     vertical-align: middle;
     transition: background 0.2s ease;
     white-space: nowrap;
     overflow: visible;
+    font-size: 14px;
   }
 
   .table tr:hover td {
@@ -712,8 +701,8 @@ const CSS = `
     font-size: 9px;
     font-weight: 600;
     color: var(--accent-primary);
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    background: #fff7ed;
+    border: 1px solid var(--border-subtle);
     padding: 2px 6px;
     border-radius: 6px;
     display: inline-flex;
@@ -763,8 +752,8 @@ const CSS = `
   .inline-edit-input,
   .inline-edit-select {
     width: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: #ffffff;
+    border: 1px solid var(--border-strong);
     color: var(--text-primary);
     padding: 6px 10px;
     border-radius: var(--radius-sm);
@@ -1137,6 +1126,9 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
       });
       if (response.ok) {
         const transaction = await response.json();
+        // Play sound based on entry type (defaults to credit in modal)
+        playTransactionSound(transaction.entry_type || 'credit');
+        // If we're on the transactions page, the parent will handle refresh via polling or we could refresh manually
         if (onTransactionCreated) onTransactionCreated(transaction, receipt?.id);
         onClose();
       } else {
@@ -1151,14 +1143,14 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
   const netAmount = (parseFloat(formData.amount) || 0) - fee;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all animate-in fade-in duration-300">
-      <div className="modal-container bg-[#0f172a] border border-white/10 rounded-[24px] p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/50 text-white relative">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all animate-in fade-in duration-300">
+      <div className="modal-container bg-white border border-orange-200 rounded-[24px] p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl shadow-orange-900/10 text-orange-950 relative">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">New Transaction</h2>
-            <p className="text-[13px] text-slate-400 mt-1 uppercase tracking-wider font-semibold">Record a new receipt activity</p>
+            <h2 className="text-2xl font-bold tracking-tight text-orange-900">New Transaction</h2>
+            <p className="text-[13px] text-orange-700/60 mt-1 uppercase tracking-wider font-semibold">Record a new receipt activity</p>
           </div>
-          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-xl text-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -1166,7 +1158,7 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
         </div>
 
         {error && (
-          <div className="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center gap-3">
+          <div className="mb-6 px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm flex items-center gap-3">
             <Icon.Alert /> {error}
           </div>
         )}
@@ -1174,22 +1166,22 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
         <form onSubmit={handleSubmit} className="space-y-6" style={{ padding: 0 }}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Date</label>
+              <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">Date</label>
               <input type="date" value={formData.transaction_date} onChange={(e) => setFormData({...formData, transaction_date: e.target.value})} className="input-field" required />
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Account</label>
+              <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">Account</label>
               <select value={formData.account} onChange={(e) => setFormData({...formData, account: e.target.value})} className="input-field appearance-none cursor-pointer">
-                <option value="Account 1" className="bg-slate-900">Account 1</option>
-                <option value="Account 2" className="bg-slate-900">Account 2</option>
-                <option value="Account 3" className="bg-slate-900">Account 3</option>
+                <option value="Account 1" className="bg-white">Account 1</option>
+                <option value="Account 2" className="bg-white">Account 2</option>
+                <option value="Account 3" className="bg-white">Account 3</option>
               </select>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Amount</label>
+              <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">Amount</label>
               <div className="amount-input-container">
                 <span className="amount-prefix">₱</span>
                 <input type="number" step="0.01" min="0" value={formData.amount} onChange={(e) => {
@@ -1200,7 +1192,7 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
               </div>
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Source Type</label>
+              <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">Source Type</label>
               <div className="toggle-group">
                 <button type="button" onClick={() => setFormData({...formData, source_type: 'gcash'})} className={`toggle-button ${formData.source_type === 'gcash' ? 'active' : ''}`}>GCASH</button>
                 <button type="button" onClick={() => setFormData({...formData, source_type: 'others'})} className={`toggle-button ${formData.source_type === 'others' ? 'active danger' : ''}`}>OTHERS</button>
@@ -1209,40 +1201,40 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Reference / Label</label>
+            <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">Reference / Label</label>
             <input type="text" value={formData.label} onChange={(e) => setFormData({...formData, label: e.target.value})} placeholder="e.g. 50238 / Int" className="input-field" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-green-500/5 border border-green-500/20 rounded-2xl p-4 flex flex-col items-center">
-              <span className="text-[10px] font-bold text-green-400/60 uppercase tracking-widest mb-1">Fee (Calculated)</span>
-              <span className="text-xl font-bold text-green-400 font-mono">₱{fee.toFixed(2)}</span>
+            <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex flex-col items-center">
+              <span className="text-[10px] font-bold text-green-700/60 uppercase tracking-widest mb-1">Fee (Calculated)</span>
+              <span className="text-xl font-bold text-green-600 font-mono">₱{fee.toFixed(2)}</span>
             </div>
-            <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-4 flex flex-col items-center">
-              <span className="text-[10px] font-bold text-blue-400/60 uppercase tracking-widest mb-1">Net Amount</span>
-              <span className="text-xl font-bold text-blue-400 font-mono">₱{netAmount.toFixed(2)}</span>
+            <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex flex-col items-center">
+              <span className="text-[10px] font-bold text-orange-700/60 uppercase tracking-widest mb-1">Net Amount</span>
+              <span className="text-xl font-bold text-orange-600 font-mono">₱{netAmount.toFixed(2)}</span>
             </div>
           </div>
 
-          <div className="bg-slate-900/50 border border-white/10 rounded-[20px] p-6">
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4 ml-1">Suggested Denominations</label>
+          <div className="bg-orange-50/50 border border-orange-100 rounded-[20px] p-6">
+            <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-4 ml-1">Suggested Denominations</label>
             <div className="grid grid-cols-3 gap-3">
               {Object.entries(formData.denominations).map(([denom, count]) => (
-                <div key={denom} className="bg-slate-800/50 border border-white/5 p-3 rounded-xl text-center">
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">₱{denom}</div>
-                  <div className="text-lg font-bold text-white font-mono">×{count}</div>
+                <div key={denom} className="bg-white border border-orange-100 p-3 rounded-xl text-center shadow-sm">
+                  <div className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-1">₱{denom}</div>
+                  <div className="text-lg font-bold text-orange-900 font-mono">×{count}</div>
                 </div>
               ))}
               {Object.keys(formData.denominations).length === 0 && (
                 <div className="col-span-3 py-4 text-center">
-                  <p className="text-[12px] text-slate-500 italic">Enter an amount to see suggestions</p>
+                  <p className="text-[12px] text-orange-300 italic">Enter an amount to see suggestions</p>
                 </div>
               )}
             </div>
           </div>
 
           <div className="flex gap-4 pt-4">
-            <button type="button" onClick={onClose} className="flex-1 px-6 py-3.5 border border-white/10 text-slate-400 font-bold text-[13px] uppercase tracking-wider rounded-xl hover:bg-white/5 hover:text-white transition-all">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 px-6 py-3.5 border border-orange-200 text-orange-600 font-bold text-[13px] uppercase tracking-wider rounded-xl hover:bg-orange-50 transition-all">Cancel</button>
             <button type="submit" disabled={submitting} className="cta-button">
               {submitting ? 'Processing...' : 'Create Transaction'}
             </button>
@@ -1263,6 +1255,8 @@ export default function TransactionsPage() {
   const [error, setError] = useState(null);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [allAccountsData, setAllAccountsData] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
 
   const form = forms[activeAccount] || EMPTY_FORM();
   const setForm = (updater) => setForms(prev => {
@@ -1310,6 +1304,27 @@ export default function TransactionsPage() {
     };
     fetchAllAccountsData();
   }, [transactions]); // Re-fetch when transactions change
+
+  const filteredTransactions = useMemo(() => {
+    let list = [...transactions];
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(t => 
+        (t.label || '').toLowerCase().includes(q) ||
+        (t.amount || '').toString().includes(q) ||
+        (t.entry_type || '').toLowerCase().includes(q) ||
+        (t.transaction_date || '').includes(q)
+      );
+    }
+    
+    return list.sort((a, b) => {
+      const dateA = new Date(a.transaction_date);
+      const dateB = new Date(b.transaction_date);
+      if (dateA > dateB) return sortOrder === 'desc' ? -1 : 1;
+      if (dateA < dateB) return sortOrder === 'desc' ? 1 : -1;
+      return sortOrder === 'desc' ? (b.id - a.id) : (a.id - b.id);
+    });
+  }, [transactions, searchQuery, sortOrder]);
 
   const openingBalance = transactions.length > 0
     ? parseFloat(transactions[0].opening_balance ?? 0)
@@ -1360,6 +1375,9 @@ export default function TransactionsPage() {
       
       if (res.ok) {
         const saved = await res.json();
+        // Play sound based on entry type
+        playTransactionSound(saved.entry_type || form.entry_type);
+        // Simply add to state; the filteredTransactions memo will handle sorting
         setTransactions(prev => [...prev, saved]);
         setForm(f => ({ ...f, amount: '', reference: '', label: '' }));
       } else {
@@ -1577,7 +1595,14 @@ export default function TransactionsPage() {
     `;
 
     ACCOUNTS.forEach(account => {
-      const accountTransactions = allAccountsData[account] || [];
+      // Get transactions and sort ASC for balance calculation
+      const accountTransactions = [...(allAccountsData[account] || [])].sort((a, b) => {
+        const dateA = new Date(a.transaction_date);
+        const dateB = new Date(b.transaction_date);
+        if (dateA !== dateB) return dateA - dateB;
+        return (a.id || 0) - (b.id || 0);
+      });
+      
       if (accountTransactions.length === 0) return;
 
       const totalCredit = accountTransactions
@@ -1877,8 +1902,48 @@ export default function TransactionsPage() {
                   <h2 className="table-title">Transaction History</h2>
                   <p className="form-subtitle">{activeAccount} • All activity</p>
                 </div>
-                <div className="table-stats">
-                  {transactions.length} transactions
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      placeholder="Search transactions..." 
+                      className="input-field py-2 pl-10 pr-10 text-xs w-64"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                      </svg>
+                    </div>
+                    {searchQuery && (
+                      <button 
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                      className="table-stats hover:bg-white/5 transition-all flex items-center gap-2"
+                      title={sortOrder === 'desc' ? "Showing Newest First" : "Showing Oldest First"}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: sortOrder === 'asc' ? 'rotate(180deg)' : 'none' }}>
+                        <path d="M7 15l5 5 5-5M7 9l5-5 5 5" />
+                      </svg>
+                      {sortOrder === 'desc' ? 'Newest' : 'Oldest'}
+                    </button>
+                    <div className="table-stats">
+                      {filteredTransactions.length} transactions
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1905,7 +1970,7 @@ export default function TransactionsPage() {
                         <th>Date</th>
                         <th>Type</th>
                         <th>Batch</th>
-                        <th>Reference / Label</th>
+                        <th className="w-full">Reference / Label</th>
                         <th>Amount</th>
                         <th>Balance</th>
                         <th style={{ textAlign: 'center' }}>Actions</th>
@@ -1913,11 +1978,28 @@ export default function TransactionsPage() {
                     </thead>
                     <tbody>
                       {(() => {
-                        let running = openingBalance;
-                        return transactions.map(t => {
+                        // Calculate balances in ASC order first
+                        const sortedAsc = [...transactions].sort((a, b) => {
+                          const dateA = new Date(a.transaction_date);
+                          const dateB = new Date(b.transaction_date);
+                          if (dateA > dateB) return 1;
+                          if (dateA < dateB) return -1;
+                          return (a.id || 0) - (b.id || 0);
+                        });
+
+                        let currentRunning = openingBalance;
+                        const balances = {};
+                        sortedAsc.forEach(t => {
                           const amt = parseFloat(t.amount || 0);
-                          if (t.entry_type === 'credit') running += amt;
-                          else running -= amt;
+                          if (t.entry_type === 'credit') currentRunning += amt;
+                          else currentRunning -= amt;
+                          balances[t.id] = currentRunning;
+                        });
+
+                        // Display in current state order (DESC)
+                        return filteredTransactions.map(t => {
+                          const amt = parseFloat(t.amount || 0);
+                          const running = balances[t.id];
                           
                           const d = fmtDate(t.transaction_date);
                           const batch = t.batch;
@@ -2085,7 +2167,7 @@ export default function TransactionsPage() {
                                 )}
                               </td>
                               <td data-label="Ref / Label">
-                                <div style={{ fontWeight: 600, fontSize: '13px', whiteSpace: 'nowrap', overflow: 'visible' }}>
+                                <div style={{ fontWeight: 600, fontSize: '13px', overflow: 'visible' }}>
                                   {t.label || t.reference || '—'}
                                 </div>
                               </td>

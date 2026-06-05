@@ -56,8 +56,8 @@ class TransactionController extends Controller
             $query->where('account', $request->account);
         }
 
-        $transactions = $query->orderBy('transaction_date', 'asc')
-                              ->orderBy('created_at', 'asc')
+        $transactions = $query->orderBy('transaction_date', 'desc')
+                              ->orderBy('created_at', 'desc')
                               ->get();
 
         return response()->json($transactions);

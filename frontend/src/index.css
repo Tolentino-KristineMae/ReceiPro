@@ -28,32 +28,33 @@ html { font-size: 14px; }
 
 @layer base {
   :root {
-    --bg: #0f172a;
-    --panel: rgba(30, 41, 59, 0.7);
-    --panel-strong: #1e293b;
-    --border: rgba(226, 232, 240, 0.08);
-    --border-strong: rgba(226, 232, 240, 0.12);
-    --text: #f1f5f9;
-    --muted: #64748b;
-    --muted-2: #475569;
+    --bg: #fffbf5;
+    --panel: rgba(255, 255, 255, 0.85);
+    --panel-strong: #ffffff;
+    --border: rgba(251, 146, 60, 0.15);
+    --border-strong: rgba(251, 146, 60, 0.25);
+    --text: #431407;
+    --muted: #9a3412;
+    --muted-2: #c2410c;
 
-    --brand: #3b82f6;
-    --brand-2: #60a5fa;
-    --brand-ring: rgba(59, 130, 246, 0.35);
+    --brand: #f97316;
+    --brand-2: #fb923c;
+    --brand-ring: rgba(249, 115, 22, 0.3);
   }
 
   body {
     font-family: var(--font-sans);
     background:
-      radial-gradient(1200px 600px at 20% -10%, rgba(59, 130, 246, 0.15), transparent 58%),
-      radial-gradient(900px 500px at 85% 0%, rgba(100, 116, 139, 0.1), transparent 62%),
-      linear-gradient(to bottom, rgba(15, 23, 42, 0.03) 0px, transparent 220px),
-      linear-gradient(to right, rgba(15, 23, 42, 0.035) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(15, 23, 42, 0.035) 1px, transparent 1px),
+      radial-gradient(1200px 600px at 20% -10%, rgba(249, 115, 22, 0.1), transparent 58%),
+      radial-gradient(900px 500px at 85% 0%, rgba(251, 146, 60, 0.08), transparent 62%),
+      linear-gradient(to bottom, rgba(255, 251, 245, 0.8) 0px, transparent 220px),
+      linear-gradient(to right, rgba(251, 146, 60, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(251, 146, 60, 0.04) 1px, transparent 1px),
       var(--bg);
     background-size: auto, auto, auto, 44px 44px, 44px 44px, auto;
     color: var(--text);
     letter-spacing: -0.01em;
+    overflow: hidden;
   }
 
   h1, h2, h3, h4, .font-display {
