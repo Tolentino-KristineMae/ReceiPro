@@ -16,7 +16,6 @@ export default function BatchCheckerPage() {
   const [showProcessor, setShowProcessor] = useState(false);
   const [processorPhase, setProcessorPhase] = useState('categorize');
   const [isCreating, setIsCreating] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [filter, setFilter] = useState('all');
   const [isRunningCheck, setIsRunningCheck] = useState(false);
   const [fileCount, setFileCount] = useState(0);
@@ -96,12 +95,10 @@ export default function BatchCheckerPage() {
 
   const handleCreateAndUpload = async (e) => {
     e.preventDefault();
-    const files = Array.from(fileInputRef.current?.files || []);
-    if (!files.length) return;
+    const files = fileInputRef.current?.files;
+    if (!files?.length) return;
     
     setIsCreating(true);
-    setUploadProgress({ current: 0, total: files.length });
-    
     try {
       const res = await fetch(getApiUrl('/api/batches'), {
         method: 'POST',
@@ -111,52 +108,38 @@ export default function BatchCheckerPage() {
       
       if (res.ok) {
         const newBatch = await res.json();
+        const formData = new FormData();
+        Array.from(files).forEach(file => formData.append('receipts[]', file));
+        formData.append('batch_id', newBatch.id);
         
-        // Chunk uploads to bypass PHP's max_file_uploads (usually 20)
-        const CHUNK_SIZE = 15;
-        let latestBatchData = newBatch;
-
-        for (let i = 0; i < files.length; i += CHUNK_SIZE) {
-          const chunk = files.slice(i, i + CHUNK_SIZE);
-          const formData = new FormData();
-          chunk.forEach(file => formData.append('receipts[]', file));
-          formData.append('batch_id', newBatch.id);
+        const uploadRes = await fetch(getApiUrl('/api/receipts/upload'), {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (uploadRes.ok) {
+          const updatedBatch = await uploadRes.json();
+          setBatches(prev => [updatedBatch, ...prev.filter(b => b.id !== updatedBatch.id)]);
           
-          const uploadRes = await fetch(getApiUrl('/api/receipts/upload'), {
-            method: 'POST',
-            body: formData,
-          });
-          
-          if (uploadRes.ok) {
-            latestBatchData = await uploadRes.json();
-            setUploadProgress(prev => ({ ...prev, current: Math.min(prev.total, i + chunk.length) }));
-            // Update batches list in real-time
-            setBatches(prev => [latestBatchData, ...prev.filter(b => b.id !== latestBatchData.id)]);
-            setSelectedBatch(latestBatchData);
-          } else {
-            console.error('Upload chunk failed');
-            break;
+          // Properly clear file input - reset form and state
+          setFileCount(0);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+            // Reset the form element itself
+            if (fileInputRef.current.form) {
+              fileInputRef.current.form.reset();
+            }
           }
+          
+          // Set selected batch immediately with all receipts
+          setSelectedBatch(updatedBatch);
+          
+          // Navigate after state updates
+          navigate(`/batch/${updatedBatch.id}`);
         }
-        
-        // Properly clear file input
-        setFileCount(0);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-          if (fileInputRef.current.form) fileInputRef.current.form.reset();
-        }
-        
-        // Final state sync and navigation
-        setBatches(prev => [latestBatchData, ...prev.filter(b => b.id !== latestBatchData.id)]);
-        setSelectedBatch(latestBatchData);
-        navigate(`/batch/${latestBatchData.id}`);
       }
-    } catch (e) { 
-      console.error(e); 
-    } finally { 
-      setIsCreating(false);
-      setUploadProgress({ current: 0, total: 0 });
-    }
+    } catch (e) { console.error(e); } 
+    finally { setIsCreating(false); }
   };
 
   const handleRunExtraction = async () => {
@@ -173,14 +156,11 @@ export default function BatchCheckerPage() {
     e.stopPropagation();
     if (!window.confirm('Delete this batch?')) return;
     try {
-      const res = await fetch(getApiUrl(`/api/batches/${id}`), { method: 'DELETE' });
-      if (res.ok) {
-        // Re-fetch all batches to get the updated sequences from the server
-        await fetchBatches(true);
-        if (String(selectedBatch?.id) === String(id)) {
-          navigate('/batch');
-          setSelectedBatch(null);
-        }
+      await fetch(getApiUrl(`/api/batches/${id}`), { method: 'DELETE' });
+      setBatches(prev => prev.filter(b => b.id !== id));
+      if (String(selectedBatch?.id) === String(id)) {
+        navigate('/batch');
+        setSelectedBatch(null);
       }
     } catch (e) { console.error(e); }
   };
@@ -202,35 +182,24 @@ export default function BatchCheckerPage() {
   const handleAddUpload = async (files) => {
     if (!selectedBatch || !files.length) return;
     
-    const filesArray = Array.from(files);
     setIsCreating(true);
-    setUploadProgress({ current: 0, total: filesArray.length });
-
     try {
-      const CHUNK_SIZE = 15;
-      for (let i = 0; i < filesArray.length; i += CHUNK_SIZE) {
-        const chunk = filesArray.slice(i, i + CHUNK_SIZE);
-        const formData = new FormData();
-        chunk.forEach(file => formData.append('receipts[]', file));
-        formData.append('batch_id', selectedBatch.id);
-        
-        const uploadRes = await fetch(getApiUrl('/api/receipts/upload'), {
-          method: 'POST',
-          body: formData,
-        });
-        
-        if (uploadRes.ok) {
-          const updatedBatch = await uploadRes.json();
-          setBatches(prev => prev.map(b => b.id === updatedBatch.id ? updatedBatch : b));
-          setSelectedBatch(updatedBatch);
-          setUploadProgress(prev => ({ ...prev, current: Math.min(prev.total, i + chunk.length) }));
-        }
+      const formData = new FormData();
+      Array.from(files).forEach(file => formData.append('receipts[]', file));
+      formData.append('batch_id', selectedBatch.id);
+      
+      const uploadRes = await fetch(getApiUrl('/api/receipts/upload'), {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (uploadRes.ok) {
+        await fetchBatches(true);
       }
     } catch (e) { 
       console.error('Failed to upload receipts:', e); 
     } finally { 
       setIsCreating(false); 
-      setUploadProgress({ current: 0, total: 0 });
     }
   };
 
@@ -315,7 +284,6 @@ export default function BatchCheckerPage() {
           setFileCount={setFileCount}
           fileInputRef={fileInputRef}
           isCreating={isCreating}
-          uploadProgress={uploadProgress}
           handleDeleteBatch={handleDeleteBatch}
           handleCreateAndUpload={handleCreateAndUpload}
           navigate={navigate}
@@ -332,8 +300,6 @@ export default function BatchCheckerPage() {
           handleRunExtraction={handleRunExtraction}
           handleRunFinalCheck={handleRunFinalCheck}
           isRunningCheck={isRunningCheck}
-          isCreating={isCreating}
-          uploadProgress={uploadProgress}
           setShowProcessor={openProcessor}
           navigate={navigate}
         />

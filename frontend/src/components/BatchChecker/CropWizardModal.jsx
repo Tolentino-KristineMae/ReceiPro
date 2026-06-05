@@ -10,7 +10,6 @@ import ExtractionStage from './Steps/ExtractionStage';
 import VerificationStage from './Steps/VerificationStage';
 import FinalizeStage from './Steps/FinalizeStage';
 import SummaryStage from './Steps/SummaryStage';
-import qrJonarld from '../../assets/qr-jonarld.jpg';
 import { getApiUrl } from '../../apiConfig';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -181,39 +180,21 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     '1000': 0, '500': 0, '200': 0, '100': 0, '50': 0, '20': 0, // Bills
     'c20': 0, 'c10': 0, 'c5': 0, 'c1': 0 // Coins
   });
-  const [bankTransfers, setBankTransfers] = useState([{ id: Date.now(), amount: 0, reference: '', bank: 'GCash' }]);
+  const [bankTransferAmount, setBankTransferAmount] = useState(0);
   const [showBillingSummary, setShowBillingSummary] = useState(false);
   const [showBillingSummaryModal, setShowBillingSummaryModal] = useState(false);
   const [savedBatchInfo, setSavedBatchInfo] = useState(null);
 
   // Calculations for Summary
   const verifiedClaims = ocrResults?.filter(r => r.verification_status === 'verified') || [];
-  
-  // Robust gross amount calculation: check top-level amount, then nested ocr_data
-  const calculatedGross = verifiedClaims.reduce((sum, r) => {
-    // Try multiple possible locations for the amount
-    const amount = r.amount || 
-                  r.receipt?.ocr_data?.amount || 
-                  (typeof r.receipt?.ocr_data === 'string' ? JSON.parse(r.receipt.ocr_data).amount : 0) ||
-                  0;
-    return sum + Number(amount);
-  }, 0);
-  
-  // Use saved values as fallback if local calculation is 0 and we have saved info
-  // This is critical when reloading the page in the billing stage
-  const totalClaimsAmount = (calculatedGross === 0 && savedBatchInfo?.summary_data?.gross_amount > 0) 
-    ? Number(savedBatchInfo.summary_data.gross_amount) 
-    : calculatedGross;
-    
-  const calculatedServiceFee = Math.floor(totalClaimsAmount / 1000) * 10;
-  const serviceFee = (calculatedServiceFee === 0 && savedBatchInfo?.summary_data?.service_fee > 0)
-    ? Number(savedBatchInfo.summary_data.service_fee)
-    : calculatedServiceFee;
+  const totalClaimsAmount = verifiedClaims.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+  const serviceFee = Math.floor(totalClaimsAmount / 1000) * 10;
   
   // Calculate total deductions from savedDeductions array
   const totalDeductionsAmount = savedDeductions.reduce((sum, d) => sum + Number(d.amount || 0), 0);
   
-  // Calculate net amount
+  // Calculate net amount: if finalNetAmount is set and valid, use it; otherwise calculate fresh
+  // Only use finalNetAmount if it's been explicitly set (greater than 0 or if we're in billing phase)
   const calculatedNet = totalClaimsAmount - serviceFee - totalDeductionsAmount;
   const netAmount = (finalNetAmount > 0 && phase === 'billing') ? finalNetAmount : calculatedNet;
   
@@ -232,8 +213,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     const val = key.startsWith('c') ? Number(key.substring(1)) : Number(key);
     return sum + (val * count);
   }, 0);
-  const bankTotal = bankTransfers.reduce((sum, t) => sum + Number(t.amount || 0), 0);
-  const billingTotal = cashTotal + bankTotal;
+  const billingTotal = cashTotal + Number(bankTransferAmount || 0);
   const billingDiff = netAmount - billingTotal;
   const isBillingBalanced = Math.abs(billingDiff) < 0.01;
 
@@ -300,29 +280,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               if (batch.billing_data.cash_denominations) {
                 setCashDenominations(batch.billing_data.cash_denominations);
               }
-              if (batch.billing_data.bank_transfers) {
-                setBankTransfers(batch.billing_data.bank_transfers);
+              if (batch.billing_data.bank_transfer_amount) {
+                setBankTransferAmount(batch.billing_data.bank_transfer_amount);
               }
-            }
-
-            // Safety: Construct ocrResults from receipts if missing in Summary/Billing phase
-            // This ensures the verified claims breakdown is always available without re-running verification
-            if (!ocrResults || ocrResults.length === 0) {
-              console.log('Constructing ocrResults from loaded receipts...');
-              const results = batch.receipts.map(r => {
-                const ocrData = typeof r.ocr_data === 'string' ? JSON.parse(r.ocr_data) : (r.ocr_data || {});
-                return {
-                  receipt: r,
-                  amount: ocrData.amount || 0,
-                  reference: ocrData.reference || 'N/A',
-                  date: ocrData.date || 'N/A',
-                  confidence: ocrData.confidence || 0,
-                  manualEntry: !!ocrData.manual,
-                  verification_status: r.match_status || 'flagged',
-                  account_holder: r.account_holder
-                };
-              });
-              setOcrResults(results);
             }
           }
         } catch (e) {
@@ -2325,205 +2285,120 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
               {/* Stage 8: Billing View (Main Content) */}
               {phase === 'billing' && (
-                <div className="flex-1 flex flex-col p-10 overflow-hidden animate-in slide-in-from-left duration-500 text-left" style={{ 
-                  background: 'radial-gradient(ellipse 80% 50% at 10% -10%, rgba(16, 185, 129, 0.1) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 90% 100%, rgba(59, 130, 246, 0.08) 0%, transparent 55%), #020c18'
-                }}>
-                  {/* Header */}
-                  <div style={{ marginBottom: '32px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{
-                          padding: '10px 18px',
-                          borderRadius: '12px',
-                          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%)',
-                          border: '1px solid rgba(16, 185, 129, 0.3)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px'
-                        }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="2" y="5" width="20" height="14" rx="2" />
-                            <line x1="2" y1="10" x2="22" y2="10" />
-                          </svg>
-                          <span style={{ 
-                            color: '#10b981', 
-                            fontSize: '11px', 
-                            fontWeight: 900, 
-                            textTransform: 'uppercase', 
-                            letterSpacing: '0.1em',
-                            fontFamily: "'Space Grotesk', sans-serif"
-                          }}>
-                            Billing & Payment
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{
-                          padding: '8px 16px',
-                          borderRadius: '10px',
-                          background: isBillingBalanced ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-                          border: `1px solid ${isBillingBalanced ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
-                        }}>
-                          <span style={{ 
-                            color: isBillingBalanced ? '#10b981' : '#f59e0b', 
-                            fontSize: '11px', 
-                            fontWeight: 800,
-                            fontFamily: "'Space Grotesk', sans-serif"
-                          }}>
-                            {isBillingBalanced ? '✓ Balanced' : `₱${Math.abs(billingDiff).toLocaleString()} Remaining`}
-                          </span>
-                        </div>
-                      </div>
+                <div className="flex-1 flex flex-col p-10 overflow-hidden animate-in slide-in-from-left duration-500 text-left">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-3xl font-black text-white uppercase tracking-tight">Payment Details</h3>
+                    <div className={`px-6 py-2 rounded-full ${isBillingBalanced ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'} text-[12px] font-black uppercase tracking-[0.2em] border transition-all`}>
+                      {isBillingBalanced ? '✓ FUNDS BALANCED' : `₱${Math.abs(billingDiff).toLocaleString()} REMAINING`}
                     </div>
-                    <p style={{ 
-                      color: '#64748b', 
-                      fontSize: '13px', 
-                      fontWeight: 500,
-                      fontFamily: "'Space Grotesk', sans-serif",
-                      margin: 0
-                    }}>
-                      Complete the settlement by scanning the QR code or allocating cash
-                    </p>
                   </div>
-
+                  
                   <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
                     <div className="grid grid-cols-1 gap-8">
-                      {/* Modern Summary Cards */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-                        <div style={{
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          backdropFilter: 'blur(20px)',
-                          border: '1px solid rgba(255, 255, 255, 0.08)',
-                          borderRadius: '24px',
-                          padding: '24px',
-                          textAlign: 'center'
-                        }}>
-                          <div style={{ fontSize: '9px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Amount to Accumulate</div>
-                          <div style={{ fontSize: '28px', fontWeight: 900, color: '#fff', fontFamily: "'Space Mono', monospace" }}>₱{netAmount.toLocaleString()}</div>
-                          <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 700, marginTop: '4px' }}>TARGET SETTLEMENT</div>
-                        </div>
-
-                        <div style={{
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          backdropFilter: 'blur(20px)',
-                          border: '1px solid rgba(255, 255, 255, 0.08)',
-                          borderRadius: '24px',
-                          padding: '24px',
-                          textAlign: 'center'
-                        }}>
-                          <div style={{ fontSize: '9px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Total Prepared</div>
-                          <div style={{ fontSize: '28px', fontWeight: 900, color: isBillingBalanced ? '#10b981' : '#f59e0b', fontFamily: "'Space Mono', monospace" }}>₱{billingTotal.toLocaleString()}</div>
-                          <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 700, marginTop: '4px' }}>CASH + BANK</div>
-                        </div>
-
-                        <div style={{
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          backdropFilter: 'blur(20px)',
-                          border: `1px solid ${billingDiff === 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
-                          borderRadius: '24px',
-                          padding: '24px',
-                          textAlign: 'center'
-                        }}>
-                          <div style={{ fontSize: '9px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Difference</div>
-                          <div style={{ fontSize: '28px', fontWeight: 900, color: billingDiff === 0 ? '#10b981' : '#ef4444', fontFamily: "'Space Mono', monospace" }}>
-                            {billingDiff === 0 ? 'BALANCED' : `₱${Math.abs(billingDiff).toLocaleString()}`}
+                      {/* Summary Cards */}
+                      <div className="grid grid-cols-3 gap-6">
+                        <div className="p-8 bg-white/5 rounded-[32px] border border-white/10 text-center">
+                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Net Amount Due</div>
+                          <div className="text-3xl font-black text-white tracking-tighter">
+                            ₱{netAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                           </div>
-                          <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 700, marginTop: '4px' }}>{billingDiff > 0 ? 'SHORTFALL' : 'EXCESS'}</div>
+                          <div className="text-[9px] text-slate-500 font-medium uppercase mt-2">
+                            Target amount
+                          </div>
+                        </div>
+                        <div className="p-8 bg-white/5 rounded-[32px] border border-white/10 text-center">
+                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Total Prepared</div>
+                          <div className={`text-3xl font-black ${isBillingBalanced ? 'text-green-400' : 'text-amber-400'} tracking-tighter`}>
+                            ₱{billingTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                          </div>
+                          <div className="text-[9px] text-slate-500 font-medium uppercase mt-2">
+                            Cash + Bank
+                          </div>
+                        </div>
+                        <div className="p-8 bg-white/5 rounded-[32px] border border-white/10 text-center">
+                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Difference</div>
+                          <div className={`text-3xl font-black ${billingDiff === 0 ? 'text-green-400' : 'text-red-400'} tracking-tighter`}>
+                            {billingDiff === 0 ? '✓' : `₱${Math.abs(billingDiff).toLocaleString()}`}
+                          </div>
+                          <div className="text-[9px] text-slate-500 font-medium uppercase mt-2">
+                            {billingDiff === 0 ? 'Balanced' : billingDiff > 0 ? 'Short' : 'Over'}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Payment Methods Grid */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                        {/* QR Code Section */}
-                        <div style={{
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          backdropFilter: 'blur(20px)',
-                          border: '1px solid rgba(255, 255, 255, 0.08)',
-                          borderRadius: '32px',
-                          padding: '32px'
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <span style={{ fontSize: '16px' }}>📱</span>
-                            </div>
-                            <h4 style={{ fontSize: '13px', fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.1em' }}>GCash Payment</h4>
+                      {/* QR Code Payment Section */}
+                      <div className="bg-white/5 rounded-[40px] border border-white/10 p-10">
+                        <h4 className="text-sm font-black text-white uppercase tracking-widest mb-8">GCash Payment</h4>
+                        
+                        <div className="flex flex-col items-center justify-center gap-6">
+                          {/* QR Code Image */}
+                          <div className="p-6 bg-white rounded-3xl shadow-2xl">
+                            <img 
+                              src="/src/assets/qr-jonarld.jpg" 
+                              alt="GCash QR Code" 
+                              className="w-64 h-64 object-contain"
+                            />
                           </div>
                           
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-                            <div style={{ padding: '20px', background: '#fff', borderRadius: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
-                              <img src={qrJonarld} alt="QR Code" style={{ width: '200px', height: '200px', objectFit: 'contain' }} />
+                          {/* Payment Instructions */}
+                          <div className="text-center space-y-2">
+                            <div className="text-lg font-black text-white">
+                              Scan to Pay via GCash
                             </div>
-                            <div style={{ textAlign: 'center' }}>
-                              <div style={{ fontSize: '16px', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>Scan to Pay</div>
-                              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Please send exact net amount</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Allocation Details */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                          <div style={{
-                            background: 'rgba(255, 255, 255, 0.03)',
-                            backdropFilter: 'blur(20px)',
-                            border: '1px solid rgba(255, 255, 255, 0.08)',
-                            borderRadius: '24px',
-                            padding: '24px'
-                          }}>
-                            <div style={{ fontSize: '10px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '16px' }}>Account Info</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>Name</span>
-                                <span style={{ fontSize: '12px', color: '#fff', fontWeight: 800 }}>Jonarld</span>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>Method</span>
-                                <span style={{ fontSize: '12px', color: '#3b82f6', fontWeight: 800 }}>GCash Transfer</span>
-                              </div>
+                            <div className="text-sm text-slate-400 font-medium">
+                              Send ₱{netAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })} to complete the transaction
                             </div>
                           </div>
 
-                          <div style={{
-                            background: 'rgba(16, 185, 129, 0.05)',
-                            border: '1px solid rgba(16, 185, 129, 0.1)',
-                            borderRadius: '24px',
-                            padding: '24px',
-                            flex: 1,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            textAlign: 'center',
-                            gap: '12px'
-                          }}>
-                            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>💰</div>
-                            <div>
-                              <div style={{ fontSize: '13px', fontWeight: 900, color: '#fff', marginBottom: '4px' }}>Amount to Accumulate</div>
-                              <div style={{ fontSize: '24px', fontWeight: 900, color: '#10b981', fontFamily: "'Space Mono', monospace" }}>₱{netAmount.toLocaleString()}</div>
+                          {/* Payment Details */}
+                          <div className="w-full max-w-md space-y-3 mt-4">
+                            <div className="flex items-center justify-between p-4 bg-white/[0.02] rounded-xl border border-white/5">
+                              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Account Name</span>
+                              <span className="text-sm font-black text-white">Jonarld</span>
+                            </div>
+                            <div className="flex items-center justify-between p-4 bg-white/[0.02] rounded-xl border border-white/5">
+                              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Payment Method</span>
+                              <span className="text-sm font-black text-blue-400">GCash</span>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Instructions */}
-                      <div style={{
-                        background: 'rgba(59, 130, 246, 0.05)',
-                        border: '1px solid rgba(59, 130, 246, 0.1)',
-                        borderRadius: '20px',
-                        padding: '20px',
-                        display: 'flex',
-                        gap: '16px',
-                        alignItems: 'center'
-                      }}>
-                        <span style={{ fontSize: '20px' }}>💡</span>
-                        <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500, margin: 0, lineHeight: 1.6 }}>
-                          Accumulate the total net amount by allocating cash in the sidebar. Once the difference reaches zero, the batch will be balanced and ready for finalization.
-                        </p>
+                      {/* Info Box */}
+                      <div className="p-6 bg-blue-500/5 rounded-2xl border border-blue-500/10 flex gap-4 items-start">
+                        <div className="text-xl">💳</div>
+                        <div className="text-[11px] text-blue-200/60 leading-relaxed font-medium">
+                          Scan the QR code using your GCash app to send the payment. 
+                          You can also enter cash denominations and bank transfer details in the sidebar to track the funds received.
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
+
+                              {Object.values(cashDenominations).every(c => c === 0) && (
+                                  <div className="col-span-5 p-8 border-2 border-dashed border-white/5 rounded-3xl text-center text-[11px] font-black text-slate-600 uppercase tracking-widest">
+                                    No Cash Allocated
+                                  </div>
+                              )}
+
+                              {/* Bank Transfer Bar */}
+                          {(billingMethod === 'bank' || billingMethod === 'both') && (
+                            <div className="p-8 bg-blue-500/5 rounded-3xl border border-blue-500/10 flex items-center justify-between">
+                              <div className="flex items-center gap-6">
+                                <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center text-2xl text-blue-400">🏦</div>
+                                <div>
+                                  <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Electronic Transfer</div>
+                                  <div className="text-sm font-bold text-white uppercase tracking-tight">Bank-to-Bank Settlement</div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Prepared Amount</div>
+                                <div className="text-2xl font-black text-blue-400 tracking-tighter">₱{Number(bankTransferAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>
+                              </div>
+                            </div>
+                          )}
 
               {/* Loading & Start States */}
               {((phase === 'ocr' && !showOcrPreview) || (phase === 'verify' && !showVerifyPreview) || (phase === 'finalize' && !finalizedBatch)) && (
@@ -2655,7 +2530,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               onChange={onChange}
               onComplete={onComplete}
               imgRef={imgRef}
-              src={phase === 'billing' ? qrJonarld : (current ? `http://localhost:8000/api/receipts/${current.id}/image` : '')}
+              src={current ? `http://localhost:8000/api/receipts/${current.id}/image` : ''}
               onLoad={onImageLoad}
               disabled={true}
               category={currentCategory}
@@ -2678,7 +2553,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
             {phase === 'verify' && (
               <VerificationStage
-                batchId={batchId}
                 isVerifying={isVerifying}
                 ocrResults={ocrResults}
                 onStartVerification={startVerifyPhase}
@@ -2687,7 +2561,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   setPhase('ocr');
                   setShowOcrPreview(true);
                 }}
-                setOcrResults={setOcrResults}
               />
             )}
 
@@ -2934,302 +2807,103 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               )}
 
             {phase === 'billing' && (
-              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '24px' }}>
-                {/* Header Card */}
-                <div style={{
-                  padding: '24px',
-                  borderRadius: '20px',
-                  background: isBillingBalanced ? 'rgba(16, 185, 129, 0.08)' : 'rgba(255, 255, 255, 0.03)',
-                  border: `1px solid ${isBillingBalanced ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.08)'}`,
-                  textAlign: 'center',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}>
-                  <div style={{ fontSize: '32px' }}>{isBillingBalanced ? '📊' : '⚖️'}</div>
-                  <div>
-                    <h4 style={{ color: '#fff', fontSize: '13px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Stage 8: Billing</h4>
-                    <p style={{ color: '#64748b', fontSize: '10px', fontWeight: 600, margin: '4px 0 8px 0' }}>Prepare the funds to tally with the net total.</p>
-                    <div style={{ 
-                      background: 'rgba(0, 0, 0, 0.3)', 
-                      padding: '8px 16px', 
-                      borderRadius: '12px',
-                      border: '1px solid rgba(255, 255, 255, 0.05)'
-                    }}>
-                      <div style={{ fontSize: '8px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Target to Accumulate</div>
-                      <div style={{ fontSize: '18px', fontWeight: 900, color: '#10b981', fontFamily: "'Space Mono', monospace" }}>₱{netAmount.toLocaleString()}</div>
-                    </div>
-                  </div>
+              <div className="flex flex-col gap-6 animate-in slide-in-from-right-4 duration-300">
+                <div className={`${isBillingBalanced ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/10 border-red-500/20'} border rounded-[32px] p-8 text-center transition-all`}>
+                  <div className="text-4xl mb-4">{isBillingBalanced ? '📊' : '⚖️'}</div>
+                  <h4 className="text-white font-black uppercase tracking-widest text-sm mb-2">Stage 8: Billing</h4>
+                  <p className="text-slate-400 text-[10px] font-medium leading-relaxed">
+                    Prepare the funds to tally with the net total.
+                  </p>
                 </div>
 
-                {/* Main Inputs */}
-                <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {/* Method Toggle */}
-                  <div style={{
-                    display: 'flex',
-                    padding: '4px',
-                    background: 'rgba(0, 0, 0, 0.4)',
-                    borderRadius: '14px',
-                    border: '1px solid rgba(255, 255, 255, 0.08)'
-                  }}>
+                <div className="space-y-6">
+                  {/* Method Selection Toggles */}
+                  <div className="flex p-1 bg-black/40 rounded-2xl border border-white/5">
                     {['cash', 'bank', 'both'].map(method => (
                       <button
                         key={method}
                         onClick={() => setBillingMethod(method)}
-                        style={{
-                          flex: 1,
-                          padding: '10px',
-                          borderRadius: '10px',
-                          fontSize: '10px',
-                          fontWeight: 800,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.08em',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          background: billingMethod === method ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                          color: billingMethod === method ? '#fff' : '#64748b'
-                        }}
+                        className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                          billingMethod === method ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300'
+                        }`}
                       >
                         {method}
                       </button>
                     ))}
                   </div>
 
-                  {/* Cash Section */}
-                  {(billingMethod === 'cash' || billingMethod === 'both') && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div style={{ fontSize: '9px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.12em', paddingLeft: '8px' }}>Cash Denominations</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  {/* Dynamic Inputs Based on Method */}
+                  <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar space-y-4">
+                    {(billingMethod === 'cash' || billingMethod === 'both') && (
+                      <div className="space-y-3">
+                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-2">Cash Denominations</div>
                         {[1000, 500, 200, 100, 50, 20].map(val => (
-                          <div key={val} style={{
-                            background: 'rgba(255, 255, 255, 0.02)',
-                            border: '1px solid rgba(255, 255, 255, 0.06)',
-                            borderRadius: '12px',
-                            padding: '10px 14px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px'
-                          }}>
-                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', width: '40px' }}>₱{val}</span>
+                          <div key={val} className="flex items-center gap-3">
+                            <div className="w-12 text-[10px] font-bold text-slate-400">₱{val}</div>
                             <input 
                               type="number" 
                               min="0"
                               value={cashDenominations[val] || ''}
                               onChange={(e) => setCashDenominations(prev => ({ ...prev, [val]: parseInt(e.target.value) || 0 }))}
-                              style={{
-                                flex: 1,
-                                background: 'rgba(0, 0, 0, 0.3)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '8px',
-                                padding: '6px 10px',
-                                color: '#fff',
-                                fontSize: '12px',
-                                fontWeight: 800,
-                                textAlign: 'right',
-                                outline: 'none',
-                                fontFamily: "'Space Mono', monospace"
-                              }}
-                              placeholder="0"
+                              className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white text-xs font-bold focus:border-amber-500 outline-none"
+                              placeholder="Count"
                             />
                           </div>
                         ))}
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div className="h-[1px] bg-white/5 my-2" />
                         {[20, 10, 5, 1].map(val => (
-                          <div key={`c${val}`} style={{
-                            background: 'rgba(255, 255, 255, 0.02)',
-                            border: '1px solid rgba(255, 255, 255, 0.06)',
-                            borderRadius: '12px',
-                            padding: '10px 14px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px'
-                          }}>
-                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', width: '40px' }}>₵{val}</span>
+                          <div key={`c${val}`} className="flex items-center gap-3">
+                            <div className="w-12 text-[10px] font-bold text-slate-400">₱{val}</div>
                             <input 
                               type="number" 
                               min="0"
                               value={cashDenominations[`c${val}`] || ''}
                               onChange={(e) => setCashDenominations(prev => ({ ...prev, [`c${val}`]: parseInt(e.target.value) || 0 }))}
-                              style={{
-                                flex: 1,
-                                background: 'rgba(0, 0, 0, 0.3)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '8px',
-                                padding: '6px 10px',
-                                color: '#fff',
-                                fontSize: '12px',
-                                fontWeight: 800,
-                                textAlign: 'right',
-                                outline: 'none',
-                                fontFamily: "'Space Mono', monospace"
-                              }}
-                              placeholder="0"
+                              className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white text-xs font-bold focus:border-amber-500 outline-none"
+                              placeholder="Count"
                             />
                           </div>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Bank Section */}
-                  {(billingMethod === 'bank' || billingMethod === 'both') && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '8px', paddingRight: '4px' }}>
-                        <div style={{ fontSize: '9px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Bank Transfers</div>
-                        <button 
-                          onClick={() => {
-                            const remaining = Math.max(0, netAmount - billingTotal);
-                            if (remaining > 0) {
-                              setBankTransfers(prev => [...prev, { id: Date.now(), amount: remaining, reference: '', bank: 'GCash' }]);
-                            }
-                          }}
-                          style={{
-                            background: 'rgba(59, 130, 246, 0.1)',
-                            border: '1px solid rgba(59, 130, 246, 0.2)',
-                            borderRadius: '6px',
-                            padding: '2px 8px',
-                            color: '#3b82f6',
-                            fontSize: '9px',
-                            fontWeight: 900,
-                            cursor: 'pointer',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          + Add Transfer
-                        </button>
-                      </div>
-
-                      {bankTransfers.map((transfer, idx) => (
-                        <div key={transfer.id} style={{
-                          background: 'rgba(59, 130, 246, 0.04)',
-                          border: '1px solid rgba(59, 130, 246, 0.15)',
-                          borderRadius: '16px',
-                          padding: '16px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '10px'
-                        }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '10px', fontWeight: 800, color: '#3b82f6', textTransform: 'uppercase' }}>Transfer #{idx + 1}</span>
-                            {bankTransfers.length > 1 && (
-                              <button 
-                                onClick={() => setBankTransfers(prev => prev.filter(t => t.id !== transfer.id))}
-                                style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '14px', cursor: 'pointer', padding: '0 4px' }}
-                              >
-                                &times;
-                              </button>
-                            )}
-                          </div>
-                          <div style={{ position: 'relative' }}>
-                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#3b82f6', fontWeight: 900, fontSize: '12px' }}>₱</span>
-                            <input 
-                              type="number" 
-                              min="0"
-                              value={transfer.amount || ''}
-                              onChange={(e) => {
-                                const val = Math.max(0, parseFloat(e.target.value) || 0);
-                                setBankTransfers(prev => prev.map(t => t.id === transfer.id ? { ...t, amount: val } : t));
-                              }}
-                              style={{
-                                width: '100%',
-                                background: 'rgba(0, 0, 0, 0.3)',
-                                border: '1px solid rgba(59, 130, 246, 0.2)',
-                                borderRadius: '10px',
-                                padding: '10px 10px 10px 28px',
-                                color: '#fff',
-                                fontSize: '14px',
-                                fontWeight: 900,
-                                outline: 'none',
-                                fontFamily: "'Space Mono', monospace"
-                              }}
-                              placeholder="0.00"
-                            />
-                            <button 
-                              onClick={() => {
-                                const otherTotal = billingTotal - Number(transfer.amount || 0);
-                                const maxVal = Math.max(0, netAmount - otherTotal);
-                                setBankTransfers(prev => prev.map(t => t.id === transfer.id ? { ...t, amount: maxVal } : t));
-                              }}
-                              style={{
-                                position: 'absolute',
-                                right: '10px',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                background: 'rgba(59, 130, 246, 0.2)',
-                                border: 'none',
-                                borderRadius: '4px',
-                                padding: '2px 6px',
-                                color: '#3b82f6',
-                                fontSize: '8px',
-                                fontWeight: 900,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              MAX
-                            </button>
-                          </div>
+                    {(billingMethod === 'bank' || billingMethod === 'both') && (
+                      <div className="space-y-3 pt-4 border-t border-white/5">
+                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-2">Bank Transfer Amount</div>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xs">₱</span>
                           <input 
-                            type="text"
-                            placeholder="Reference No. (Optional)"
-                            value={transfer.reference}
-                            onChange={(e) => setBankTransfers(prev => prev.map(t => t.id === transfer.id ? { ...t, reference: e.target.value } : t))}
-                            style={{
-                              background: 'rgba(0, 0, 0, 0.2)',
-                              border: '1px solid rgba(255, 255, 255, 0.05)',
-                              borderRadius: '8px',
-                              padding: '8px 12px',
-                              color: 'rgba(255, 255, 255, 0.7)',
-                              fontSize: '10px',
-                              fontWeight: 600,
-                              outline: 'none'
-                            }}
+                            type="number" 
+                            min="0"
+                            value={bankTransferAmount || ''}
+                            onChange={(e) => setBankTransferAmount(Math.max(0, parseFloat(e.target.value) || 0))}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white text-sm font-bold focus:border-blue-500 outline-none"
+                            placeholder="0.00"
                           />
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer Actions */}
-                <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {!isBillingBalanced && (
-                    <div style={{
-                      padding: '12px',
-                      borderRadius: '12px',
-                      background: 'rgba(239, 68, 68, 0.08)',
-                      border: '1px solid rgba(239, 68, 68, 0.2)',
-                      textAlign: 'center'
-                    }}>
-                      <span style={{ fontSize: '10px', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {billingDiff > 0 ? `₱${billingDiff.toLocaleString()} Remaining` : `₱${Math.abs(billingDiff).toLocaleString()} Overallocated`}
-                      </span>
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
 
                   <button 
                     disabled={!isBillingBalanced}
-                    onClick={async () => {
-                      try {
+                    onClick={async () => {                      try {
                         const res = await fetch(`http://localhost:8000/api/batches/${batchId}/status`, {
                           method: 'PATCH',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ 
                             checker_status: 'billing_ready',
+                            // Re-send summary_data so both are stored together (keep existing deductions array)
                             summary_data: {
                               gross_amount: totalClaimsAmount,
                               service_fee: serviceFee,
-                              deductions: savedDeductions,
+                              deductions: savedDeductions, // Use the saved deductions array
                               net_amount: finalNetAmount || netAmount
                             },
                             billing_data: {
                               method: billingMethod,
                               cash_denominations: cashDenominations,
-                              bank_transfers: bankTransfers,
+                              bank_transfer_amount: bankTransferAmount,
                               total_prepared: billingTotal
                             }
                           }),
@@ -3243,75 +2917,29 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                         alert(`Failed to save billing: ${e.message}. Please try again.`);
                       }
                     }}
-                    style={{
-                      width: '100%',
-                      padding: '18px',
-                      borderRadius: '16px',
-                      background: isBillingBalanced ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(255, 255, 255, 0.05)',
-                      border: 'none',
-                      color: isBillingBalanced ? '#fff' : 'rgba(255, 255, 255, 0.2)',
-                      fontSize: '11px',
-                      fontWeight: 900,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.15em',
-                      cursor: isBillingBalanced ? 'pointer' : 'not-allowed',
-                      boxShadow: isBillingBalanced ? '0 10px 30px rgba(16, 185, 129, 0.3)' : 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '10px',
-                      transition: 'all 0.2s'
-                    }}
+                    className="w-full py-5 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black text-[11px] uppercase tracking-[0.2em] hover:scale-[1.02] transition-all shadow-2xl shadow-green-500/20 flex items-center justify-center gap-3 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
                   >
                     Finish & Generate Billing ✨
                   </button>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.05)' }} />
-                    <button 
-                      onClick={() => setPhase('summary')}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#64748b',
-                        fontSize: '9px',
-                        fontWeight: 900,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.15em',
-                        cursor: 'pointer',
-                        transition: 'color 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
-                      onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}
-                    >
-                      ← Back to Summary
-                    </button>
-                    <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.05)' }} />
-                   </div>
-                   
-                   <div style={{
-                     display: 'flex',
-                     alignItems: 'center',
-                     justifyContent: 'center',
-                     gap: '12px',
-                     padding: '8px 0'
-                   }}>
-                     <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.05)' }} />
-                     <span style={{
-                       fontSize: '9px',
-                       fontWeight: 900,
-                       color: '#64748b',
-                       textTransform: 'uppercase',
-                       letterSpacing: '0.2em',
-                       whiteSpace: 'nowrap',
-                       fontFamily: "'Space Grotesk', system-ui, sans-serif"
-                     }}>
-                       Stage 8 of 8: Billing & Payment
-                     </span>
-                     <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.05)' }} />
-                   </div>
-                 </div>
-               </div>
+                  {/* Hint when button is disabled */}
+                  {!isBillingBalanced && (
+                    <div className="text-center text-[10px] font-bold text-red-400/80 px-2">
+                      {billingDiff > 0
+                        ? `₱${billingDiff.toLocaleString('en-PH', { minimumFractionDigits: 2 })} still unallocated`
+                        : `₱${Math.abs(billingDiff).toLocaleString('en-PH', { minimumFractionDigits: 2 })} over-allocated`}
+                      {' — funds must match net amount exactly.'}
+                    </div>
+                  )}
+                  
+                  <button 
+                    onClick={() => setPhase('summary')}
+                    className="w-full py-3 text-[9px] font-black text-slate-600 uppercase tracking-widest hover:text-white transition-colors"
+                  >
+                    ← Back to Summary
+                  </button>
+                </div>
+              </div>
             )}
             </div>
           </div>
@@ -3341,20 +2969,14 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
           netAmount={netAmount}
           billingMethod={billingMethod}
           cashDenominations={cashDenominations}
-          bankTransfers={bankTransfers}
+          bankTransferAmount={bankTransferAmount}
           totalPrepared={billingTotal}
-          verifiedClaims={verifiedClaims.map(r => {
-            const amount = r.amount || 
-                          r.receipt?.ocr_data?.amount || 
-                          (typeof r.receipt?.ocr_data === 'string' ? JSON.parse(r.receipt.ocr_data).amount : 0) ||
-                          0;
-            return {
-              account_holder: r.receipt?.account_holder || r.account_holder,
-              amount: amount,
-              reference: r.reference || r.receipt?.ocr_data?.reference || 'N/A',
-              source_label: r.receipt?.source_label || r.source_label,
-            };
-          })}
+          verifiedClaims={verifiedClaims.map(r => ({
+            account_holder: r.receipt?.account_holder || r.account_holder,
+            amount: r.amount,
+            reference: r.reference,
+            source_label: r.receipt?.source_label || r.source_label,
+          }))}
         />
       </>
     )}
@@ -3379,27 +3001,6 @@ function detectAccountFromPhone(text) {
       return account;
     }
   }
-  return null;
-}
-
-function detectAccount(text) {
-  // 1. Try phone number first
-  const phoneMatch = detectAccountFromPhone(text);
-  if (phoneMatch) return phoneMatch;
-
-  // 2. Try name patterns if phone is missing or +63 only
-  // Patterns provided by user for specific account holders
-  const lower = text.toLowerCase();
-  
-  // Kristine: Kr....e m.. t.
-  if (/kr.*e\s+m.*t/i.test(lower)) return 'Kristine';
-  
-  // Nixie: ni....e j...l ...p.
-  if (/ni.*e\s+j.*l.*p/i.test(lower)) return 'Nixie';
-  
-  // Babilyn: b....n.....t
-  if (/b.*n.*t/i.test(lower)) return 'Babilyn';
-
   return null;
 }
 
@@ -3430,34 +3031,17 @@ function extractFields(text) {
 
   for (let i = 0; i < lines.length; i++) {
     if (!refLabelRe.test(lines[i])) continue;
-    
-    // Check same line
     const afterLabel = lines[i].replace(refLabelRe, '').trim();
     const fromSameLine = pull13(afterLabel);
     if (fromSameLine) { reference = fromSameLine; break; }
-    
-    // Check combined with next line (in case it's cut/wrapped)
-    if (lines[i + 1]) {
-      const combined = (afterLabel + lines[i + 1]).replace(/\s/g, '');
-      const matchCombined = combined.match(/\d{13}/);
-      if (matchCombined) {
-        reference = matchCombined[0];
-        break;
-      }
-    }
+    const fromNextLine = pull13(lines[i + 1] || '');
+    if (fromNextLine) { reference = fromNextLine; break; }
   }
 
-  // Fallback: search all lines for any 13-digit sequence, even if split across two lines
   if (!reference) {
-    for (let i = 0; i < lines.length; i++) {
-      const fromLine = pull13(lines[i]);
-      if (fromLine) { reference = fromLine; break; }
-      
-      if (lines[i+1]) {
-        const combined = (lines[i] + lines[i+1]).replace(/\s/g, '');
-        const m = combined.match(/\d{13}/);
-        if (m) { reference = m[0]; break; }
-      }
+    for (const line of lines) {
+      const found = pull13(line);
+      if (found) { reference = found; break; }
     }
   }
 
@@ -3492,7 +3076,7 @@ function extractFields(text) {
     }
   }
 
-  return { amount, reference, date: extractDate(lines), account_holder: detectAccount(text) };
+  return { amount, reference, date: extractDate(lines), account_holder: detectAccountFromPhone(text) };
 }
 
 function extractDate(lines) {

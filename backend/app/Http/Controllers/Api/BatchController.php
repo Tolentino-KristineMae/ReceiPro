@@ -13,69 +13,14 @@ class BatchController extends Controller
     /** List all batches with their receipts */
     public function index()
     {
-        // 1. Fetch all batches in chronological order to check/fix naming
-        $allBatches = Batch::orderBy('created_at', 'asc')->get();
-        
-        $needsFix = false;
-        $seenNames = [];
-        $seenFinals = [];
-        $finalizedIndex = 0;
-        foreach ($allBatches as $index => $b) {
-            $expectedName = 'Batch #' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
-            $expectedFinal = null;
-            
-            if ($b->final_batch_number) {
-                $finalizedIndex++;
-                $expectedFinal = 'B-' . str_pad($finalizedIndex, 4, '0', STR_PAD_LEFT);
-            }
-
-            // Check Display Name
-            if (preg_match('/^Batch #\d+$/', $b->name)) {
-                if ($b->name !== $expectedName || in_array($b->name, $seenNames)) {
-                    $needsFix = true;
-                    break;
-                }
-                $seenNames[] = $b->name;
-            }
-
-            // Check Final Batch Number
-            if ($b->final_batch_number) {
-                if ($b->final_batch_number !== $expectedFinal || in_array($b->final_batch_number, $seenFinals)) {
-                    $needsFix = true;
-                    break;
-                }
-                $seenFinals[] = $b->final_batch_number;
-            }
-        }
-
-        // 2. If duplicates or gaps found, perform a deep re-sequence
-        if ($needsFix) {
-            \Log::info("Duplicate or gap detected in batch names. Re-sequencing...");
-            $finalizedCount = 0;
-            foreach ($allBatches as $index => $b) {
-                // Fix Display Name
-                if (preg_match('/^Batch #\d+$/', $b->name)) {
-                    $newName = 'Batch #' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
-                    if ($b->name !== $newName) {
-                        $b->update(['name' => $newName]);
-                    }
-                }
-
-                // Fix Final Batch Number (B-XXXX)
-                if ($b->final_batch_number) {
-                    $finalizedCount++;
-                    $newFinal = 'B-' . str_pad($finalizedCount, 4, '0', STR_PAD_LEFT);
-                    if ($b->final_batch_number !== $newFinal) {
-                        $b->update(['final_batch_number' => $newFinal]);
-                    }
-                }
-            }
-        }
-
-        // 3. Return final list in descending order for the dashboard
         $batches = Batch::with(['receipts' => function ($query) {
-            $query->orderBy('created_at', 'asc')->with('transaction');
+            $query->orderBy('created_at', 'asc');
         }])->orderBy('created_at', 'desc')->get();
+        
+        // Debug logging
+        foreach ($batches as $batch) {
+            \Log::info("Batch {$batch->id}: {$batch->receipts->count()} receipts");
+        }
         
         return response()->json($batches);
     }
@@ -83,17 +28,8 @@ class BatchController extends Controller
     /** Create a named batch (before uploading receipts) */
     public function store(Request $request)
     {
-        // Find the highest sequence number among auto-generated names
-        $allBatches = Batch::all();
-        $maxNum = 0;
-        foreach ($allBatches as $b) {
-            if (preg_match('/Batch #(\d+)/', $b->name, $matches)) {
-                $num = (int)$matches[1];
-                if ($num > $maxNum) $maxNum = $num;
-            }
-        }
-        
-        $name = $request->name ?: 'Batch #' . str_pad($maxNum + 1, 3, '0', STR_PAD_LEFT);
+        $count = Batch::count() + 1;
+        $name = $request->name ?: 'Batch #' . str_pad($count, 3, '0', STR_PAD_LEFT);
 
         $batch = Batch::create([
             'batch_number'   => 'BATCH-' . now()->format('Ymd-His') . '-' . Str::random(4),
@@ -108,7 +44,7 @@ class BatchController extends Controller
     public function show(Batch $batch)
     {
         return response()->json($batch->load(['receipts' => function ($query) {
-            $query->orderBy('created_at', 'asc')->with('transaction');
+            $query->orderBy('created_at', 'asc');
         }]));
     }
 
@@ -132,11 +68,9 @@ class BatchController extends Controller
         }
 
         // On finalization: assign final batch number AND link matching transactions
-        if ($request->checker_status === 'finalized') {
-            if (!$batch->final_batch_number) {
-                $count = Batch::whereNotNull('final_batch_number')->count() + 1;
-                $data['final_batch_number'] = 'B-' . str_pad($count, 4, '0', STR_PAD_LEFT);
-            }
+        if ($request->checker_status === 'finalized' && !$batch->final_batch_number) {
+            $count = Batch::whereNotNull('final_batch_number')->count() + 1;
+            $data['final_batch_number'] = 'B-' . str_pad($count, 4, '0', STR_PAD_LEFT);
 
             $batch->update($data);
 
@@ -144,63 +78,38 @@ class BatchController extends Controller
             $batch->load(['receipts' => function ($query) {
                 $query->orderBy('created_at', 'asc');
             }]);
-
             foreach ($batch->receipts as $receipt) {
-                // If already linked, skip
-                if ($receipt->transaction_id) continue;
-
-                $ocrData = $receipt->ocr_data;
-                if (!$ocrData || !isset($ocrData['amount'])) continue;
-
-                $reference = trim($ocrData['reference'] ?? '');
-                $amount = (float)$ocrData['amount'];
+                $ref    = $receipt->ocr_data['reference'] ?? null;
+                $amount = isset($receipt->ocr_data['amount'])
+                    ? (float) $receipt->ocr_data['amount']
+                    : null;
                 $holder = $receipt->account_holder;
 
-                if ($amount <= 0) continue;
+                if (!$ref && !$amount) continue;
 
-                // Robust Matching Logic (Same as in process method)
-                $digitReference = preg_replace('/\D+/', '', $reference);
-                $partialMatches = [];
-                if (strlen($digitReference) >= 5) $partialMatches[] = substr($digitReference, -5);
-                if (strlen($digitReference) >= 4) $partialMatches[] = substr($digitReference, -4);
-                $partialMatches = array_unique($partialMatches);
+                // Match by reference first (most precise), then by amount + account_holder
+                $transaction = null;
 
-                $query = \App\Models\Transaction::where('amount', $amount)
-                    ->whereNull('batch_id') // Only link unlinked transactions
-                    ->where(function($subQuery) use ($reference, $partialMatches, $receipt) {
-                        if ($reference && $reference !== 'MISSING') {
-                            $subQuery->where('reference', $reference)
-                                    ->orWhere('label', $reference);
-
-                            foreach ($partialMatches as $part) {
-                                $subQuery->orWhere('reference', 'like', '%' . $part)
-                                        ->orWhere('label', 'like', '%' . $part);
-                            }
-                        }
-
-                        if ($receipt->category === 'others' && $receipt->source_label) {
-                            $subQuery->orWhere('label', trim($receipt->source_label));
-                        }
-                    });
-
-                if ($receipt->category === 'gcash' && $holder) {
-                    $query->where('account_holder', $holder);
+                if ($ref) {
+                    $transaction = \App\Models\Transaction::where('reference', $ref)
+                        ->whereNull('batch_id')
+                        ->first();
                 }
 
-                $transaction = $query->first();
+                if (!$transaction && $amount && $holder) {
+                    $transaction = \App\Models\Transaction::where('account_holder', $holder)
+                        ->whereRaw('ABS(amount - ?) < 0.01', [$amount])
+                        ->whereNull('batch_id')
+                        ->first();
+                }
 
                 if ($transaction) {
-                    $receipt->update([
-                        'transaction_id' => $transaction->id,
-                        'match_status'   => 'verified'
-                    ]);
                     $transaction->update(['batch_id' => $batch->id]);
-                    \Log::info("Auto-linked receipt {$receipt->id} to transaction {$transaction->id} during finalization");
                 }
             }
 
             return response()->json($batch->fresh()->load(['receipts' => function ($query) {
-                $query->orderBy('created_at', 'asc')->with('transaction');
+                $query->orderBy('created_at', 'asc');
             }]));
         }
 
@@ -213,7 +122,7 @@ class BatchController extends Controller
         }
 
         return response()->json($batch->fresh()->load(['receipts' => function ($query) {
-            $query->orderBy('created_at', 'asc')->with('transaction');
+            $query->orderBy('created_at', 'asc');
         }]));
     }
 
@@ -249,20 +158,12 @@ class BatchController extends Controller
 
         $transaction = \App\Models\Transaction::findOrFail($request->transaction_id);
 
-        // Prevent linking a transaction that's already claimed by another batch
-        if ($transaction->batch_id && $transaction->batch_id != $batch->id) {
-            return response()->json([
-                'error' => 'Transaction already claimed by another batch',
-                'claimed_batch_id' => $transaction->batch_id
-            ], 409);
-        }
-
         $receipt->update([
             'match_status' => 'verified',
             'transaction_id' => $transaction->id
         ]);
 
-        // Link the transaction to this batch (idempotent)
+        // Link the transaction to this batch
         $transaction->update(['batch_id' => $batch->id]);
 
         return response()->json($receipt->fresh());
@@ -275,27 +176,29 @@ class BatchController extends Controller
         
         $batch->delete();
 
-        // Re-sequence to fix duplicates and gaps
-        // We sort by creation date to keep the historical order
-        $allBatches = Batch::orderBy('created_at', 'asc')->get();
-        
-        $finalizedCount = 0;
-        foreach ($allBatches as $index => $b) {
-            // 1. Re-sequence the display Name (Batch #001, Batch #002...)
-            // Only update if it matches our standard naming pattern
-            $standardName = 'Batch #' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
-            if (preg_match('/Batch #\d+/', $b->name)) {
-                if ($b->name !== $standardName) {
-                    $b->update(['name' => $standardName]);
-                }
-            }
+        // 1. Re-sequence final_batch_number for all remaining finalized batches
+        $finalizedBatches = Batch::whereNotNull('final_batch_number')
+            ->orderBy('created_at', 'asc')
+            ->get();
 
-            // 2. Re-sequence the Final Batch Number (B-0001, B-0002...)
-            if ($b->final_batch_number) {
-                $finalizedCount++;
-                $newFinal = 'B-' . str_pad($finalizedCount, 4, '0', STR_PAD_LEFT);
-                if ($b->final_batch_number !== $newFinal) {
-                    $b->update(['final_batch_number' => $newFinal]);
+        foreach ($finalizedBatches as $index => $b) {
+            $newNumber = 'B-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT);
+            if ($b->final_batch_number !== $newNumber) {
+                $b->update(['final_batch_number' => $newNumber]);
+            }
+        }
+
+        // 2. Re-sequence display names for non-finalized batches that follow the "Batch #XXX" pattern
+        $openBatches = Batch::whereNull('final_batch_number')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        foreach ($openBatches as $index => $b) {
+            // Only update if the name follows the "Batch #XXX" pattern
+            if (preg_match('/^Batch #\d+$/', $b->name)) {
+                $newName = 'Batch #' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+                if ($b->name !== $newName) {
+                    $b->update(['name' => $newName]);
                 }
             }
         }
@@ -348,7 +251,6 @@ class BatchController extends Controller
                 \Log::info("Verification attempt for receipt {$receipt->id}: ref='{$reference}', amount={$ocrData['amount']}, category={$receipt->category}, account_holder=" . ($receipt->account_holder ?? 'null') . ", source_label=" . ($receipt->source_label ?? 'null'));
 
                 $query = \App\Models\Transaction::where('amount', $ocrData['amount'])
-                    ->whereNull('batch_id') // only consider unlinked transactions
                     ->where(function($subQuery) use ($reference, $partialMatches, $receipt) {
                         // Match reference or label with OCR reference (trimmed full value)
                         $subQuery->where('reference', $reference)
@@ -381,20 +283,6 @@ class BatchController extends Controller
                         'timestamp' => $transaction->transaction_date ? $transaction->transaction_date->format('H:i') : now()->format('H:i'),
                         'transaction' => $transaction
                     ];
-
-                    // Link immediately if perfect match found (only if still unlinked)
-                    if (!$transaction->batch_id) {
-                        $receipt->update([
-                            'transaction_id' => $transaction->id,
-                            'match_status'   => 'verified'
-                        ]);
-                        $transaction->update(['batch_id' => $batch->id]);
-                    } else {
-                        // Transaction already claimed in another batch
-                        $matchDetails['already_claimed'] = true;
-                        $matchDetails['claimed_batch_id'] = $transaction->batch_id;
-                        \Log::warning("Receipt {$receipt->id} matched to already-claimed transaction {$transaction->id} (batch {$transaction->batch_id})");
-                    }
                 } else {
                     // Find recommended transactions (no batch record)
                     // Priority 1: Match reference and specific labels (like "Int")

@@ -52,8 +52,6 @@ export default function BatchDetail({
   handleRunExtraction,
   handleRunFinalCheck, 
   isRunningCheck, 
-  isCreating,
-  uploadProgress,
   setShowProcessor, 
   navigate 
 }) {
@@ -276,19 +274,11 @@ export default function BatchDetail({
             />
             <button
               className="btn-icon-modern"
-              onClick={() => !isCreating && fileInputRef.current?.click()}
+              onClick={() => fileInputRef.current?.click()}
               title="Add More Receipts"
-              style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', width: isCreating ? 'auto' : '40px', padding: isCreating ? '0 1rem' : '0' }}
-              disabled={isCreating}
+              style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}
             >
-              {isCreating ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: 800 }}>
-                  <div className="spinner-modern" style={{ width: '14px', height: '14px' }} />
-                  {uploadProgress.total > 0 ? `${uploadProgress.current}/${uploadProgress.total}` : '...'}
-                </div>
-              ) : (
-                <Icon.Plus />
-              )}
+              <Icon.Plus />
             </button>
 
             <button
@@ -606,8 +596,6 @@ export default function BatchDetail({
                   parseOCRData={parseOCRData} 
                   onDelete={() => setReceiptToDelete(receipt)}
                   isBillingDone={batch.checker_status === 'billing_ready'}
-                  batchId={batch.id}
-                  batchNumber={batch.batch_number}
                 />
               ))}
           </div>
@@ -685,13 +673,13 @@ export default function BatchDetail({
         // Fallback billing: if billing_data missing, show cash total from denominations
         const billingMethod      = bd.method              || 'both';
         const cashDenoms         = bd.cash_denominations  || {};
-        const bankTransfers      = bd.bank_transfers      || []; // Updated to array
+        const bankAmt            = bd.bank_transfer_amount || 0;
         const totalPrepared      = bd.total_prepared       || netAmount;
 
         return (
           <BillingSummaryModal
             onClose={() => setShowSummaryModal(false)}
-            batchNumber={batch.name}
+            batchNumber={batch.batch_number}
             finalBatchNumber={batch.final_batch_number}
             grossAmount={grossAmount}
             serviceFee={serviceFee}
@@ -699,7 +687,7 @@ export default function BatchDetail({
             netAmount={netAmount}
             billingMethod={billingMethod}
             cashDenominations={cashDenoms}
-            bankTransfers={bankTransfers} // Updated prop name and value
+            bankTransferAmount={bankAmt}
             totalPrepared={totalPrepared}
             verifiedClaims={verifiedReceipts}
           />
@@ -709,7 +697,7 @@ export default function BatchDetail({
   );
 }
 
-function ReceiptCard({ receipt, parseOCRData, onDelete, isBillingDone, batchId, batchNumber }) {
+function ReceiptCard({ receipt, parseOCRData, onDelete, isBillingDone }) {
   const getStatus = () => {
     const ocr = parseOCRData(receipt.ocr_data);
     const mStatus = receipt.match_status?.toLowerCase();
@@ -751,25 +739,6 @@ function ReceiptCard({ receipt, parseOCRData, onDelete, isBillingDone, batchId, 
       className={`receipt-card ${status.className === 'danger' ? 'is-not-found' : ''}`}
       style={isBillingDone ? { outline: '2px solid rgba(16,185,129,0.4)', outlineOffset: '-2px' } : {}}
     >
-      {/* Notice: linked transaction already claimed/completed */}
-      {receipt.transaction && receipt.transaction.batch_id && receipt.transaction.batch_id !== batchId && (
-        <button onClick={() => window.location.href = `/batch/${receipt.transaction.batch_id}`} style={{
-          position: 'absolute', top: '8px', right: '8px', zIndex: 20,
-          background: 'rgba(255,165,0,0.95)', color: '#000', padding: '6px 8px', borderRadius: '10px', fontWeight: 800, fontSize: '11px',
-          border: 'none', cursor: 'pointer'
-        }} title={`View Batch ${receipt.transaction.batch_id}`}>
-          Claimed in Batch {receipt.transaction.batch_id}
-        </button>
-      )}
-
-      {receipt.transaction && receipt.transaction.status === 'completed' && (
-        <div style={{
-          position: 'absolute', top: '8px', right: '8px', zIndex: 20,
-          background: 'rgba(16,185,129,0.95)', color: '#fff', padding: '6px 8px', borderRadius: '10px', fontWeight: 800, fontSize: '11px'
-        }}>
-          Transaction Completed
-        </div>
-      )}
       <button 
         className="receipt-delete-btn"
         onClick={(e) => { e.stopPropagation(); onDelete(); }}

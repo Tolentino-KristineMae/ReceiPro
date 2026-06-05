@@ -31,17 +31,12 @@ export default function BatchDashboard({
   setFileCount, 
   fileInputRef, 
   isCreating, 
-  uploadProgress,
   handleCreateAndUpload, 
   handleDeleteBatch, 
   navigate 
 }) {
-  // Robust next number: find max existing Batch # and add 1
-  const maxNum = batches.reduce((max, b) => {
-    const match = b.name?.match(/Batch #(\d+)/);
-    return match ? Math.max(max, parseInt(match[1])) : max;
-  }, 0);
-  const nextBatchName = `Batch #${String(maxNum + 1).padStart(3, '0')}`;
+  const nextBatchNumber = batches.length + 1;
+  const nextBatchName = `Batch #${String(nextBatchNumber).padStart(3, '0')}`;
 
   return (
     <div className="bcp-layout">
@@ -91,9 +86,7 @@ export default function BatchDashboard({
             {isCreating ? (
               <>
                 <div className="spinner-modern" />
-                {uploadProgress.total > 0 
-                  ? `Uploading ${uploadProgress.current}/${uploadProgress.total}...`
-                  : 'Creating...'}
+                Creating...
               </>
             ) : (
               <>
@@ -197,7 +190,7 @@ function BatchCard({ batch, onClick, onDelete, delay = 0 }) {
           fontWeight: 800,
           marginBottom: 'auto'
         }}>
-          {batch.name || 'Unnamed'}
+          Batch {batch.name || 'Unnamed'}
         </div>
         
         <div style={{ marginTop: '1.5rem' }}>
