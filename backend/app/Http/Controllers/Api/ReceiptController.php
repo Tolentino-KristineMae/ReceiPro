@@ -165,4 +165,23 @@ class ReceiptController extends Controller
 
         return response()->json($receipts);
     }
+
+    public function bulkUpdateCategory(Request $request)
+    {
+        $request->validate([
+            'receipts' => 'required|array',
+            'receipts.*.id' => 'required|exists:receipts,id',
+            'receipts.*.category' => 'required|in:unsorted,gcash,others',
+            'receipts.*.account_holder' => 'nullable|string|max:100',
+        ]);
+
+        foreach ($request->receipts as $receiptData) {
+            Receipt::where('id', $receiptData['id'])->update([
+                'category' => $receiptData['category'],
+                'account_holder' => $receiptData['account_holder'] ?? null,
+            ]);
+        }
+
+        return response()->json(['message' => 'Receipts updated successfully'], 200);
+    }
 }

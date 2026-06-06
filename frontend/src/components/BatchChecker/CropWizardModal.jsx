@@ -150,9 +150,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       });
       return firstNeedsCrop !== -1 ? firstNeedsCrop : 0;
     }
-    if (initialPhase === 'verify') {
-      return 0;
-    }
     return 0;
   });
   
@@ -163,18 +160,26 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     receipts.forEach(r => { if (r.category === 'others') set.add(r.id); });
     return set;
   });
-  const [sortingView, setSortingView] = useState('select'); // 'select' | 'review'
+
+  const [sortingView, setSortingView] = useState(() => {
+    if (initialPhase === 'categorize') {
+      const hasUnsorted = receipts.some(r => !r.category || r.category === 'unsorted');
+      return hasUnsorted ? 'select' : 'review';
+    }
+    return 'select';
+  });
+
   const [isSavingSorting, setIsSavingSorting] = useState(false);
   const [selections, setSelections] = useState({}); // { index: { category, account } } — used in crop phase
   const [crops, setCrops] = useState({}); // { index: dataUrl }
   const [isProcessingOcr, setIsProcessingOcr] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0); // Track OCR progress percentage
-  const [isVerifying, setIsVerifying] = useState(initialPhase === 'verify');
+  const [isVerifying, setIsVerifying] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [ocrResults, setOcrResults] = useState(null);
   const [ocrAccountFilter, setOcrAccountFilter] = useState('All'); // Filter for OCR results
-  const [showOcrPreview, setShowOcrPreview] = useState(false);
-  const [showVerifyPreview, setShowVerifyPreview] = useState(initialPhase === 'verify');
+  const [showOcrPreview, setShowOcrPreview] = useState(() => initialPhase === 'ocr');
+  const [showVerifyPreview, setShowVerifyPreview] = useState(() => initialPhase === 'verify');
   const [finalizedBatch, setFinalizedBatch] = useState(null);
   
   // Stage 7: Summary State
@@ -226,7 +231,39 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   const billingDiff = netAmount - billingTotal;
   const isBillingBalanced = Math.abs(billingDiff) < 0.01;
 
-  // Initialize OCR results if jumping to verify
+  // Try to reconstruct ocrResults from receipts if they have data
+  useEffect(() => {
+    if ((phase === 'ocr' || phase === 'verify' || phase === 'finalize' || phase === 'summary' || phase === 'billing') && !ocrResults && receipts.length > 0) {
+      const hasOcrData = receipts.some(r => {
+        const ocr = r.ocr_data ? (typeof r.ocr_data === 'string' ? JSON.parse(r.ocr_data) : r.ocr_data) : null;
+        return r.ocr_status === 'completed' || (ocr && (ocr.raw_text || ocr.manual));
+      });
+
+      if (hasOcrData) {
+        console.log('Reconstructing ocrResults from receipts data...');
+        const results = receipts.map(r => {
+          const ocr = r.ocr_data ? (typeof r.ocr_data === 'string' ? JSON.parse(r.ocr_data) : r.ocr_data) : {};
+          return {
+            receipt: r,
+            amount: ocr.amount || 0,
+            reference: ocr.reference || null,
+            date: ocr.date || null,
+            confidence: ocr.confidence || 100,
+            manualEntry: !!ocr.manual,
+            account_holder: r.account_holder || ocr.account_holder,
+            verification_status: r.match_status // Used in Stage 5
+          };
+        });
+        setOcrResults(results);
+        
+        // Ensure preview flags are set if we jumped to these phases
+        if (phase === 'ocr') setShowOcrPreview(true);
+        if (phase === 'verify') setShowVerifyPreview(true);
+      }
+    }
+  }, [phase, receipts, ocrResults]);
+
+  // Initialize OCR results if jumping to verify (Keep as fallback for backend-driven verification)
   useEffect(() => {
     if (initialPhase === 'verify' && !ocrResults && receipts.length > 0) {
       const triggerProcess = async () => {
@@ -270,6 +307,11 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
             
             // Store the full batch info for the billing summary modal
             setSavedBatchInfo(batch);
+            
+            // If already finalized, set the finalized batch state
+            if (batch.checker_status === 'finalized' || batch.checker_status === 'summarized' || batch.checker_status === 'billing_ready') {
+              setFinalizedBatch(batch);
+            }
             
             if (batch.summary_data) {
               if (batch.summary_data.deductions) {
@@ -460,17 +502,23 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   const handleApplySorting = async () => {
     setIsSavingSorting(true);
     try {
-      await Promise.all(receipts.map(r => {
+      // Prepare bulk update payload
+      const receiptsToUpdate = receipts.map(r => {
         const cat = checkedForOthers.has(r.id) ? 'others' : 'gcash';
-        return fetch(getApiUrl(`/api/receipts/${r.id}`), {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            category: cat,
-            account_holder: cat === 'others' ? 'OTHERS' : null,
-          }),
-        });
-      }));
+        return {
+          id: r.id,
+          category: cat,
+          account_holder: cat === 'others' ? 'OTHERS' : null,
+        };
+      });
+
+      // Single bulk API call instead of multiple individual calls
+      await fetch(getApiUrl('/api/receipts/bulk-update-category'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receipts: receiptsToUpdate }),
+      });
+
       setSortingView('review');
     } catch (e) {
       alert(`Failed to save sorting: ${e.message}. Please try again.`);
@@ -1501,8 +1549,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
         </div>
 
         {/* Progress */}
-        <div className="cw-progress-container">
-          {phase !== 'categorize' && (
+        <div className="cw-progress-container" style={{ position: 'relative' }}>
+
+          {phase !== 'categorize' && phase !== 'ocr' && phase !== 'verify' && phase !== 'finalize' && phase !== 'summary' && phase !== 'billing' && (
           <div className="cw-steps">
             {receipts.map((_, i) => (
               <div key={i} className={`cw-step-seg ${i < index ? 'done' : i === index ? 'active' : ''}`}>
@@ -2702,8 +2751,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* Stage 7 Summary */}
+            {/* Stage 7 Summary */}
               {phase === 'summary' && (
                 <SummaryStage
                   verifiedClaims={verifiedClaims}
@@ -2825,17 +2875,17 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
                   <button 
                     disabled={!isBillingBalanced}
-                    onClick={async () => {                      try {
+                    onClick={async () => {
+                      try {
                         const res = await fetch(`http://localhost:8000/api/batches/${batchId}/status`, {
                           method: 'PATCH',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ 
                             checker_status: 'billing_ready',
-                            // Re-send summary_data so both are stored together (keep existing deductions array)
                             summary_data: {
                               gross_amount: totalClaimsAmount,
                               service_fee: serviceFee,
-                              deductions: savedDeductions, // Use the saved deductions array
+                              deductions: savedDeductions,
                               net_amount: finalNetAmount || netAmount
                             },
                             billing_data: {
@@ -2857,16 +2907,16 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                     }}
                     className="w-full py-5 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black text-[11px] uppercase tracking-[0.2em] hover:scale-[1.02] transition-all shadow-2xl shadow-green-500/20 flex items-center justify-center gap-3 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
                   >
-                    Finish & Generate Billing ✨
+                    Finish & Generate Billing
                   </button>
 
                   {/* Hint when button is disabled */}
                   {!isBillingBalanced && (
                     <div className="text-center text-[10px] font-bold text-red-400/80 px-2">
                       {billingDiff > 0
-                        ? `₱${billingDiff.toLocaleString('en-PH', { minimumFractionDigits: 2 })} still unallocated`
-                        : `₱${Math.abs(billingDiff).toLocaleString('en-PH', { minimumFractionDigits: 2 })} over-allocated`}
-                      {' — funds must match net amount exactly.'}
+                        ? `PHP ${billingDiff.toLocaleString('en-PH', { minimumFractionDigits: 2 })} still unallocated`
+                        : `PHP ${Math.abs(billingDiff).toLocaleString('en-PH', { minimumFractionDigits: 2 })} over-allocated`}
+                      {' -- funds must match net amount exactly.'}
                     </div>
                   )}
                   
@@ -2874,17 +2924,16 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                     onClick={() => setPhase('summary')}
                     className="w-full py-3 text-[9px] font-black text-slate-600 uppercase tracking-widest hover:text-white transition-colors"
                   >
-                    ← Back to Summary
+                    Back to Summary
                   </button>
                 </div>
               </div>
             )}
-            </div>
           </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
+  </div>
 
     {/* Billing Summary Modal */}
     {showBillingSummaryModal && (
@@ -2946,8 +2995,8 @@ function detectAccountFromPhone(text) {
 function extractFields(text) {
   const normalized = text
     .replace(/\r/g, '\n')
-    .replace(/[|\\[\]{}]/g, ' ')
-    .replace(/[''`]/g, '')
+    .replace(/[|\\\[\]{}]/g, ' ')
+    .replace(/['"\u0060]/g, '')
     .replace(/\u00a0/g, ' ');
 
   const lines = normalized.split('\n').map(l => l.trim()).filter(Boolean);
@@ -3029,7 +3078,10 @@ function extractDate(lines) {
       const m = line.match(re);
       if (m) return fmt(mi, m[1], m[2]);
     }
-    { const m = line.match(/\b(0?[1-9]|1[0-2])[\/\-\.](0?[1-9]|[12]\d|3[01])[\/\-\.](\d{4})\b/); if (m) return fmt(parseInt(m[1])-1, m[2], m[3]); }
+    {
+      const m = line.match(/\b(0?[1-9]|1[0-2])[\/\-\.](0?[1-9]|[12]\d|3[01])[\/\-\.](\d{4})\b/);
+      if (m) return fmt(parseInt(m[1]) - 1, m[2], m[3]);
+    }
   }
   return null;
 }

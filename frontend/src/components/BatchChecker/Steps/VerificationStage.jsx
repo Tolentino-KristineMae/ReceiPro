@@ -99,7 +99,7 @@ export default function VerificationStage({
                 className="vs-nav-btn back"
                 onClick={onBack}
               >
-                ← Back
+                Back
               </button>
             )}
             {onFinalize && (

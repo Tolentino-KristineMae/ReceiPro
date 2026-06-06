@@ -1,4 +1,6 @@
 import React from 'react';
+import { getOverallProgress } from './BatchUtils';
+import BillingSummaryModal from './BillingSummaryModal';
 
 const fmt = (n) =>
   Number(n ?? 0).toLocaleString('en-PH', {
@@ -79,6 +81,7 @@ export default function BatchDashboard({
   
   const [customBatchName, setCustomBatchName] = React.useState('');
   const [isEditingName, setIsEditingName] = React.useState(false);
+  const [summaryBatch, setSummaryBatch] = React.useState(null);
 
   // Update custom name if it's empty or when batches change (if not manually editing)
   React.useEffect(() => {
@@ -512,20 +515,75 @@ export default function BatchDashboard({
                 onClick={() => navigate(`/batch/${batch.id}`)}
                 onDelete={(e) => handleDeleteBatch(e, batch.id)}
                 onUpdateName={handleUpdateBatchName}
+                onViewSummary={(e) => {
+                  e.stopPropagation();
+                  setSummaryBatch(batch);
+                }}
                 delay={i * 0.03}
               />
             ))}
           </div>
         )}
+
+        {/* Billing Summary Modal */}
+        {summaryBatch && (() => {
+          const sd = summaryBatch.summary_data || {};
+          const bd = summaryBatch.billing_data || {};
+
+          // Build verified receipts list from actual receipt data
+          const verifiedReceipts = (summaryBatch.receipts || [])
+            .filter(r => r.match_status === 'verified' || r.match_status === 'flagged')
+            .map(r => {
+              const ocr = (typeof r.ocr_data === 'string') ? JSON.parse(r.ocr_data || '{}') : (r.ocr_data || {});
+              return {
+                account_holder: r.account_holder,
+                amount: Number(ocr.amount || 0),
+                reference: ocr.reference || null,
+                source_label: r.source_label,
+              };
+            });
+
+          // Fallback: reconstruct financials from receipts if summary_data wasn't saved
+          const grossFallback = verifiedReceipts.reduce((s, r) => s + r.amount, 0);
+          const feeFallback = Math.floor(grossFallback / 1000) * 10;
+          const netFallback = grossFallback - feeFallback;
+
+          const grossAmount   = sd.gross_amount   ?? grossFallback;
+          const serviceFee    = sd.service_fee    ?? feeFallback;
+          const netAmount     = sd.net_amount     ?? netFallback;
+          const deductions    = sd.deductions     || [];
+
+          const billingMethod      = bd.method              || 'both';
+          const cashDenoms         = bd.cash_denominations  || {};
+          const bankAmt            = bd.bank_transfer_amount || 0;
+          const totalPrepared      = bd.total_prepared       || netAmount;
+
+          return (
+            <BillingSummaryModal
+              onClose={() => setSummaryBatch(null)}
+              batchNumber={summaryBatch.batch_number}
+              finalBatchNumber={summaryBatch.final_batch_number}
+              grossAmount={grossAmount}
+              serviceFee={serviceFee}
+              deductions={deductions}
+              netAmount={netAmount}
+              billingMethod={billingMethod}
+              cashDenominations={cashDenoms}
+              bankTransferAmount={bankAmt}
+              totalPrepared={totalPrepared}
+              verifiedClaims={verifiedReceipts}
+            />
+          );
+        })()}
       </div>
     </div>
   );
 }
 
-function BatchCard({ batch, onClick, onDelete, onUpdateName, delay = 0 }) {
+function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, delay = 0 }) {
   const total = batch.receipts?.length || 0;
   const verified = batch.receipts?.filter(r => r.ocr_status === 'completed').length || 0;
-  const progress = total > 0 ? Math.round((verified / total) * 100) : 0;
+  const progress = getOverallProgress(batch);
   
   const [isEditing, setIsEditing] = React.useState(false);
   const [editName, setEditName] = React.useState(batch.name || '');
@@ -694,7 +752,43 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, delay = 0 }) {
       </div>
 
       {/* Status & Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100px', justifyContent: 'flex-end', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '130px', justifyContent: 'flex-end', flexShrink: 0 }}>
+        {batch.checker_status === 'billing_ready' && (
+          <button 
+            onClick={onViewSummary}
+            style={{ 
+              width: '28px', 
+              height: '28px', 
+              borderRadius: '6px',
+              background: 'rgba(34, 197, 94, 0.08)',
+              border: '1px solid rgba(34, 197, 94, 0.2)',
+              color: 'var(--success-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s',
+              flexShrink: 0
+            }}
+            title="View Summary"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(34, 197, 94, 0.15)';
+              e.currentTarget.style.transform = 'scale(1.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(34, 197, 94, 0.08)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </button>
+        )}
+        
         <div style={{
           padding: '4px 0',
           width: '60px',

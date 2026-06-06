@@ -174,7 +174,7 @@ export default function CropStage({
                 {imageRotation % 360 === 0 ? 'Portrait' : 
                  imageRotation % 360 === 90 ? 'Landscape' : 
                  imageRotation % 360 === 180 ? 'Inverted' : 
-                 'Landscape ←'}
+                 'Landscape Left'}
               </span>
               <svg
                 width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -249,7 +249,7 @@ export default function CropStage({
 
           {/* Recategorize Button */}
           <button onClick={onRecategorize} className="cs-recategorize-btn">
-            ← Re-categorize All
+            Re-categorize All
           </button>
 
           {/* Navigation */}
@@ -257,11 +257,11 @@ export default function CropStage({
             <div className="cs-nav-buttons">
               {index > 0 && (
                 <button onClick={onPrev} className="cs-nav-btn prev">
-                  ← Prev
+                  Prev
                 </button>
               )}
               <button onClick={onNext} className={`cs-nav-btn next ${currentCategory === 'gcash' ? 'gcash' : 'others'}`}>
-                {index + 1 < total ? 'Next →' : 'Finish ✨'}
+                {index + 1 < total ? 'Next' : 'Finish ✨'}
               </button>
             </div>
             <div className="cs-nav-progress">

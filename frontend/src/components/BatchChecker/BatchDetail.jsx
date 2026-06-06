@@ -1,6 +1,7 @@
 import React from 'react';
 import BillingSummaryModal from './BillingSummaryModal';
 import { getApiUrl } from '../../apiConfig';
+import { parseOCRData, calculateBatchStats, getOverallProgress } from './BatchUtils';
 
 const Icon = {
   Trash: ({ size = 18 }) => (
@@ -60,16 +61,6 @@ export default function BatchDetail({
   const [showSummaryModal, setShowSummaryModal] = React.useState(false);
   const fileInputRef = React.useRef(null);
 
-  const parseOCRData = (data) => {
-    if (!data) return null;
-    if (typeof data === 'object') return data;
-    try {
-      return JSON.parse(data);
-    } catch (e) {
-      return null;
-    }
-  };
-
   if (!batch) {
     return (
       <div className="glass-card empty-box">
@@ -79,43 +70,7 @@ export default function BatchDetail({
     );
   }
 
-  const stats = {
-    total: batch?.receipts?.length || 0,
-    unsorted: batch?.receipts?.filter(r => !r.category || r.category === 'unsorted').length || 0,
-    // How many still need cropping or manual input
-    needsCropInput: batch?.receipts?.filter(r => {
-      if (!r.category || r.category === 'unsorted') return false;
-      const ocr = parseOCRData(r.ocr_data);
-      
-      if (r.category === 'others') {
-        // If it's manual, we check if manual flag is true AND amount/ref exist
-        const isManualDone = ocr && ocr.manual === true && (ocr.amount || ocr.reference);
-        return !isManualDone;
-      }
-      
-      // GCash: Need a cropped image (check for path string or base64)
-      const hasCrop = r.cropped_image && r.cropped_image.length > 5;
-      return !hasCrop;
-    }).length,
-    // How many are ready for OCR (or have finished it)
-    readyForOcr: batch?.receipts?.filter(r => {
-      const ocr = parseOCRData(r.ocr_data);
-      const isOthersDone = r.category === 'others' && ocr && ocr.manual;
-      const isGcashDone = r.category === 'gcash' && r.cropped_image && r.cropped_image.length > 5;
-      return isOthersDone || isGcashDone;
-    }).length,
-    // How many have actually finished the OCR/Extraction phase
-    ocrFinished: batch?.receipts?.filter(r => {
-      const ocr = parseOCRData(r.ocr_data);
-      if (r.category === 'others' && ocr?.manual) return true;
-      return r.ocr_status === 'completed' || r.ocr_status === 'processing' || (ocr && ocr.raw_text);
-    }).length,
-    // How many are verified (Stage 5)
-    verified: batch?.receipts?.filter(r => {
-      const status = r.match_status?.toLowerCase();
-      return status === 'verified' || status === 'flagged' || status === 'not_found';
-    }).length || 0,
-  };
+  const stats = calculateBatchStats(batch);
 
   // Define stages logic based on user workflow
   const stages = [
@@ -169,47 +124,7 @@ export default function BatchDetail({
     },
   ];
 
-  // Overall completion should reflect all stages (now 8 stages)
-  const getOverallProgress = () => {
-    if (!batch || stats.total === 0) return 0;
-    
-    let totalProgress = 0;
-    const stageWeight = 100 / 8; // Each stage is 12.5%
-    
-    // Stage 1: Uploading
-    totalProgress += stageWeight;
-    
-    // Stage 2: Sorting
-    totalProgress += ((stats.total - stats.unsorted) / stats.total) * stageWeight;
-    
-    // Stage 3: Crop & Input
-    totalProgress += ((stats.total - stats.needsCropInput) / stats.total) * stageWeight;
-    
-    // Stage 4: Extraction
-    totalProgress += (stats.ocrFinished / stats.total) * stageWeight;
-    
-    // Stage 5: Run Check
-    totalProgress += (stats.verified / stats.total) * stageWeight;
-
-    // Stage 6: Finalize
-    if (batch.checker_status === 'finalized' || batch.checker_status === 'summarized' || batch.checker_status === 'billing_ready') {
-      totalProgress += stageWeight;
-    }
-
-    // Stage 7: Summary
-    if (batch.checker_status === 'summarized' || batch.checker_status === 'billing_ready') {
-      totalProgress += stageWeight;
-    }
-
-    // Stage 8: Billing
-    if (batch.checker_status === 'billing_ready') {
-      totalProgress += stageWeight;
-    }
-
-    return Math.round(totalProgress);
-  };
-
-  const progress = getOverallProgress();
+  const progress = getOverallProgress(batch);
 
   const currentStageIndex = stages.findLastIndex(s => s.status === 'done' || s.status === 'active');
   const lineFillWidth = (currentStageIndex / (stages.length - 1)) * 100;
@@ -314,49 +229,6 @@ export default function BatchDetail({
               </button>
             )}
             
-            {/* Shortcut Button (Floating-style next to primary action) */}
-            {(() => {
-              const activeStage = stages.find(s => s.status === 'active');
-              if (activeStage && activeStage.id < 8) {
-                return (
-                  <div style={{ marginLeft: '1.5rem', paddingLeft: '1.5rem', borderLeft: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center' }}>
-                    <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginRight: '1rem' }}>
-                      Next Step:
-                    </div>
-                    <button 
-                      className="btn-icon-modern" 
-                      style={{ width: 'auto', padding: '0 1.5rem', borderRadius: '12px', fontSize: '11px' }}
-                      onClick={() => {
-                        const nextStage = stages.find(s => s.id === activeStage.id);
-                        if (nextStage.id === 2) setShowProcessor('categorize');
-                        if (nextStage.id === 3) setShowProcessor('crop');
-                        if (nextStage.id === 4) handleRunExtraction();
-                        if (nextStage.id === 5) handleRunFinalCheck();
-                        if (nextStage.id === 6) {
-                           // Finalize shortcut
-                           fetch(getApiUrl(`/api/batches/${batch.id}/status`), {
-                             method: 'PATCH',
-                             headers: { 'Content-Type': 'application/json' },
-                             body: JSON.stringify({ checker_status: 'finalized' }),
-                           }).then(() => window.location.reload());
-                        }
-                        if (nextStage.id === 7) {
-                           // Summary shortcut
-                           fetch(getApiUrl(`/api/batches/${batch.id}/status`), {
-                             method: 'PATCH',
-                             headers: { 'Content-Type': 'application/json' },
-                             body: JSON.stringify({ checker_status: 'summarized' }),
-                           }).then(() => window.location.reload());
-                        }
-                      }}
-                    >
-                      {activeStage.label} →
-                    </button>
-                  </div>
-                );
-              }
-              return null;
-            })()}
             
             {/* Primary Action Button Based on Stage */}
             {(() => {
@@ -499,34 +371,92 @@ export default function BatchDetail({
           </div>
         </div>
 
-        <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}>
+        <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
           <div className="metric-card-sm">
             <span className="metric-label-sm">Total</span>
             <span className="metric-value-sm">{stats.total}</span>
+            <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden' }}>
+              <div style={{ width: '100%', height: '100%', background: 'var(--text-muted)' }} />
+            </div>
           </div>
+          
+          {/* Stage 2: Sorting */}
           <div className="metric-card-sm">
-            <span className="metric-label-sm">Sorting</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="metric-label-sm">Sorting</span>
+              <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)' }}>
+                {Math.round(((stats.total - stats.unsorted) / stats.total) * 100 || 0)}%
+              </span>
+            </div>
             <span className={`metric-value-sm ${stats.unsorted > 0 ? 'warning' : ''}`}>
               {stats.total - stats.unsorted}/{stats.total}
             </span>
+            <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden' }}>
+              <div style={{ width: `${((stats.total - stats.unsorted) / stats.total) * 100 || 0}%`, height: '100%', background: 'var(--accent-yellow)' }} />
+            </div>
           </div>
+
+          {/* Stage 3: Crop & Input */}
           <div className="metric-card-sm">
-            <span className="metric-label-sm">Crop & Input</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="metric-label-sm">Crop & Input</span>
+              <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)' }}>
+                {Math.round(((stats.total - stats.needsCropInput) / stats.total) * 100 || 0)}%
+              </span>
+            </div>
             <span className={`metric-value-sm ${stats.needsCropInput > 0 ? 'accent' : ''}`}>
               {stats.total - stats.needsCropInput}/{stats.total}
             </span>
+            <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden' }}>
+              <div style={{ width: `${((stats.total - stats.needsCropInput) / stats.total) * 100 || 0}%`, height: '100%', background: 'var(--accent-primary)' }} />
+            </div>
           </div>
+
+          {/* Stage 4: OCR */}
           <div className="metric-card-sm">
-            <span className="metric-label-sm">OCR</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="metric-label-sm">OCR</span>
+              <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)' }}>
+                {Math.round((stats.ocrFinished / stats.total) * 100 || 0)}%
+              </span>
+            </div>
             <span className={`metric-value-sm ${stats.ocrFinished > 0 ? 'success' : ''}`}>
               {stats.ocrFinished}/{stats.total}
             </span>
+            <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden' }}>
+              <div style={{ width: `${(stats.ocrFinished / stats.total) * 100 || 0}%`, height: '100%', background: 'var(--success-primary)' }} />
+            </div>
           </div>
+
+          {/* Stage 5: Run Check */}
           <div className="metric-card-sm">
-            <span className="metric-label-sm">Run Check</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="metric-label-sm">Run Check</span>
+              <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)' }}>
+                {Math.round((stats.verified / stats.total) * 100 || 0)}%
+              </span>
+            </div>
             <span className="metric-value-sm success">
               {stats.verified}/{stats.total}
             </span>
+            <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden' }}>
+              <div style={{ width: `${(stats.verified / stats.total) * 100 || 0}%`, height: '100%', background: 'var(--success-primary)' }} />
+            </div>
+          </div>
+
+          {/* Stage 6-8 Combined Status */}
+          <div className="metric-card-sm">
+            <span className="metric-label-sm">Post-Process</span>
+            <span className="metric-value-sm" style={{ fontSize: '12px' }}>
+              {batch.checker_status === 'billing_ready' ? 'READY' : 
+               batch.checker_status === 'summarized' ? 'SUMMARY' : 
+               batch.checker_status === 'finalized' ? 'FINAL' : 'WAITING'}
+            </span>
+            <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden', display: 'flex', gap: '2px' }}>
+               <div style={{ flex: 1, background: (batch.checker_status === 'finalized' || batch.checker_status === 'summarized' || batch.checker_status === 'billing_ready') ? 'var(--success-primary)' : 'transparent' }} />
+               <div style={{ flex: 1, background: (batch.checker_status === 'summarized' || batch.checker_status === 'billing_ready') ? 'var(--success-primary)' : 'transparent' }} />
+               <div style={{ flex: 1, background: (batch.checker_status === 'billing_ready') ? 'var(--success-primary)' : 'transparent' }} />
+            </div>
           </div>
         </div>
 

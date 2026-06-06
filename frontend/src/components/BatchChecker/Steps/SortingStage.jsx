@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './SortingStage.css';
 
 const API_BASE = 'http://localhost:8000';
@@ -14,6 +14,9 @@ export default function SortingStage({
   onProceed,
   onReceiptClick, // New prop for handling receipt card clicks
 }) {
+  const [focusedColumn, setFocusedColumn] = useState(null); // null, 'gcash', or 'others'
+  const [draggedReceipt, setDraggedReceipt] = useState(null);
+  
   const gcashCount  = receipts.length - checkedForOthers.size;
   const othersCount = checkedForOthers.size;
 
@@ -27,6 +30,46 @@ export default function SortingStage({
       else next.add(id);
       return next;
     });
+  };
+
+  const handleDragStart = (e, receipt) => {
+    setDraggedReceipt(receipt);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setDraggedReceipt(null);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDropOnGcash = (e) => {
+    e.preventDefault();
+    if (draggedReceipt && checkedForOthers.has(draggedReceipt.id)) {
+      // Move from Others to GCash
+      setCheckedForOthers(prev => {
+        const next = new Set(prev);
+        next.delete(draggedReceipt.id);
+        return next;
+      });
+    }
+    setDraggedReceipt(null);
+  };
+
+  const handleDropOnOthers = (e) => {
+    e.preventDefault();
+    if (draggedReceipt && !checkedForOthers.has(draggedReceipt.id)) {
+      // Move from GCash to Others
+      setCheckedForOthers(prev => {
+        const next = new Set(prev);
+        next.add(draggedReceipt.id);
+        return next;
+      });
+    }
+    setDraggedReceipt(null);
   };
 
   /* ── Select view ── */
@@ -102,7 +145,7 @@ export default function SortingStage({
           {isSavingSorting ? (
             <><span className="ss-spinner" /> Saving…</>
           ) : (
-            <>Apply Sorting &nbsp;→</>
+            <>Apply Sorting</>
           )}
         </button>
       </div>
@@ -115,18 +158,74 @@ export default function SortingStage({
       {/* Header */}
       <div className="ss-review-header">
         <h3 className="ss-title">Review Sorting</h3>
-        <button className="ss-edit-btn" onClick={() => setSortingView('select')}>
-          ← Edit
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {/* Toggle Buttons */}
+          <div style={{
+            display: 'flex',
+            border: '1px solid rgba(251, 146, 60, 0.3)',
+            borderRadius: '10px',
+            overflow: 'hidden',
+            background: '#fff'
+          }}>
+            <button
+              className={`ss-toggle-btn ${focusedColumn === 'gcash' ? 'active gcash' : ''}`}
+              onClick={() => setFocusedColumn(focusedColumn === 'gcash' ? null : 'gcash')}
+              style={{
+                padding: '8px 16px',
+                border: 'none',
+                background: focusedColumn === 'gcash' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                color: focusedColumn === 'gcash' ? '#3b82f6' : 'rgba(67, 20, 7, 0.6)',
+                fontSize: '11px',
+                fontWeight: 900,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                fontFamily: "'Space Grotesk', sans-serif",
+                borderRight: '1px solid rgba(251, 146, 60, 0.2)'
+              }}
+            >
+              GCash ({gcashCount})
+            </button>
+            <button
+              className={`ss-toggle-btn ${focusedColumn === 'others' ? 'active others' : ''}`}
+              onClick={() => setFocusedColumn(focusedColumn === 'others' ? null : 'others')}
+              style={{
+                padding: '8px 16px',
+                border: 'none',
+                background: focusedColumn === 'others' ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
+                color: focusedColumn === 'others' ? '#ef4444' : 'rgba(67, 20, 7, 0.6)',
+                fontSize: '11px',
+                fontWeight: 900,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                fontFamily: "'Space Grotesk', sans-serif"
+              }}
+            >
+              Others ({othersCount})
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Columns */}
       <div className="ss-scroll">
-        <div className="ss-columns">
+        <div className="ss-columns" style={{
+          gridTemplateColumns: 
+            focusedColumn === 'gcash' ? '90% 10%' :
+            focusedColumn === 'others' ? '10% 90%' :
+            '1fr 1fr'
+        }}>
 
           {/* GCash */}
           {gcashReceipts.length > 0 && (
-            <div className="ss-col gcash">
+            <div 
+              className="ss-col gcash"
+              onDragOver={handleDragOver}
+              onDrop={handleDropOnGcash}
+            >
               <div className="ss-col-header">
                 <span className="ss-col-label gcash">GCash</span>
                 <span className="ss-col-count gcash">{gcashReceipts.length}</span>
@@ -136,6 +235,9 @@ export default function SortingStage({
                   <div 
                     key={r.id} 
                     className="ss-col-card gcash"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, r)}
+                    onDragEnd={handleDragEnd}
                     onClick={(e) => {
                       e.stopPropagation();
                       console.log('GCash receipt clicked:', r.id);
@@ -145,8 +247,8 @@ export default function SortingStage({
                         console.warn('onReceiptClick handler not provided');
                       }
                     }}
-                    style={{ cursor: 'pointer' }}
-                    title={`Receipt ID: ${r.id} - Click to edit`}
+                    style={{ cursor: 'grab' }}
+                    title={`Receipt ID: ${r.id} - Drag to move or click to edit`}
                   >
                     <div className="ss-receipt-id">#{r.id}</div>
                     <img src={`${API_BASE}/api/receipts/${r.id}/image`} alt="" crossOrigin="anonymous" />
@@ -158,7 +260,11 @@ export default function SortingStage({
 
           {/* Others */}
           {othersReceipts.length > 0 && (
-            <div className="ss-col others">
+            <div 
+              className="ss-col others"
+              onDragOver={handleDragOver}
+              onDrop={handleDropOnOthers}
+            >
               <div className="ss-col-header">
                 <span className="ss-col-label others">Others</span>
                 <span className="ss-col-count others">{othersReceipts.length}</span>
@@ -168,6 +274,9 @@ export default function SortingStage({
                   <div 
                     key={r.id} 
                     className="ss-col-card others"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, r)}
+                    onDragEnd={handleDragEnd}
                     onClick={(e) => {
                       e.stopPropagation();
                       console.log('Others receipt clicked:', r.id);
@@ -177,8 +286,8 @@ export default function SortingStage({
                         console.warn('onReceiptClick handler not provided');
                       }
                     }}
-                    style={{ cursor: 'pointer' }}
-                    title={`Receipt ID: ${r.id} - Click to edit`}
+                    style={{ cursor: 'grab' }}
+                    title={`Receipt ID: ${r.id} - Drag to move or click to edit`}
                   >
                     <div className="ss-receipt-id">#{r.id}</div>
                     <img src={`${API_BASE}/api/receipts/${r.id}/image`} alt="" crossOrigin="anonymous" />
@@ -193,7 +302,7 @@ export default function SortingStage({
 
       {/* Proceed */}
       <button className="ss-proceed-btn" onClick={onProceed}>
-        Confirm Sorting & Proceed to Extraction &nbsp;→
+        Confirm Sorting & Proceed to Cropping
       </button>
     </div>
   );

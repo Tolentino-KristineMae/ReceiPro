@@ -5,6 +5,7 @@ import BatchDashboard from './BatchDashboard';
 import BatchDetail from './BatchDetail';
 import { BATCH_STYLES } from './BatchStyles';
 import { getApiUrl } from '../../apiConfig';
+import { parseOCRData } from './BatchUtils';
  
 // ─── Enhanced BatchCheckerPage ─────────────────────────────────────────────────
 export default function BatchCheckerPage() {
@@ -39,8 +40,13 @@ export default function BatchCheckerPage() {
   // Polling for real-time updates when a batch is active or processing
   useEffect(() => {
     let interval;
-    // Don't poll while we are in the middle of creating or adding files
-    if ((batchId || isRunningCheck || isCreating) && !isCreating) {
+    // Check if any batch is in an active state that needs polling
+    const hasActiveBatches = batches.some(b => 
+      b.checker_status === 'processing' || 
+      b.receipts?.some(r => r.ocr_status === 'processing' || r.ocr_status === 'uploading')
+    );
+
+    if ((batchId || isRunningCheck || isCreating || hasActiveBatches) && !isCreating) {
       interval = setInterval(() => {
         if (!batchId) {
           // Dashboard view - fetch all batches
@@ -58,7 +64,7 @@ export default function BatchCheckerPage() {
       }, 3000);
     }
     return () => clearInterval(interval);
-  }, [batchId, isRunningCheck, isCreating]);
+  }, [batchId, isRunningCheck, isCreating, batches.length]); // Use length as a simple trigger
 
   const fetchBatches = async (silent = false) => {
     try {
@@ -285,15 +291,6 @@ export default function BatchCheckerPage() {
     return true;
   }) || [];
 
-  const stats = {
-    total: selectedBatch?.receipts?.length || 0,
-    unsorted: selectedBatch?.receipts?.filter(r => !r.category || r.category === 'unsorted').length || 0,
-    ready: selectedBatch?.receipts?.filter(r => r.category && r.category !== 'unsorted' && r.ocr_status === 'pending').length || 0,
-    verified: selectedBatch?.receipts?.filter(r => r.ocr_status === 'completed').length || 0,
-  };
-
-  const progress = stats.total > 0 ? Math.round((stats.verified / stats.total) * 100) : 0;
-
   if (loading) {
     return (
       <div className="bcp-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -338,16 +335,6 @@ export default function BatchCheckerPage() {
     setShowProcessor(true);
   };
 
-  const parseOCRData = (data) => {
-    if (!data) return null;
-    if (typeof data === 'object') return data;
-    try {
-      return JSON.parse(data);
-    } catch (e) {
-      return null;
-    }
-  };
-
   return (
     <div className="bcp-root">
       {!batchId ? (
@@ -387,11 +374,25 @@ export default function BatchCheckerPage() {
           receipts={wizardReceipts}
           onClose={async () => {
             setShowProcessor(false);
-            await fetchBatches();
+            // Force immediate batch refresh to sync progress
+            await fetchBatches(false);
+            if (batchId) {
+              // Also refresh the selected batch detail
+              const res = await fetch(getApiUrl(`/api/batches/${batchId}?t=${Date.now()}`), { cache: 'no-store' });
+              const batch = await res.json();
+              setSelectedBatch(batch);
+            }
           }}
           onDone={async () => {
             setShowProcessor(false);
-            await fetchBatches();
+            // Force immediate batch refresh to sync progress
+            await fetchBatches(false);
+            if (batchId) {
+              // Also refresh the selected batch detail
+              const res = await fetch(getApiUrl(`/api/batches/${batchId}?t=${Date.now()}`), { cache: 'no-store' });
+              const batch = await res.json();
+              setSelectedBatch(batch);
+            }
           }}
         />
       )}
