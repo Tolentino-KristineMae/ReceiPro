@@ -1,30 +1,15 @@
 /* ─── Fonts ─────────────────────────────────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
 
-/* ─── Ocean Blue Tokens ──────────────────────────────────────────────────────── */
+/* ─── System-Matched Orange Light Theme Tokens ───────────────────────────────── */
 :root {
-  --ocean-950:  #020c18;
-  --ocean-900:  #051628;
-  --ocean-850:  #071e35;
-  --ocean-800:  #0a2540;
-  --ocean-700:  #0e3a5e;
-  --ocean-600:  #1260a4;
-  --ocean-500:  #1a7fcb;
-  --ocean-400:  #38a8e8;
-  --ocean-300:  #67c6f5;
-  --ocean-200:  #a8dffb;
-  --ocean-100:  #ddf2fe;
-
-  --amber-500:  #f59e0b;
-  --amber-400:  #fbbf24;
-  --amber-300:  #fcd34d;
-
-  --glass-bg:         rgba(10, 37, 64, 0.6);
-  --glass-border:     rgba(56, 168, 232, 0.12);
-  --glass-border-mid: rgba(56, 168, 232, 0.22);
-  --glow-blue:        rgba(26, 127, 203, 0.35);
-  --glow-amber:       rgba(245, 158, 11, 0.35);
-
+  --cw-bg-primary:    #ffffff;
+  --cw-bg-secondary:  #fffbf5;
+  --cw-accent:        #f97316;
+  --cw-text-main:     #431407;
+  --cw-text-muted:    rgba(67, 20, 7, 0.6);
+  --cw-border:        rgba(251, 146, 60, 0.15);
+  
   --font-display: 'Space Grotesk', system-ui, sans-serif;
   --font-body:    'Space Grotesk', system-ui, sans-serif;
 
@@ -41,10 +26,7 @@
   flex-direction: column;
   overflow: hidden;
   font-family: var(--font-body);
-  background:
-    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(18, 96, 164, 0.18) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(26, 127, 203, 0.12) 0%, transparent 55%),
-    var(--ocean-950);
+  background: var(--cw-bg-primary);
   animation: cs-fade-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -92,12 +74,13 @@
 .cs-sidebar {
   width: 480px;
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.01);
+  background: var(--cw-bg-secondary);
   display: flex;
   flex-direction: column;
   padding: 24px;
   overflow-y: auto;
   gap: 14px;
+  border-left: 1px solid var(--cw-border);
   animation: cs-slide-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -109,18 +92,19 @@
 .cs-sidebar::-webkit-scrollbar { width: 4px; }
 .cs-sidebar::-webkit-scrollbar-track { background: transparent; }
 .cs-sidebar::-webkit-scrollbar-thumb {
-  background: rgba(56, 168, 232, 0.2);
+  background: var(--cw-border);
   border-radius: 99px;
 }
-.cs-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(56, 168, 232, 0.4); }
+.cs-sidebar::-webkit-scrollbar-thumb:hover { background: var(--cw-accent); }
 
 /* ─── Header Card ────────────────────────────────────────────────────────────── */
 .cs-header-card {
   padding: 14px 18px;
   border-radius: 16px;
   text-align: left;
-  border: 1px solid;
-  backdrop-filter: blur(8px);
+  border: 1px solid var(--cw-border);
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(67, 20, 7, 0.05);
   transition: all 0.3s;
   display: flex;
   flex-direction: column;
@@ -128,13 +112,11 @@
 }
 
 .cs-header-card.gcash {
-  background: rgba(18, 96, 164, 0.12);
-  border-color: rgba(56, 168, 232, 0.25);
+  border-left: 4px solid #10b981;
 }
 
 .cs-header-card.others {
-  background: rgba(245, 158, 11, 0.12);
-  border-color: rgba(245, 158, 11, 0.25);
+  border-left: 4px solid var(--cw-accent);
 }
 
 .cs-header-icon {
@@ -145,34 +127,16 @@
   font-family: var(--font-display);
   font-size: 20px;
   font-weight: 900;
-  color: #fff;
+  color: var(--cw-text-main);
   letter-spacing: -0.02em;
   margin: 0;
   line-height: 1;
-  position: relative;
-  display: inline-block;
-}
-
-.cs-header-title::after {
-  content: '';
-  display: block;
-  width: 30px;
-  height: 2.5px;
-  border-radius: 99px;
-  margin-top: 5px;
-  background: linear-gradient(90deg, var(--ocean-400), var(--ocean-300));
-  box-shadow: 0 0 8px var(--glow-blue);
-}
-
-.cs-header-card.others .cs-header-title::after {
-  background: linear-gradient(90deg, var(--amber-500), var(--amber-400));
-  box-shadow: 0 0 8px var(--glow-amber);
 }
 
 .cs-header-subtitle {
   font-size: 11px;
   font-weight: 500;
-  color: rgba(168, 223, 251, 0.45);
+  color: var(--cw-text-muted);
   line-height: 1.4;
   margin: 0;
   letter-spacing: 0.01em;

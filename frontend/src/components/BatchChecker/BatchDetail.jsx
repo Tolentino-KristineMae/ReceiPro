@@ -276,7 +276,6 @@ export default function BatchDetail({
               className="btn-icon-modern"
               onClick={() => fileInputRef.current?.click()}
               title="Add More Receipts"
-              style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}
             >
               <Icon.Plus />
             </button>
@@ -297,9 +296,9 @@ export default function BatchDetail({
                 style={{
                   display: 'flex', alignItems: 'center', gap: '8px',
                   padding: '0 18px', height: '40px', borderRadius: '12px',
-                  background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.15) 100%)',
-                  border: '1px solid rgba(16,185,129,0.35)',
-                  color: '#10b981', fontWeight: 900, fontSize: '11px',
+                  background: 'rgba(34, 197, 94, 0.08)',
+                  border: '1px solid rgba(34, 197, 94, 0.2)',
+                  color: 'var(--success-primary)', fontWeight: 900, fontSize: '11px',
                   textTransform: 'uppercase', letterSpacing: '0.12em',
                   cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap',
                 }}
@@ -326,7 +325,7 @@ export default function BatchDetail({
                     </div>
                     <button 
                       className="btn-icon-modern" 
-                      style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', width: 'auto', padding: '0 1.5rem', borderRadius: '12px', fontSize: '11px' }}
+                      style={{ width: 'auto', padding: '0 1.5rem', borderRadius: '12px', fontSize: '11px' }}
                       onClick={() => {
                         const nextStage = stages.find(s => s.id === activeStage.id);
                         if (nextStage.id === 2) setShowProcessor('categorize');

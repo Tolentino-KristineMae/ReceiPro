@@ -533,6 +533,7 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, delay = 0 }) {
   const getStatus = () => {
     if (batch.checker_status === 'billing_ready') return { label: 'Ready', color: '#15803d', bg: 'rgba(21, 128, 61, 0.08)', border: 'rgba(21, 128, 61, 0.2)' };
     if (batch.checker_status === 'summarized' || batch.checker_status === 'finalized') return { label: 'Review', color: '#ea580c', bg: 'rgba(234, 88, 12, 0.08)', border: 'rgba(234, 88, 12, 0.2)' };
+    if (batch.receipts?.some(r => r.ocr_status === 'uploading')) return { label: 'Uploading', color: 'var(--accent-primary)', bg: 'rgba(251, 146, 60, 0.08)', border: 'rgba(251, 146, 60, 0.2)' };
     if (total > 0) return { label: 'Active', color: '#f97316', bg: 'rgba(249, 115, 22, 0.08)', border: 'rgba(249, 115, 22, 0.2)' };
     return { label: 'Draft', color: '#9a3412', bg: 'rgba(154, 52, 18, 0.08)', border: 'rgba(154, 52, 18, 0.2)' };
   };

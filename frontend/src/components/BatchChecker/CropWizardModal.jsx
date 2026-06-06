@@ -17,28 +17,29 @@ const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap');
 
   .cw-overlay {
-    position: fixed; inset: 0; background: rgba(226, 240, 253, 0.85);
+    position: fixed; inset: 0; background: rgba(67, 20, 7, 0.4);
     display: flex; align-items: center; justify-content: center;
-    z-index: 1000; padding: 20px; backdrop-filter: blur(16px);
+    z-index: 1000; padding: 20px; backdrop-filter: blur(12px);
   }
   .cw-card {
-    background: #0b0d11; border: 1px solid rgba(255,255,255,0.08);
+    background: #fffbf5; border: 1px solid rgba(251, 146, 60, 0.2);
     border-radius: 40px; width: 100%; max-width: 1400px;
     max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;
-    box-shadow: 0 60px 120px rgba(0,0,0,0.9);
+    box-shadow: 0 40px 100px rgba(67, 20, 7, 0.15);
   }
   .cw-header { 
     display: flex; 
     align-items: center; 
     gap: 20px; 
     padding: 20px 40px; 
-    border-bottom: 1px solid rgba(255,255,255,0.05); 
+    border-bottom: 1px solid rgba(251, 146, 60, 0.1); 
     justify-content: center;
     position: relative;
+    background: #ffffff;
   }
   .cw-header-icon {
-    width: 40px; height: 40px; border-radius: 12px; background: rgba(245,158,11,0.1);
-    border: 1px solid rgba(245,158,11,0.2); display: flex; align-items: center; justify-content: center; color: #f59e0b;
+    width: 40px; height: 40px; border-radius: 12px; background: rgba(249, 115, 22, 0.08);
+    border: 1px solid rgba(249, 115, 22, 0.15); display: flex; align-items: center; justify-content: center; color: #f97316;
   }
   .cw-title-group {
     display: flex;
@@ -46,10 +47,10 @@ const CSS = `
     align-items: center;
     text-align: center;
   }
-  .cw-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.05em; }
-  .cw-subtitle { font-family: 'DM Sans', sans-serif; font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
-  .cw-close { position: absolute; right: 40px; color: #475569; font-size: 20px; cursor: pointer; transition: color 0.2s; border: none; background: none; }
-  .cw-close:hover { color: #fff; }
+  .cw-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: #431407; text-transform: uppercase; letter-spacing: 0.05em; }
+  .cw-subtitle { font-family: 'DM Sans', sans-serif; font-size: 10px; color: #9a3412; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+  .cw-close { position: absolute; right: 40px; color: #9a3412; font-size: 20px; cursor: pointer; transition: all 0.2s; border: none; background: none; opacity: 0.5; }
+  .cw-close:hover { color: #f97316; opacity: 1; transform: scale(1.1); }
 
   .cw-content { 
     flex: 1; 
@@ -59,6 +60,7 @@ const CSS = `
     overflow: hidden; 
     justify-content: center;
     align-items: stretch;
+    background: #fffbf5;
   }
 
   .cw-canvas-wrapper {
@@ -68,26 +70,30 @@ const CSS = `
     justify-content: center;
     padding: 40px;
     max-width: 600px;
+    background: #ffffff;
+    border-right: 1px solid rgba(251, 146, 60, 0.1);
   }
 
   .cw-sidebar {
      width: 480px;
      flex-shrink: 0;
-     background: rgba(255,255,255,0.01);
+     background: #ffffff;
      display: flex;
      flex-direction: column;
      padding: 40px;
      overflow-y: auto;
+     border-left: 1px solid rgba(251, 146, 60, 0.1);
    }
 
-  .cw-footer { padding: 30px 40px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: center; }
+  .cw-footer { padding: 30px 40px; border-top: 1px solid rgba(251, 146, 60, 0.1); display: flex; justify-content: center; background: #ffffff; }
   .cw-btn-confirm {
-    width: 100%; max-width: 400px; background: #f59e0b; color: #000;
+    width: 100%; max-width: 400px; background: #f97316; color: #fff;
     font-family: 'Syne', sans-serif; font-weight: 800; text-transform: uppercase;
     letter-spacing: 0.2em; font-size: 12px; padding: 18px; border-radius: 20px;
     border: none; cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 10px 20px rgba(249, 115, 22, 0.2);
   }
-  .cw-btn-confirm:hover { background: #fbbf24; transform: translateY(-2px); }
+  .cw-btn-confirm:hover { background: #fb923c; transform: translateY(-2px); box-shadow: 0 15px 30px rgba(249, 115, 22, 0.3); }
   .cw-btn-confirm:active { transform: translateY(0); }
 
   /* OCR Table specific styles */
@@ -95,33 +101,34 @@ const CSS = `
   .cw-table th {
     padding: 0 16px 8px; text-align: left;
     font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 800;
-    text-transform: uppercase; letter-spacing: 0.15em; color: #475569;
+    text-transform: uppercase; letter-spacing: 0.15em; color: #9a3412;
   }
-  .cw-row { background: rgba(255,255,255,0.02); transition: all 0.2s ease; border-radius: 12px; }
-  .cw-row:hover { background: rgba(255,255,255,0.04); }
-  .cw-row.saved { background: rgba(82,200,122,0.05); }
-  .cw-td { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.03); }
-  .cw-td:first-child { border-left: 1px solid rgba(255,255,255,0.03); border-radius: 12px 0 0 12px; }
-  .cw-td:last-child { border-right: 1px solid rgba(255,255,255,0.03); border-radius: 0 12px 12px 0; }
+  .cw-row { background: #ffffff; transition: all 0.2s ease; border-radius: 12px; border: 1px solid rgba(251, 146, 60, 0.05); }
+  .cw-row:hover { background: #fff7ed; border-color: rgba(249, 115, 22, 0.2); }
+  .cw-row.saved { background: rgba(34, 197, 94, 0.05); border-color: rgba(34, 197, 94, 0.15); }
+  .cw-td { padding: 12px 16px; color: #431407; }
+  .cw-td:first-child { border-radius: 12px 0 0 12px; }
+  .cw-td:last-child { border-radius: 0 12px 12px 0; }
 
   .cw-input {
-    background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 8px; padding: 8px 12px; color: #fff; font-family: 'JetBrains Mono', monospace;
+    background: #fff; border: 1.5px solid rgba(251, 146, 60, 0.15);
+    border-radius: 10px; padding: 10px 14px; color: #431407; font-family: 'JetBrains Mono', monospace;
     font-size: 11px; outline: none; transition: all 0.2s; width: 100%;
   }
-  .cw-input:focus { border-color: #52c87a; background: rgba(82,200,122,0.05); }
+  .cw-input:focus { border-color: #f97316; background: #fff; box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1); }
 
   .cw-badge {
     padding: 4px 10px; border-radius: 50px; font-size: 8px; font-weight: 800;
     text-transform: uppercase; letter-spacing: 0.1em; font-family: 'DM Sans', sans-serif;
   }
-  .cw-badge.success { background: rgba(82,200,122,0.1); color: #52c87a; border: 1px solid rgba(82,200,122,0.2); }
-  .cw-badge.warning { background: rgba(245,158,11,0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+  .cw-badge.success { background: rgba(34, 197, 94, 0.1); color: #15803d; border: 1px solid rgba(34, 197, 94, 0.2); }
+  .cw-badge.warning { background: rgba(249, 115, 22, 0.1); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.2); }
 
   .cw-stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
-  .cw-stat-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 16px; text-align: center; }
-  .cw-stat-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: #fff; }
-  .cw-stat-label { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+  .cw-stat-card { background: #ffffff; border: 1px solid rgba(251, 146, 60, 0.1); border-radius: 16px; padding: 16px; text-align: center; box-shadow: 0 4px 10px rgba(67, 20, 7, 0.03); }
+  .cw-stat-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: #431407; }
+  .cw-stat-label { font-size: 9px; font-weight: 700; color: #9a3412; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+
 `;
 
 const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'categorize' }) => {
@@ -2285,10 +2292,10 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
               {/* Stage 8: Billing View (Main Content) */}
               {phase === 'billing' && (
-                <div className="flex-1 flex flex-col p-10 overflow-hidden animate-in slide-in-from-left duration-500 text-left">
+                <div className="flex-1 flex flex-col p-10 overflow-hidden animate-in slide-in-from-left duration-500 text-left bg-[#fffbf5]">
                   <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-3xl font-black text-white uppercase tracking-tight">Payment Details</h3>
-                    <div className={`px-6 py-2 rounded-full ${isBillingBalanced ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'} text-[12px] font-black uppercase tracking-[0.2em] border transition-all`}>
+                    <h3 className="text-3xl font-black text-orange-900 uppercase tracking-tight">Payment Details</h3>
+                    <div className={`px-6 py-2 rounded-full ${isBillingBalanced ? 'bg-green-500/10 text-green-600 border-green-500/20' : 'bg-orange-500/10 text-orange-600 border-orange-500/20'} text-[12px] font-black uppercase tracking-[0.2em] border transition-all`}>
                       {isBillingBalanced ? '✓ FUNDS BALANCED' : `₱${Math.abs(billingDiff).toLocaleString()} REMAINING`}
                     </div>
                   </div>
@@ -2297,42 +2304,42 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                     <div className="grid grid-cols-1 gap-8">
                       {/* Summary Cards */}
                       <div className="grid grid-cols-3 gap-6">
-                        <div className="p-8 bg-white/5 rounded-[32px] border border-white/10 text-center">
-                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Net Amount Due</div>
-                          <div className="text-3xl font-black text-white tracking-tighter">
+                        <div className="p-8 bg-white border border-orange-100 rounded-[32px] shadow-sm text-center">
+                          <div className="text-[10px] font-black text-orange-800/40 uppercase tracking-widest mb-2">Net Amount Due</div>
+                          <div className="text-3xl font-black text-orange-900 tracking-tighter">
                             ₱{netAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                           </div>
-                          <div className="text-[9px] text-slate-500 font-medium uppercase mt-2">
+                          <div className="text-[9px] text-orange-800/30 font-medium uppercase mt-2">
                             Target amount
                           </div>
                         </div>
-                        <div className="p-8 bg-white/5 rounded-[32px] border border-white/10 text-center">
-                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Total Prepared</div>
-                          <div className={`text-3xl font-black ${isBillingBalanced ? 'text-green-400' : 'text-amber-400'} tracking-tighter`}>
+                        <div className="p-8 bg-white border border-orange-100 rounded-[32px] shadow-sm text-center">
+                          <div className="text-[10px] font-black text-orange-800/40 uppercase tracking-widest mb-2">Total Prepared</div>
+                          <div className={`text-3xl font-black ${isBillingBalanced ? 'text-green-600' : 'text-orange-600'} tracking-tighter`}>
                             ₱{billingTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                           </div>
-                          <div className="text-[9px] text-slate-500 font-medium uppercase mt-2">
+                          <div className="text-[9px] text-orange-800/30 font-medium uppercase mt-2">
                             Cash + Bank
                           </div>
                         </div>
-                        <div className="p-8 bg-white/5 rounded-[32px] border border-white/10 text-center">
-                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Difference</div>
-                          <div className={`text-3xl font-black ${billingDiff === 0 ? 'text-green-400' : 'text-red-400'} tracking-tighter`}>
+                        <div className="p-8 bg-white border border-orange-100 rounded-[32px] shadow-sm text-center">
+                          <div className="text-[10px] font-black text-orange-800/40 uppercase tracking-widest mb-2">Difference</div>
+                          <div className={`text-3xl font-black ${billingDiff === 0 ? 'text-green-600' : 'text-red-600'} tracking-tighter`}>
                             {billingDiff === 0 ? '✓' : `₱${Math.abs(billingDiff).toLocaleString()}`}
                           </div>
-                          <div className="text-[9px] text-slate-500 font-medium uppercase mt-2">
+                          <div className="text-[9px] text-orange-800/30 font-medium uppercase mt-2">
                             {billingDiff === 0 ? 'Balanced' : billingDiff > 0 ? 'Short' : 'Over'}
                           </div>
                         </div>
                       </div>
 
                       {/* QR Code Payment Section */}
-                      <div className="bg-white/5 rounded-[40px] border border-white/10 p-10">
-                        <h4 className="text-sm font-black text-white uppercase tracking-widest mb-8">GCash Payment</h4>
+                      <div className="bg-white border border-orange-100 rounded-[40px] shadow-md p-10">
+                        <h4 className="text-sm font-black text-orange-900 uppercase tracking-widest mb-8">GCash Payment</h4>
                         
                         <div className="flex flex-col items-center justify-center gap-6">
                           {/* QR Code Image */}
-                          <div className="p-6 bg-white rounded-3xl shadow-2xl">
+                          <div className="p-6 bg-white rounded-3xl shadow-xl border border-orange-50/50">
                             <img 
                               src="/src/assets/qr-jonarld.jpg" 
                               alt="GCash QR Code" 
@@ -2342,32 +2349,32 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                           
                           {/* Payment Instructions */}
                           <div className="text-center space-y-2">
-                            <div className="text-lg font-black text-white">
+                            <div className="text-lg font-black text-orange-900">
                               Scan to Pay via GCash
                             </div>
-                            <div className="text-sm text-slate-400 font-medium">
+                            <div className="text-sm text-orange-800/60 font-medium">
                               Send ₱{netAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })} to complete the transaction
                             </div>
                           </div>
 
                           {/* Payment Details */}
                           <div className="w-full max-w-md space-y-3 mt-4">
-                            <div className="flex items-center justify-between p-4 bg-white/[0.02] rounded-xl border border-white/5">
-                              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Account Name</span>
-                              <span className="text-sm font-black text-white">Jonarld</span>
+                            <div className="flex items-center justify-between p-4 bg-orange-50/30 rounded-xl border border-orange-100/50">
+                              <span className="text-xs font-bold text-orange-800/60 uppercase tracking-wider">Account Name</span>
+                              <span className="text-sm font-black text-orange-950">Jonarld</span>
                             </div>
-                            <div className="flex items-center justify-between p-4 bg-white/[0.02] rounded-xl border border-white/5">
-                              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Payment Method</span>
-                              <span className="text-sm font-black text-blue-400">GCash</span>
+                            <div className="flex items-center justify-between p-4 bg-orange-50/30 rounded-xl border border-orange-100/50">
+                              <span className="text-xs font-bold text-orange-800/60 uppercase tracking-wider">Payment Method</span>
+                              <span className="text-sm font-black text-orange-600">GCash</span>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Info Box */}
-                      <div className="p-6 bg-blue-500/5 rounded-2xl border border-blue-500/10 flex gap-4 items-start">
+                      <div className="p-6 bg-orange-500/5 rounded-2xl border border-orange-500/10 flex gap-4 items-start">
                         <div className="text-xl">💳</div>
-                        <div className="text-[11px] text-blue-200/60 leading-relaxed font-medium">
+                        <div className="text-[11px] text-orange-800/60 leading-relaxed font-medium">
                           Scan the QR code using your GCash app to send the payment. 
                           You can also enter cash denominations and bank transfer details in the sidebar to track the funds received.
                         </div>
@@ -2383,19 +2390,21 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                                   </div>
                               )}
 
-                              {/* Bank Transfer Bar */}
+                          {/* Bank Transfer Bar */}
                           {(billingMethod === 'bank' || billingMethod === 'both') && (
-                            <div className="p-8 bg-blue-500/5 rounded-3xl border border-blue-500/10 flex items-center justify-between">
+                            <div className="p-8 bg-orange-500/5 rounded-3xl border border-orange-500/10 flex items-center justify-between">
                               <div className="flex items-center gap-6">
-                                <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center text-2xl text-blue-400">🏦</div>
+                                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-2xl">
+                                  <span style={{ filter: 'grayscale(1) sepia(1) saturate(5) hue-rotate(-20deg)' }}>🏦</span>
+                                </div>
                                 <div>
-                                  <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Electronic Transfer</div>
-                                  <div className="text-sm font-bold text-white uppercase tracking-tight">Bank-to-Bank Settlement</div>
+                                  <div className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Electronic Transfer</div>
+                                  <div className="text-sm font-bold text-orange-900 uppercase tracking-tight">Bank-to-Bank Settlement</div>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Prepared Amount</div>
-                                <div className="text-2xl font-black text-blue-400 tracking-tighter">₱{Number(bankTransferAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>
+                                <div className="text-[10px] font-black text-orange-800/40 uppercase tracking-widest mb-1">Prepared Amount</div>
+                                <div className="text-2xl font-black text-orange-600 tracking-tighter">₱{Number(bankTransferAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>
                               </div>
                             </div>
                           )}

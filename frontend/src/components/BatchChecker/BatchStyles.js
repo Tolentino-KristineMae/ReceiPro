@@ -14,7 +14,7 @@ export const BATCH_STYLES = `
     
     --accent-primary:    #f97316;
     --accent-secondary:  #fb923c;
-    --success-primary:   #15803d;
+    --success-primary:   #22c55e;
     --danger-primary:    #b91c1c;
     --warning-primary:   #ea580c;
     
@@ -314,7 +314,7 @@ export const BATCH_STYLES = `
 
   .receipt-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(6, 1fr);
     gap: 1.25rem;
   }
 
@@ -323,16 +323,17 @@ export const BATCH_STYLES = `
     border-radius: var(--radius-lg);
     overflow: hidden;
     background: var(--bg-secondary);
-    border: 1px solid var(--border-subtle);
+    border: 2px solid var(--border-subtle);
     position: relative;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   }
 
   .receipt-card:hover {
-    transform: translateY(-4px);
-    border-color: var(--border-accent);
-    box-shadow: var(--shadow-xl);
+    transform: translateY(-6px) scale(1.02);
+    border-color: var(--accent-primary);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
   }
 
   .receipt-img {
@@ -461,14 +462,14 @@ export const BATCH_STYLES = `
   .back-link:hover { color: var(--text-primary); }
 
   .empty-box {
-    padding: 4rem 2rem;
-    text-align: center;
-    color: var(--text-muted-alt);
-    font-size: 13px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    justify-content: center;
+    padding: 5rem;
+    color: var(--text-muted);
+    background: var(--bg-secondary);
+    border: 1px dashed var(--border-strong);
   }
 
   .empty-icon-lg {
@@ -509,7 +510,7 @@ export const BATCH_STYLES = `
   .spinner-modern {
     width: 24px;
     height: 24px;
-    border: 3px solid rgba(255,255,255,0.1);
+    border: 3px solid rgba(0,0,0,0.05);
     border-top: 3px solid var(--accent-primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
@@ -575,13 +576,15 @@ export const BATCH_STYLES = `
     background: var(--bg-primary);
     border-color: var(--accent-primary);
     color: var(--accent-primary);
-    box-shadow: 0 0 15px var(--border-accent);
+    box-shadow: 0 0 20px var(--border-accent);
+    transform: scale(1.1);
   }
 
   .stage-item.done .stage-circle {
-    background: var(--success-primary);
-    border-color: var(--success-primary);
+    background: var(--gradient-success);
+    border-color: transparent;
     color: white;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
   }
 
   .stage-label {
@@ -593,8 +596,8 @@ export const BATCH_STYLES = `
     text-align: center;
   }
 
-  .stage-item.active .stage-label { color: var(--text-primary); }
-  .stage-item.done .stage-label { color: var(--success-primary); }
+  .stage-item.active .stage-label { color: var(--accent-primary); font-weight: 900; }
+  .stage-item.done .stage-label { color: var(--success-primary); font-weight: 700; }
 
   /* ─── Modals ─── */
   .ort-overlay {
