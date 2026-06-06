@@ -156,11 +156,6 @@ export default function SortingStage({
             </div>
           )}
 
-          {/* Separator */}
-          {gcashReceipts.length > 0 && othersReceipts.length > 0 && (
-            <div className="ss-separator" />
-          )}
-
           {/* Others */}
           {othersReceipts.length > 0 && (
             <div className="ss-col others">
@@ -198,7 +193,7 @@ export default function SortingStage({
 
       {/* Proceed */}
       <button className="ss-proceed-btn" onClick={onProceed}>
-        Looks Good — Proceed to Crop &amp; Input &nbsp;→
+        Confirm Sorting & Proceed to Extraction &nbsp;→
       </button>
     </div>
   );

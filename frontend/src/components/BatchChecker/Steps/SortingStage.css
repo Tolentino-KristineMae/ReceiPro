@@ -15,8 +15,8 @@
   --ss-border:        rgba(251, 146, 60, 0.15);
   --ss-border-strong: rgba(251, 146, 60, 0.3);
 
-  --ss-gcash-color:   #10b981;
-  --ss-others-color:  #f97316;
+  --ss-gcash-color:   #3b82f6;
+  --ss-others-color:  #eab308;
 
   --font-display: 'Space Grotesk', system-ui, sans-serif;
   --font-body:    'Space Grotesk', system-ui, sans-serif;
@@ -97,14 +97,14 @@
 }
 
 .ss-badge.gcash {
-  background: rgba(16, 185, 129, 0.08);
-  border-color: rgba(16, 185, 129, 0.2);
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
   color: var(--ss-gcash-color);
 }
 
 .ss-badge.others {
-  background: rgba(251, 191, 36, 0.08);
-  border-color: rgba(251, 191, 36, 0.2);
+  background: rgba(234, 179, 8, 0.08);
+  border-color: rgba(234, 179, 8, 0.2);
   color: var(--ss-others-color);
 }
 
@@ -149,8 +149,8 @@
 
 .ss-card.checked {
   border-color: var(--ss-others-color);
-  background: rgba(249, 115, 22, 0.03);
-  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.15);
+  background: rgba(234, 179, 8, 0.03);
+  box-shadow: 0 8px 20px rgba(234, 179, 8, 0.15);
 }
 
 .ss-card img {
@@ -265,30 +265,35 @@
 }
 
 .ss-edit-btn {
-  padding: 6px 14px;
-  border-radius: 8px;
-  background: var(--ss-bg-secondary);
-  border: 1px solid var(--ss-border-strong);
-  color: var(--ss-text-muted);
-  font-size: 10px;
+  padding: 10px 24px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 2px solid var(--ss-accent);
+  color: var(--ss-accent);
+  font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .ss-edit-btn:hover {
-  background: var(--ss-bg-tertiary);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: var(--ss-text-main);
+  background: var(--ss-accent);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.2);
 }
 
 /* ─── Columns ────────────────────────────────────────────────────────────────── */
 .ss-columns {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: 20px;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
   min-height: 400px;
 }
 
@@ -297,18 +302,29 @@
   flex-direction: column;
   gap: 16px;
   background: var(--ss-bg-secondary);
-  padding: 20px;
-  border-radius: 20px;
-  border: 1px solid var(--ss-border);
+  padding: 24px;
+  border-radius: 24px;
+  border: 1.5px solid var(--ss-border);
   box-shadow: 0 4px 12px rgba(67, 20, 7, 0.03);
+  transition: all 0.3s ease;
+}
+
+.ss-col.gcash {
+  border: 5px solid var(--ss-gcash-color);
+  background: rgba(59, 130, 246, 0.02);
+}
+
+.ss-col.others {
+  border: 5px solid var(--ss-others-color);
+  background: rgba(234, 179, 8, 0.02);
 }
 
 .ss-col-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 12px;
-  border-bottom: 1.5px solid var(--ss-border);
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--ss-border-strong);
 }
 
 .ss-col-label {
@@ -373,9 +389,18 @@
 }
 
 .ss-separator {
-  width: 1px;
-  background: var(--ss-border);
-  margin: 20px 0;
+  width: 3px;
+  background: linear-gradient(to bottom, 
+    transparent 0%, 
+    rgba(249, 115, 22, 0.1) 15%, 
+    var(--ss-accent) 50%, 
+    rgba(249, 115, 22, 0.1) 85%, 
+    transparent 100%
+  );
+  margin: 0 10px;
+  opacity: 1;
+  border-radius: 99px;
+  box-shadow: 0 0 15px rgba(249, 115, 22, 0.3);
 }
 
 /* ─── Proceed Button ─────────────────────────────────────────────────────────── */

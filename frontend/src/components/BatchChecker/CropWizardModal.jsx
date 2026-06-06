@@ -31,15 +31,17 @@ const CSS = `
     display: flex; 
     align-items: center; 
     gap: 20px; 
-    padding: 20px 40px; 
-    border-bottom: 1px solid rgba(251, 146, 60, 0.1); 
+    padding: 24px 40px; 
+    border-bottom: 2px solid #f97316; 
     justify-content: center;
     position: relative;
     background: #ffffff;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.08);
   }
   .cw-header-icon {
-    width: 40px; height: 40px; border-radius: 12px; background: rgba(249, 115, 22, 0.08);
-    border: 1px solid rgba(249, 115, 22, 0.15); display: flex; align-items: center; justify-content: center; color: #f97316;
+    width: 48px; height: 48px; border-radius: 16px; background: #ffffff;
+    border: 2px solid #f97316; display: flex; align-items: center; justify-content: center; 
+    color: #f97316; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.15);
   }
   .cw-title-group {
     display: flex;
@@ -1159,30 +1161,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       <div className="cw-card">
         {/* Header */}
         <div className="cw-header">
-          <div className="cw-header-icon" style={{
-            background: phase === 'categorize' ? 'rgba(99,102,241,0.12)' :
-                        phase === 'crop'       ? 'rgba(245,158,11,0.12)' :
-                        phase === 'ocr'        ? 'rgba(251,191,36,0.12)' :
-                        phase === 'verify'     ? 'rgba(59,130,246,0.12)' :
-                        phase === 'finalize'   ? 'rgba(16,185,129,0.12)' :
-                        phase === 'summary'    ? 'rgba(168,85,247,0.12)' :
-                                                 'rgba(16,185,129,0.12)',
-            border: `1px solid ${
-                        phase === 'categorize' ? 'rgba(99,102,241,0.3)'  :
-                        phase === 'crop'       ? 'rgba(245,158,11,0.3)'  :
-                        phase === 'ocr'        ? 'rgba(251,191,36,0.3)'  :
-                        phase === 'verify'     ? 'rgba(59,130,246,0.3)'  :
-                        phase === 'finalize'   ? 'rgba(16,185,129,0.3)'  :
-                        phase === 'summary'    ? 'rgba(168,85,247,0.3)'  :
-                                                 'rgba(16,185,129,0.3)'}`,
-            color: phase === 'categorize' ? '#818cf8' :
-                   phase === 'crop'       ? '#f59e0b' :
-                   phase === 'ocr'        ? '#fbbf24' :
-                   phase === 'verify'     ? '#60a5fa' :
-                   phase === 'finalize'   ? '#34d399' :
-                   phase === 'summary'    ? '#c084fc' :
-                                            '#34d399',
-          }}>
+          <div className="cw-header-icon">
             {/* Stage 2: Sorting — grid with checkboxes */}
             {phase === 'categorize' && (
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1245,16 +1224,16 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
           <div className="cw-title-group">
             {/* Stage 2 gets its own styled header to match SortingStage's design language */}
             {phase === 'categorize' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {/* Stage pill */}
                   <span style={{
-                    padding: '3px 10px', borderRadius: '100px',
-                    background: 'rgba(99,102,241,0.15)',
-                    border: '1px solid rgba(99,102,241,0.35)',
-                    color: '#a5b4fc',
-                    fontSize: '9px', fontWeight: 700,
-                    textTransform: 'uppercase', letterSpacing: '0.2em',
+                    padding: '4px 12px', borderRadius: '100px',
+                    background: 'rgba(249, 115, 22, 0.1)',
+                    border: '1.5px solid rgba(249, 115, 22, 0.3)',
+                    color: '#f97316',
+                    fontSize: '10px', fontWeight: 800,
+                    textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Space Grotesk', system-ui, sans-serif",
                   }}>
                     Stage 2 of 8
@@ -1262,34 +1241,35 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 </div>
                 {/* Title */}
                 <div style={{
-                  fontSize: '16px', fontWeight: 700,
-                  color: '#f1f5f9',
+                  fontSize: '20px', fontWeight: 900,
+                  color: '#431407',
                   letterSpacing: '-0.02em', lineHeight: 1.2,
+                  textTransform: 'uppercase',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
                   Sort Receipts
                 </div>
                 {/* Subtitle */}
                 <div style={{
-                  fontSize: '10px', fontWeight: 500,
-                  color: '#64748b',
-                  letterSpacing: '0.04em',
+                  fontSize: '11px', fontWeight: 600,
+                  color: 'rgba(67, 20, 7, 0.6)',
+                  letterSpacing: '0.02em',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
                   Classify each receipt as GCash or Others
                 </div>
               </div>
             ) : phase === 'crop' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {/* Stage pill */}
                   <span style={{
-                    padding: '3px 10px', borderRadius: '100px',
-                    background: 'rgba(245,158,11,0.15)',
-                    border: '1px solid rgba(245,158,11,0.35)',
-                    color: '#fbbf24',
-                    fontSize: '9px', fontWeight: 700,
-                    textTransform: 'uppercase', letterSpacing: '0.2em',
+                    padding: '4px 12px', borderRadius: '100px',
+                    background: 'rgba(249, 115, 22, 0.1)',
+                    border: '1.5px solid rgba(249, 115, 22, 0.3)',
+                    color: '#f97316',
+                    fontSize: '10px', fontWeight: 800,
+                    textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Space Grotesk', system-ui, sans-serif",
                   }}>
                     Stage 3 of 8
@@ -1297,34 +1277,35 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 </div>
                 {/* Title */}
                 <div style={{
-                  fontSize: '16px', fontWeight: 700,
-                  color: '#f1f5f9',
+                  fontSize: '20px', fontWeight: 900,
+                  color: '#431407',
                   letterSpacing: '-0.02em', lineHeight: 1.2,
+                  textTransform: 'uppercase',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
                   Crop & Input
                 </div>
                 {/* Subtitle */}
                 <div style={{
-                  fontSize: '10px', fontWeight: 500,
-                  color: '#64748b',
-                  letterSpacing: '0.04em',
+                  fontSize: '11px', fontWeight: 600,
+                  color: 'rgba(67, 20, 7, 0.6)',
+                  letterSpacing: '0.02em',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
                   Crop GCash receipts and input Others manually
                 </div>
               </div>
             ) : phase === 'ocr' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {/* Stage pill */}
                   <span style={{
-                    padding: '3px 10px', borderRadius: '100px',
-                    background: 'rgba(139,92,246,0.15)',
-                    border: '1px solid rgba(139,92,246,0.35)',
-                    color: '#c4b5fd',
-                    fontSize: '9px', fontWeight: 700,
-                    textTransform: 'uppercase', letterSpacing: '0.2em',
+                    padding: '4px 12px', borderRadius: '100px',
+                    background: 'rgba(249, 115, 22, 0.1)',
+                    border: '1.5px solid rgba(249, 115, 22, 0.3)',
+                    color: '#f97316',
+                    fontSize: '10px', fontWeight: 800,
+                    textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Space Grotesk', system-ui, sans-serif",
                   }}>
                     Stage 4 of 8
@@ -1332,34 +1313,35 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 </div>
                 {/* Title */}
                 <div style={{
-                  fontSize: '16px', fontWeight: 700,
-                  color: '#f1f5f9',
+                  fontSize: '20px', fontWeight: 900,
+                  color: '#431407',
                   letterSpacing: '-0.02em', lineHeight: 1.2,
+                  textTransform: 'uppercase',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
                   OCR Extraction
                 </div>
                 {/* Subtitle */}
                 <div style={{
-                  fontSize: '10px', fontWeight: 500,
-                  color: '#64748b',
-                  letterSpacing: '0.04em',
+                  fontSize: '11px', fontWeight: 600,
+                  color: 'rgba(67, 20, 7, 0.6)',
+                  letterSpacing: '0.02em',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
-                  Extract data from receipt images using OCR
+                  Automatically reading receipt details
                 </div>
               </div>
             ) : phase === 'verify' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {/* Stage pill */}
                   <span style={{
-                    padding: '3px 10px', borderRadius: '100px',
-                    background: 'rgba(59,130,246,0.15)',
-                    border: '1px solid rgba(59,130,246,0.35)',
-                    color: '#60a5fa',
-                    fontSize: '9px', fontWeight: 700,
-                    textTransform: 'uppercase', letterSpacing: '0.2em',
+                    padding: '4px 12px', borderRadius: '100px',
+                    background: 'rgba(249, 115, 22, 0.1)',
+                    border: '1.5px solid rgba(249, 115, 22, 0.3)',
+                    color: '#f97316',
+                    fontSize: '10px', fontWeight: 800,
+                    textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Space Grotesk', system-ui, sans-serif",
                   }}>
                     Stage 5 of 8
@@ -1367,34 +1349,35 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 </div>
                 {/* Title */}
                 <div style={{
-                  fontSize: '16px', fontWeight: 700,
-                  color: '#f1f5f9',
+                  fontSize: '20px', fontWeight: 900,
+                  color: '#431407',
                   letterSpacing: '-0.02em', lineHeight: 1.2,
+                  textTransform: 'uppercase',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
-                  Verification Check
+                  Verification
                 </div>
                 {/* Subtitle */}
                 <div style={{
-                  fontSize: '10px', fontWeight: 500,
-                  color: '#64748b',
-                  letterSpacing: '0.04em',
+                  fontSize: '11px', fontWeight: 600,
+                  color: 'rgba(67, 20, 7, 0.6)',
+                  letterSpacing: '0.02em',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
-                  Verify extracted receipts against transaction records
+                  Match results with database records
                 </div>
               </div>
             ) : phase === 'finalize' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {/* Stage pill */}
                   <span style={{
-                    padding: '3px 10px', borderRadius: '100px',
-                    background: 'rgba(16,185,129,0.15)',
-                    border: '1px solid rgba(16,185,129,0.35)',
-                    color: '#10b981',
-                    fontSize: '9px', fontWeight: 700,
-                    textTransform: 'uppercase', letterSpacing: '0.2em',
+                    padding: '4px 12px', borderRadius: '100px',
+                    background: 'rgba(249, 115, 22, 0.1)',
+                    border: '1.5px solid rgba(249, 115, 22, 0.3)',
+                    color: '#f97316',
+                    fontSize: '10px', fontWeight: 800,
+                    textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Space Grotesk', system-ui, sans-serif",
                   }}>
                     Stage 6 of 8
@@ -1402,34 +1385,35 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 </div>
                 {/* Title */}
                 <div style={{
-                  fontSize: '16px', fontWeight: 700,
-                  color: '#f1f5f9',
+                  fontSize: '20px', fontWeight: 900,
+                  color: '#431407',
                   letterSpacing: '-0.02em', lineHeight: 1.2,
+                  textTransform: 'uppercase',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
-                  Finalize Batch
+                  Finalization
                 </div>
                 {/* Subtitle */}
                 <div style={{
-                  fontSize: '10px', fontWeight: 500,
-                  color: '#64748b',
-                  letterSpacing: '0.04em',
+                  fontSize: '11px', fontWeight: 600,
+                  color: 'rgba(67, 20, 7, 0.6)',
+                  letterSpacing: '0.02em',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
-                  Complete batch processing and link transactions
+                  Final review before batch creation
                 </div>
               </div>
             ) : phase === 'summary' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {/* Stage pill */}
                   <span style={{
-                    padding: '3px 10px', borderRadius: '100px',
-                    background: 'rgba(168,85,247,0.15)',
-                    border: '1px solid rgba(168,85,247,0.35)',
-                    color: '#a855f7',
-                    fontSize: '9px', fontWeight: 700,
-                    textTransform: 'uppercase', letterSpacing: '0.2em',
+                    padding: '4px 12px', borderRadius: '100px',
+                    background: 'rgba(249, 115, 22, 0.1)',
+                    border: '1.5px solid rgba(249, 115, 22, 0.3)',
+                    color: '#f97316',
+                    fontSize: '10px', fontWeight: 800,
+                    textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Space Grotesk', system-ui, sans-serif",
                   }}>
                     Stage 7 of 8
@@ -1437,34 +1421,35 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 </div>
                 {/* Title */}
                 <div style={{
-                  fontSize: '16px', fontWeight: 700,
-                  color: '#f1f5f9',
+                  fontSize: '20px', fontWeight: 900,
+                  color: '#431407',
                   letterSpacing: '-0.02em', lineHeight: 1.2,
+                  textTransform: 'uppercase',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
-                  Claims Summary
+                  Batch Summary
                 </div>
                 {/* Subtitle */}
                 <div style={{
-                  fontSize: '10px', fontWeight: 500,
-                  color: '#64748b',
-                  letterSpacing: '0.04em',
+                  fontSize: '11px', fontWeight: 600,
+                  color: 'rgba(67, 20, 7, 0.6)',
+                  letterSpacing: '0.02em',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
-                  Calculate total claims and deductions
+                  Review total amounts and deductions
                 </div>
               </div>
             ) : phase === 'billing' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {/* Stage pill */}
                   <span style={{
-                    padding: '3px 10px', borderRadius: '100px',
-                    background: 'rgba(59,130,246,0.15)',
-                    border: '1px solid rgba(59,130,246,0.35)',
-                    color: '#3b82f6',
-                    fontSize: '9px', fontWeight: 700,
-                    textTransform: 'uppercase', letterSpacing: '0.2em',
+                    padding: '4px 12px', borderRadius: '100px',
+                    background: 'rgba(249, 115, 22, 0.1)',
+                    border: '1.5px solid rgba(249, 115, 22, 0.3)',
+                    color: '#f97316',
+                    fontSize: '10px', fontWeight: 800,
+                    textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Space Grotesk', system-ui, sans-serif",
                   }}>
                     Stage 8 of 8
@@ -1472,75 +1457,44 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 </div>
                 {/* Title */}
                 <div style={{
-                  fontSize: '16px', fontWeight: 700,
-                  color: '#f1f5f9',
+                  fontSize: '20px', fontWeight: 900,
+                  color: '#431407',
                   letterSpacing: '-0.02em', lineHeight: 1.2,
+                  textTransform: 'uppercase',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
-                  Billing & Payment
+                  Payment & Billing
                 </div>
                 {/* Subtitle */}
                 <div style={{
-                  fontSize: '10px', fontWeight: 500,
-                  color: '#64748b',
-                  letterSpacing: '0.04em',
+                  fontSize: '11px', fontWeight: 600,
+                  color: 'rgba(67, 20, 7, 0.6)',
+                  letterSpacing: '0.02em',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 }}>
-                  Prepare funds and complete payment
+                  Complete the transaction via GCash
                 </div>
               </div>
             ) : (
-              <>
-                <div className="cw-title">
-                  Stage {phase}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  fontSize: '20px', fontWeight: 900,
+                  color: '#431407',
+                  letterSpacing: '-0.02em', lineHeight: 1.2,
+                  textTransform: 'uppercase',
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  {phase === 'crop' ? 'Crop & Input' : 'Batch Checker'}
                 </div>
-            <div className="cw-subtitle">
-              {(phase !== 'ocr' && phase !== 'verify' && phase !== 'finalize' && phase !== 'summary') && (
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-white/40">TOTAL</span>
-                    <span className="text-white font-bold">{currentTotalStr}</span>
-                  </div>
-                  
-                  {gcashReceipts.length > 0 && (
-                    <>
-                      <span className="text-white/10">|</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-blue-500/60">GCASH</span>
-                        <span className={`font-bold ${isGcash ? 'text-blue-400' : 'text-blue-500/40'}`}>
-                          {phase === 'categorize' ? gcashReceipts.length : `${gcashProcessed}/${gcashReceipts.length}`}
-                        </span>
-                      </div>
-                    </>
-                  )}
-
-                  {othersReceipts.length > 0 && (
-                    <>
-                      <span className="text-white/10">|</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-amber-500/60">OTHERS</span>
-                        <span className={`font-bold ${isOthers ? 'text-amber-400' : 'text-amber-500/40'}`}>
-                          {phase === 'categorize' ? othersReceipts.length : `${othersProcessed}/${othersReceipts.length}`}
-                        </span>
-                      </div>
-                    </>
-                  )}
-
-                  {unsortedReceipts.length > 0 && phase === 'categorize' && (
-                    <>
-                      <span className="text-white/10">|</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-slate-500/60">UNSORTED</span>
-                        <span className="text-slate-400 font-bold">
-                          {unsortedReceipts.length}
-                        </span>
-                      </div>
-                    </>
-                  )}
+                <div style={{
+                  fontSize: '11px', fontWeight: 600,
+                  color: 'rgba(67, 20, 7, 0.6)',
+                  letterSpacing: '0.02em',
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                }}>
+                  Step {index + 1} of {receipts.length}
                 </div>
-              )}
-            </div>
-              </>
+              </div>
             )}
           </div>
           <button className="cw-close" onClick={onClose}>✕</button>
@@ -2383,31 +2337,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   </div>
                 </div>
               )}
-
-                              {Object.values(cashDenominations).every(c => c === 0) && (
-                                  <div className="col-span-5 p-8 border-2 border-dashed border-white/5 rounded-3xl text-center text-[11px] font-black text-slate-600 uppercase tracking-widest">
-                                    No Cash Allocated
-                                  </div>
-                              )}
-
-                          {/* Bank Transfer Bar */}
-                          {(billingMethod === 'bank' || billingMethod === 'both') && (
-                            <div className="p-8 bg-orange-500/5 rounded-3xl border border-orange-500/10 flex items-center justify-between">
-                              <div className="flex items-center gap-6">
-                                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-2xl">
-                                  <span style={{ filter: 'grayscale(1) sepia(1) saturate(5) hue-rotate(-20deg)' }}>🏦</span>
-                                </div>
-                                <div>
-                                  <div className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Electronic Transfer</div>
-                                  <div className="text-sm font-bold text-orange-900 uppercase tracking-tight">Bank-to-Bank Settlement</div>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-[10px] font-black text-orange-800/40 uppercase tracking-widest mb-1">Prepared Amount</div>
-                                <div className="text-2xl font-black text-orange-600 tracking-tighter">₱{Number(bankTransferAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>
-                              </div>
-                            </div>
-                          )}
 
               {/* Loading & Start States */}
               {((phase === 'ocr' && !showOcrPreview) || (phase === 'verify' && !showVerifyPreview) || (phase === 'finalize' && !finalizedBatch)) && (
