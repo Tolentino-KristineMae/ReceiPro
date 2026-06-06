@@ -20,6 +20,7 @@ export default function BatchCheckerPage() {
   const [isRunningCheck, setIsRunningCheck] = useState(false);
   const [fileCount, setFileCount] = useState(0);
   const [wizardReceipts, setWizardReceipts] = useState([]);
+  const [error, setError] = useState(null);
 
   const fileInputRef = useRef(null);
 
@@ -93,19 +94,27 @@ export default function BatchCheckerPage() {
     }
   }, [batches, batchId]);
 
-  const handleCreateAndUpload = async (e) => {
+  const handleCreateAndUpload = async (e, batchName) => {
     e.preventDefault();
     const files = fileInputRef.current?.files;
     if (!files?.length) return;
     
     setIsCreating(true);
+    setError(null);
     try {
       const res = await fetch(getApiUrl('/api/batches'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}), 
+        body: JSON.stringify({ name: batchName }), 
       });
       
+      if (res.status === 422) {
+        const data = await res.json();
+        setError(data.message || 'A batch with this number already exists.');
+        setIsCreating(false);
+        return;
+      }
+
       if (res.ok) {
         const newBatch = await res.json();
         const formData = new FormData();
@@ -163,6 +172,33 @@ export default function BatchCheckerPage() {
         setSelectedBatch(null);
       }
     } catch (e) { console.error(e); }
+  };
+
+  const handleUpdateBatchName = async (id, newName) => {
+    setError(null);
+    try {
+      const res = await fetch(getApiUrl(`/api/batches/${id}`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+      });
+
+      if (res.status === 422) {
+        const data = await res.json();
+        setError(data.message || 'A batch with this number already exists.');
+        return;
+      }
+
+      if (res.ok) {
+        const updatedBatch = await res.json();
+        setBatches(prev => prev.map(b => b.id === updatedBatch.id ? updatedBatch : b));
+        if (selectedBatch?.id === updatedBatch.id) {
+          setSelectedBatch(updatedBatch);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to update batch name:', e);
+    }
   };
 
   const handleDeleteReceipt = async (receiptId) => {
@@ -286,6 +322,8 @@ export default function BatchCheckerPage() {
           isCreating={isCreating}
           handleDeleteBatch={handleDeleteBatch}
           handleCreateAndUpload={handleCreateAndUpload}
+          handleUpdateBatchName={handleUpdateBatchName}
+          error={error}
           navigate={navigate}
         />
       ) : (

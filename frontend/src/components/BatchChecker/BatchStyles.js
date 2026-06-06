@@ -52,8 +52,8 @@ export const BATCH_STYLES = `
 
   .bcp-layout {
     display: grid;
-    grid-template-columns: 360px 1fr;
-    gap: 2.5rem;
+    grid-template-columns: 320px 1fr;
+    gap: 1.5rem;
     align-items: start;
   }
 
@@ -66,7 +66,7 @@ export const BATCH_STYLES = `
     backdrop-filter: blur(40px);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-xl);
-    padding: 2rem;
+    padding: 1.5rem;
     position: relative;
     overflow: hidden;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -97,16 +97,7 @@ export const BATCH_STYLES = `
     text-transform: uppercase;
     color: var(--accent-primary);
     margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .section-label::before {
-    content: '';
-    width: 12px;
-    height: 1px;
-    background: var(--accent-primary);
+    display: block;
   }
 
   .h1-modern {

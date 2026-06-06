@@ -1,5 +1,11 @@
 import React from 'react';
 
+const fmt = (n) =>
+  Number(n ?? 0).toLocaleString('en-PH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
 const Icon = {
   Plus: ({ size = 18 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -23,6 +29,37 @@ const Icon = {
       <circle cx="4" cy="4" r="4" fill="currentColor" />
     </svg>
   ),
+  Calendar: ({ size = 14 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  ),
+  Receipt: ({ size = 14 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/>
+      <path d="M16 8h-6M16 12h-6M16 16h-6"/>
+    </svg>
+  ),
+  TrendingUp: ({ size = 14 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+      <polyline points="17 6 23 6 23 12"/>
+    </svg>
+  ),
+  ArrowRight: ({ size = 14 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <polyline points="12 5 19 12 12 19"/>
+    </svg>
+  ),
+  Folder: ({ size = 14 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+    </svg>
+  ),
 };
 
 export default function BatchDashboard({ 
@@ -33,95 +70,431 @@ export default function BatchDashboard({
   isCreating, 
   handleCreateAndUpload, 
   handleDeleteBatch, 
+  handleUpdateBatchName,
+  error,
   navigate 
 }) {
   const nextBatchNumber = batches.length + 1;
-  const nextBatchName = `Batch #${String(nextBatchNumber).padStart(3, '0')}`;
+  const autoBatchName = `Batch #${String(nextBatchNumber).padStart(3, '0')}`;
+  
+  const [customBatchName, setCustomBatchName] = React.useState('');
+  const [isEditingName, setIsEditingName] = React.useState(false);
+
+  // Update custom name if it's empty or when batches change (if not manually editing)
+  React.useEffect(() => {
+    if (!customBatchName || !isEditingName) {
+      setCustomBatchName(autoBatchName);
+    }
+  }, [batches, autoBatchName]);
+
+  const displayBatchName = customBatchName || autoBatchName;
+
+  // Calculate statistics
+  const totalBatches = batches.length;
+  const completedBatches = batches.filter(b => b.checker_status === 'billing_ready').length;
+  const inProgressBatches = batches.filter(b => b.checker_status !== 'billing_ready' && b.receipts?.length > 0).length;
+  const totalReceipts = batches.reduce((sum, b) => sum + (b.receipts?.length || 0), 0);
 
   return (
     <div className="bcp-layout">
-      {/* Creation Panel */}
+      {/* Compact Creation Panel */}
       <div className="glass-card sticky">
-        <div className="section-label">New Batch</div>
-        <h2 className="h1-modern">Verification Workflow</h2>
+        {/* Compact Header */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '4px 10px',
+            borderRadius: '8px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            marginBottom: '10px'
+          }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="16"/>
+              <line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            <span style={{
+              fontSize: '9px',
+              fontWeight: 900,
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.12em',
+              fontFamily: "'Space Grotesk', sans-serif"
+            }}>New Batch</span>
+          </div>
+          <h2 style={{
+            fontSize: '22px',
+            fontWeight: 900,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.02em',
+            fontFamily: "'Space Grotesk', sans-serif",
+            lineHeight: '1.2',
+            marginBottom: '4px'
+          }}>
+            Verification Workflow
+          </h2>
+          <p style={{
+            fontSize: '11px',
+            color: 'var(--text-muted)',
+            fontFamily: "'Space Grotesk', sans-serif",
+            lineHeight: '1.4'
+          }}>
+            Upload and process receipts
+          </p>
+        </div>
+
+        {error && (
+          <div style={{
+            marginBottom: '14px',
+            padding: '10px 14px',
+            borderRadius: '10px',
+            background: 'rgba(185, 28, 28, 0.05)',
+            border: '1px solid rgba(185, 28, 28, 0.2)',
+            color: 'var(--danger-primary)',
+            fontSize: '11px',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontFamily: "'Space Grotesk', sans-serif",
+            animation: 'fadeIn 0.3s ease-out'
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            {error}
+          </div>
+        )}
         
-        <form onSubmit={handleCreateAndUpload} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="metric-card-sm" style={{ background: 'var(--bg-glass-hover)', border: '1px solid var(--border-strong)' }}>
-            <label className="form-label" style={{ marginBottom: '8px' }}>Next Batch</label>
-            <div className="metric-value-sm accent" style={{ fontSize: '1.5rem' }}>{nextBatchName}</div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>System Auto-Generated</div>
+        <form onSubmit={(e) => handleCreateAndUpload(e, displayBatchName)} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* Next Batch Info */}
+          <div style={{
+            padding: '16px',
+            borderRadius: '12px',
+            background: 'var(--bg-tertiary)',
+            border: '1px solid var(--border-subtle)',
+            position: 'relative'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontSize: '9px',
+                  fontWeight: 900,
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.12em',
+                  marginBottom: '6px',
+                  fontFamily: "'Space Grotesk', sans-serif"
+                }}>Next Batch Number</div>
+                
+                {isEditingName ? (
+                  <input
+                    type="text"
+                    value={customBatchName}
+                    onChange={(e) => setCustomBatchName(e.target.value)}
+                    onBlur={() => setIsEditingName(false)}
+                    onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)}
+                    autoFocus
+                    style={{
+                      fontSize: '24px',
+                      fontWeight: 900,
+                      color: 'var(--accent-primary)',
+                      letterSpacing: '-0.02em',
+                      fontFamily: "'Space Mono', monospace",
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: '2px solid var(--accent-primary)',
+                      width: '100%',
+                      outline: 'none',
+                      padding: '0'
+                    }}
+                  />
+                ) : (
+                  <div 
+                    onClick={() => setIsEditingName(true)}
+                    style={{
+                      fontSize: '28px',
+                      fontWeight: 900,
+                      color: 'var(--accent-primary)',
+                      letterSpacing: '-0.02em',
+                      fontFamily: "'Space Mono', monospace",
+                      cursor: 'text',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    {displayBatchName}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                background: 'var(--bg-glass-hover)',
+                border: '1px solid var(--border-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Icon.Folder size={24} style={{ color: 'var(--accent-primary)' }} />
+              </div>
+            </div>
+            <div style={{
+              marginTop: '10px',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              background: 'rgba(251, 146, 60, 0.08)',
+              fontSize: '10px',
+              color: 'var(--text-muted)',
+              fontFamily: "'Space Grotesk', sans-serif",
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+              {isEditingName ? 'Manual override active' : 'Auto-generated by system'}
+            </div>
           </div>
 
+          {/* File Upload Zone */}
           <div>
-            <label className="form-label">Receipt Images</label>
-            <div className="drop-zone">
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '11px',
+              fontWeight: 800,
+              color: 'var(--text-primary)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              marginBottom: '10px',
+              fontFamily: "'Space Grotesk', sans-serif"
+            }}>
+              <Icon.Receipt size={14} />
+              Receipt Images
+            </label>
+            <div style={{
+              position: 'relative',
+              borderRadius: '12px',
+              border: '2px dashed var(--border-strong)',
+              background: 'var(--bg-tertiary)',
+              padding: '28px 20px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              overflow: 'hidden'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--accent-primary)';
+              e.currentTarget.style.background = 'rgba(251, 146, 60, 0.12)';
+              e.currentTarget.style.transform = 'scale(1.01)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border-strong)';
+              e.currentTarget.style.background = 'var(--bg-tertiary)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            onClick={() => fileInputRef.current?.click()}
+            >
               <input
                 type="file"
                 multiple
                 ref={fileInputRef}
                 onChange={(e) => setFileCount(e.target.files?.length || 0)}
+                style={{ display: 'none' }}
               />
-              <div className="drop-icon">📁</div>
+              
               {fileCount > 0 ? (
-                <>
-                  <div className="metric-value-sm accent" style={{ textAlign: 'center' }}>
-                    {fileCount} file{fileCount !== 1 ? 's' : ''}
+                <div style={{ animation: 'fadeIn 0.3s ease-in' }}>
+                  <div style={{
+                    width: '56px',
+                    height: '56px',
+                    margin: '0 auto 12px',
+                    borderRadius: '14px',
+                    background: 'rgba(22, 163, 74, 0.1)',
+                    border: '1px solid rgba(22, 163, 74, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
                   </div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center' }}>Click to change</div>
-                </>
+                  <div style={{
+                    fontSize: '28px',
+                    fontWeight: 900,
+                    color: '#16a34a',
+                    marginBottom: '6px',
+                    fontFamily: "'Space Mono', monospace"
+                  }}>
+                    {fileCount}
+                  </div>
+                  <div style={{
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: '#16a34a',
+                    marginBottom: '4px',
+                    fontFamily: "'Space Grotesk', sans-serif"
+                  }}>
+                    {fileCount === 1 ? 'File Selected' : 'Files Selected'}
+                  </div>
+                  <div style={{
+                    fontSize: '11px',
+                    color: 'var(--text-muted)',
+                    fontFamily: "'Space Grotesk', sans-serif"
+                  }}>
+                    Click to change selection
+                  </div>
+                </div>
               ) : (
-                <>
-                  <div className="metric-value-sm" style={{ textAlign: 'center' }}>Drag & Drop</div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center' }}>or click to browse</div>
-                </>
+                <div>
+                  <div style={{
+                    width: '56px',
+                    height: '56px',
+                    margin: '0 auto 12px',
+                    borderRadius: '14px',
+                    background: 'var(--bg-glass-hover)',
+                    border: '1px solid var(--border-subtle)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                  </div>
+                  <div style={{
+                    fontSize: '14px',
+                    fontWeight: 800,
+                    color: 'var(--text-primary)',
+                    marginBottom: '6px',
+                    fontFamily: "'Space Grotesk', sans-serif"
+                  }}>
+                    Drop files here
+                  </div>
+                  <div style={{
+                    fontSize: '12px',
+                    color: 'var(--text-muted)',
+                    marginBottom: '12px',
+                    fontFamily: "'Space Grotesk', sans-serif"
+                  }}>
+                    or click to browse from your computer
+                  </div>
+                  <div style={{
+                    display: 'inline-block',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    background: 'rgba(249, 115, 22, 0.08)',
+                    border: '1px solid var(--border-subtle)',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    color: 'var(--accent-primary)',
+                    fontFamily: "'Space Grotesk', sans-serif"
+                  }}>
+                    JPG, PNG, PDF supported
+                  </div>
+                </div>
               )}
             </div>
           </div>
 
+          {/* Create Button */}
           <button 
             type="submit" 
-            className="btn-primary-modern" 
             disabled={isCreating || fileCount === 0}
+            style={{
+              width: '100%',
+              padding: '16px 20px',
+              borderRadius: '12px',
+              border: 'none',
+              background: fileCount === 0 ? 'rgba(100, 116, 139, 0.1)' : 'var(--gradient-primary)',
+              color: fileCount === 0 ? '#94a3b8' : '#fff',
+              fontSize: '12px',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '0.12em',
+              cursor: fileCount === 0 ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              fontFamily: "'Space Grotesk', sans-serif",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              boxShadow: fileCount === 0 ? 'none' : 'var(--shadow-lg)',
+              opacity: fileCount === 0 ? 0.6 : 1
+            }}
+            onMouseEnter={(e) => {
+              if (fileCount > 0 && !isCreating) {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-xl)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (fileCount > 0 && !isCreating) {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+              }
+            }}
           >
             {isCreating ? (
               <>
                 <div className="spinner-modern" />
-                Creating...
+                Creating Batch...
               </>
             ) : (
               <>
-                <Icon.Plus />
+                <Icon.Plus size={16} />
                 Create Batch
               </>
             )}
           </button>
         </form>
-
-        {/* Quick Stats */}
-        <div style={{ 
-          marginTop: '2rem', 
-          paddingTop: '1.5rem', 
-          borderTop: '1px solid var(--border-subtle)',
-          display: 'flex', 
-          justifyContent: 'space-between',
-          gap: '1rem'
-        }}>
-          <div className="metric-card-sm" style={{ flex: 1, background: 'transparent', border: 'none' }}>
-            <span className="metric-label-sm">Total Batches</span>
-            <span className="metric-value-sm">{batches.length}</span>
-          </div>
-          <div className="metric-card-sm" style={{ flex: 1, background: 'transparent', border: 'none' }}>
-            <span className="metric-label-sm">Completed</span>
-            <span className="metric-value-sm success">
-              {batches.filter(b => b.checker_status === 'finalized').length}
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Batches Grid */}
       <div>
-        <div className="section-label">Recent Batches</div>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          marginBottom: '1.5rem'
+        }}>
+          <div>
+            <div className="section-label">Recent Batches</div>
+            <div style={{ 
+              fontSize: '10px', 
+              fontWeight: 600,
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginTop: '4px'
+            }}>
+              {batches.length} batch{batches.length !== 1 ? 'es' : ''} • Sorted by most recent
+            </div>
+          </div>
+        </div>
+        
         {batches.length === 0 ? (
           <div className="glass-card empty-box">
             <div className="empty-icon-lg">📂</div>
@@ -131,18 +504,17 @@ export default function BatchDashboard({
             </div>
           </div>
         ) : (
-          <div className="glass-card" style={{ padding: '2rem' }}>
-            <div className="receipt-grid">
-              {batches.map((batch, i) => (
-                <BatchCard
-                  key={batch.id}
-                  batch={batch}
-                  onClick={() => navigate(`/batch/${batch.id}`)}
-                  onDelete={(e) => handleDeleteBatch(e, batch.id)}
-                  delay={i * 0.05}
-                />
-              ))}
-            </div>
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            {batches.map((batch, i) => (
+              <BatchCard
+                key={batch.id}
+                batch={batch}
+                onClick={() => navigate(`/batch/${batch.id}`)}
+                onDelete={(e) => handleDeleteBatch(e, batch.id)}
+                onUpdateName={handleUpdateBatchName}
+                delay={i * 0.03}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -150,58 +522,225 @@ export default function BatchDashboard({
   );
 }
 
-function BatchCard({ batch, onClick, onDelete, delay = 0 }) {
+function BatchCard({ batch, onClick, onDelete, onUpdateName, delay = 0 }) {
   const total = batch.receipts?.length || 0;
   const verified = batch.receipts?.filter(r => r.ocr_status === 'completed').length || 0;
   const progress = total > 0 ? Math.round((verified / total) * 100) : 0;
-  const status = batch.checker_status === 'finalized' ? 'success' : 'pending';
+  
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editName, setEditName] = React.useState(batch.name || '');
+
+  const getStatus = () => {
+    if (batch.checker_status === 'billing_ready') return { label: 'Ready', color: '#15803d', bg: 'rgba(21, 128, 61, 0.08)', border: 'rgba(21, 128, 61, 0.2)' };
+    if (batch.checker_status === 'summarized' || batch.checker_status === 'finalized') return { label: 'Review', color: '#ea580c', bg: 'rgba(234, 88, 12, 0.08)', border: 'rgba(234, 88, 12, 0.2)' };
+    if (total > 0) return { label: 'Active', color: '#f97316', bg: 'rgba(249, 115, 22, 0.08)', border: 'rgba(249, 115, 22, 0.2)' };
+    return { label: 'Draft', color: '#9a3412', bg: 'rgba(154, 52, 18, 0.08)', border: 'rgba(154, 52, 18, 0.2)' };
+  };
+  
+  const status = getStatus();
+  const netAmount = batch.summary_data?.net_amount || null;
+  const hasNetAmount = netAmount !== null && netAmount !== undefined;
+  
+  const createdDate = new Date(batch.created_at);
+  const formattedDate = createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
   return (
     <div 
-      className="receipt-card glass-card" 
+      className="glass-card"
       style={{ 
         animationDelay: `${delay}s`,
-        background: 'rgba(255,255,255,0.03)',
+        padding: '12px 16px',
+        cursor: 'pointer',
+        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'flex',
-        flexDirection: 'column',
-        aspectRatio: 'unset',
-        minHeight: '180px'
+        alignItems: 'center',
+        gap: '1.5rem',
+        border: '1px solid var(--border-subtle)',
+        background: 'var(--bg-secondary)',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--shadow-sm)'
       }}
       onClick={onClick}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.borderColor = 'var(--accent-primary)';
+        e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.borderColor = 'var(--border-subtle)';
+        e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+      }}
     >
-      <div className="receipt-info" style={{ opacity: 1, background: 'transparent', position: 'static', flex: 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '1rem' }}>
-          <div className={`status-pill ${status}`}>
-            {status === 'success' ? <Icon.CheckCircle /> : <Icon.Circle />}
-            {status.toUpperCase()}
-          </div>
-          <button 
-            className="btn-icon-modern danger" 
-            onClick={onDelete}
-            style={{ width: '32px', height: '32px', borderRadius: '8px' }}
-          >
-            <Icon.Trash size={14} />
-          </button>
-        </div>
-        
-        <div style={{ 
-          fontSize: '1.25rem', 
-          color: 'var(--text-primary)',
-          fontWeight: 800,
-          marginBottom: 'auto'
+      {/* Batch Identity */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '220px', flexShrink: 0 }}>
+        <div style={{
+          width: '32px',
+          height: '32px',
+          borderRadius: '8px',
+          background: `linear-gradient(135deg, ${status.color}15 0%, ${status.color}05 100%)`,
+          border: `1px solid ${status.color}30`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0
         }}>
-          Batch {batch.name || 'Unnamed'}
+          <Icon.Folder size={14} style={{ color: status.color }} />
+        </div>
+        <div style={{ overflow: 'hidden' }}>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onBlur={() => {
+                setIsEditing(false);
+                if (editName !== batch.name) {
+                  onUpdateName(batch.id, editName);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setIsEditing(false);
+                  if (editName !== batch.name) {
+                    onUpdateName(batch.id, editName);
+                  }
+                }
+                if (e.key === 'Escape') {
+                  setEditName(batch.name);
+                  setIsEditing(false);
+                }
+              }}
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                fontSize: '14px',
+                fontWeight: 800,
+                color: 'var(--accent-primary)',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: '1px solid var(--accent-primary)',
+                width: '100%',
+                outline: 'none',
+                padding: '0'
+              }}
+            />
+          ) : (
+            <div 
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditing(true);
+              }}
+              style={{ 
+                fontSize: '14px', 
+                color: 'var(--text-primary)',
+                fontWeight: 800,
+                letterSpacing: '-0.01em',
+                marginBottom: '1px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              {batch.name || 'Unnamed Batch'}
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}>
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </div>
+          )}
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Icon.Calendar size={10} />
+            {formattedDate} • {batch.final_batch_number ? `ID: ${batch.final_batch_number}` : 'Draft'}
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem', flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
+          <div style={{ width: '45px' }}>
+            <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted-alt)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Items</div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>{total}</div>
+          </div>
+          <div style={{ width: '55px' }}>
+            <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted-alt)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Verified</div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: '#15803d', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>{verified}</div>
+          </div>
+          {hasNetAmount && (
+            <div style={{ width: '100px' }}>
+              <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted-alt)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Net Total</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--accent-primary)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+                ₱{fmt(netAmount)}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Progress Mini */}
+        <div style={{ flex: 1, maxWidth: '160px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '6px' }}>
+            <span style={{ letterSpacing: '0.05em' }}>PROGRESS</span>
+            <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>{progress}%</span>
+          </div>
+          <div style={{ height: '4px', background: 'rgba(0,0,0,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress}%`, background: status.color, borderRadius: '2px', transition: 'width 0.5s ease' }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Status & Actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100px', justifyContent: 'flex-end', flexShrink: 0 }}>
+        <div style={{
+          padding: '4px 0',
+          width: '60px',
+          textAlign: 'center',
+          borderRadius: '6px',
+          background: status.bg,
+          border: `1px solid ${status.border}`,
+          color: status.color,
+          fontSize: '9px',
+          fontWeight: 800,
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em'
+        }}>
+          {status.label}
         </div>
         
-        <div style={{ marginTop: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>
-            <span>PROGRESS</span>
-            <span>{verified}/{total} VERIFIED</span>
-          </div>
-          <div className="progress-bar-wrap" style={{ height: '4px', margin: 0 }}>
-            <div className="progress-fill" style={{ width: `${progress}%` }} />
-          </div>
-        </div>
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(e);
+          }}
+          style={{ 
+            width: '28px', 
+            height: '28px', 
+            borderRadius: '6px',
+            background: 'transparent',
+            border: '1px solid transparent',
+            color: 'var(--text-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.2s',
+            flexShrink: 0
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(185, 28, 28, 0.08)';
+            e.currentTarget.style.color = 'var(--danger-primary)';
+            e.currentTarget.style.borderColor = 'rgba(185, 28, 28, 0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--text-muted)';
+            e.currentTarget.style.borderColor = 'transparent';
+          }}
+        >
+          <Icon.Trash size={14} />
+        </button>
       </div>
     </div>
   );

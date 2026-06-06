@@ -28,6 +28,12 @@ class BatchController extends Controller
     /** Create a named batch (before uploading receipts) */
     public function store(Request $request)
     {
+        $request->validate([
+            'name' => 'nullable|string|unique:batches,name',
+        ], [
+            'name.unique' => 'A batch with this number already exists.',
+        ]);
+
         $count = Batch::count() + 1;
         $name = $request->name ?: 'Batch #' . str_pad($count, 3, '0', STR_PAD_LEFT);
 
@@ -38,6 +44,21 @@ class BatchController extends Controller
         ]);
 
         return response()->json($batch, 201);
+    }
+
+    public function update(Request $request, Batch $batch)
+    {
+        $request->validate([
+            'name' => 'nullable|string|unique:batches,name,' . $batch->id,
+        ], [
+            'name.unique' => 'A batch with this number already exists.',
+        ]);
+
+        $batch->update($request->only(['name', 'checker_status', 'summary_data', 'billing_data']));
+
+        return response()->json($batch->fresh()->load(['receipts' => function ($query) {
+            $query->orderBy('created_at', 'asc');
+        }]));
     }
 
     /** Show a single batch with all receipts */

@@ -27,6 +27,7 @@ Route::prefix('batches')->group(function () {
     Route::get('/', [BatchController::class, 'index']);
     Route::post('/', [BatchController::class, 'store']);
     Route::get('/{batch}', [BatchController::class, 'show']);
+    Route::patch('/{batch}', [BatchController::class, 'update']);
     Route::patch('/{batch}/status', [BatchController::class, 'updateStatus']);
     Route::patch('/{batch}/receipts/{receipt}/label', [BatchController::class, 'updateReceiptLabel']);
     Route::delete('/{batch}', [BatchController::class, 'destroy']);
