@@ -193,8 +193,8 @@ export default function SortingStage({
               style={{
                 padding: '8px 16px',
                 border: 'none',
-                background: focusedColumn === 'others' ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
-                color: focusedColumn === 'others' ? '#ef4444' : 'rgba(67, 20, 7, 0.6)',
+                background: focusedColumn === 'others' ? 'rgba(245, 158, 11, 0.1)' : 'transparent',
+                color: focusedColumn === 'others' ? '#f59e0b' : 'rgba(67, 20, 7, 0.6)',
                 fontSize: '11px',
                 fontWeight: 900,
                 textTransform: 'uppercase',

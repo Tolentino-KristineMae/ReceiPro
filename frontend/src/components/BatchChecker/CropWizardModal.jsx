@@ -1313,9 +1313,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   {/* Stage pill */}
                   <span style={{
                     padding: '4px 12px', borderRadius: '100px',
-                    background: 'rgba(249, 115, 22, 0.1)',
-                    border: '1.5px solid rgba(249, 115, 22, 0.3)',
-                    color: '#f97316',
+                    background: '#f97316',
+                    border: '1.5px solid #f97316',
+                    color: '#fff',
                     fontSize: '10px', fontWeight: 800,
                     textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Space Grotesk', system-ui, sans-serif",
@@ -1326,7 +1326,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 {/* Title */}
                 <div style={{
                   fontSize: '20px', fontWeight: 900,
-                  color: '#431407',
+                  color: '#f97316',
                   letterSpacing: '-0.02em', lineHeight: 1.2,
                   textTransform: 'uppercase',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
@@ -1584,7 +1584,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               {/* Phase 3 Preview */}
               {phase === 'ocr' && showOcrPreview && (
                 <div className="flex-1 flex flex-col overflow-hidden" style={{ 
-                  background: 'radial-gradient(ellipse 80% 50% at 10% -10%, rgba(18, 96, 164, 0.18) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 90% 100%, rgba(26, 127, 203, 0.12) 0%, transparent 55%), #020c18',
+                  background: '#fffbf5',
                   padding: '40px'
                 }}>
                   {/* Header */}
@@ -1593,18 +1593,18 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                       <div style={{
                         padding: '10px 18px',
                         borderRadius: '12px',
-                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%)',
-                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        background: 'rgba(249, 115, 22, 0.08)',
+                        border: '1px solid rgba(249, 115, 22, 0.25)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '10px'
                       }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                           <polyline points="22 4 12 14.01 9 11.01" />
                         </svg>
                         <span style={{ 
-                          color: '#10b981', 
+                          color: '#f97316', 
                           fontSize: '11px', 
                           fontWeight: 900, 
                           textTransform: 'uppercase', 
@@ -1617,11 +1617,11 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                       <div style={{
                         padding: '8px 16px',
                         borderRadius: '10px',
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                        background: 'rgba(249, 115, 22, 0.06)',
+                        border: '1px solid rgba(249, 115, 22, 0.15)'
                       }}>
                         <span style={{ 
-                          color: '#94a3b8', 
+                          color: 'rgba(67, 20, 7, 0.7)', 
                           fontSize: '11px', 
                           fontWeight: 700,
                           fontFamily: "'Space Grotesk', sans-serif"
@@ -1631,7 +1631,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                       </div>
                     </div>
                     <p style={{ 
-                      color: '#64748b', 
+                      color: 'rgba(67, 20, 7, 0.55)', 
                       fontSize: '13px', 
                       fontWeight: 500,
                       fontFamily: "'Space Grotesk', sans-serif",
@@ -1645,266 +1645,196 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   {(() => {
                     const accounts = ['Babilyn', 'Nixie', 'Kristine'];
                     const colors = {
-                      All:      { bg: 'rgba(100,116,139,0.12)', border: 'rgba(100,116,139,0.3)', text: '#94a3b8', count: '#64748b' },
-                      Babilyn:  { bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.3)', text: '#c4b5fd', count: '#a78bfa' },
-                      Nixie:    { bg: 'rgba(244,114,182,0.12)', border: 'rgba(244,114,182,0.3)', text: '#f9a8d4', count: '#f472b6' },
-                      Kristine: { bg: 'rgba(56,189,248,0.12)',  border: 'rgba(56,189,248,0.3)',  text: '#7dd3fc', count: '#38bdf8' },
+                      All:      { bg: 'rgba(249,115,22,0.08)',   border: 'rgba(249,115,22,0.25)',   text: '#f97316',  count: '#ea580c' },
+                      Babilyn:  { bg: 'rgba(236,72,153,0.08)',   border: 'rgba(236,72,153,0.25)',   text: '#ec4899',  count: '#db2777' },
+                      Nixie:    { bg: 'rgba(139,92,246,0.08)',   border: 'rgba(139,92,246,0.25)',   text: '#8b5cf6',  count: '#7c3aed' },
+                      Kristine: { bg: 'rgba(6,182,212,0.08)',    border: 'rgba(6,182,212,0.25)',    text: '#06b6d4',  count: '#0891b2' },
                     };
                     const allCount = ocrResults?.length || 0;
+                    const unknownCount = ocrResults?.filter(r => {
+                      const h = r.receipt?.account_holder || r.account_holder;
+                      return !h || h === 'Unknown' || h === 'OTHERS';
+                    }).length || 0;
                     return (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px', flexWrap: 'wrap' }}>
-                        {/* All filter */}
                         <div 
                           onClick={() => setOcrAccountFilter('All')}
                           style={{
                             padding: '10px 16px',
                             borderRadius: '12px',
-                            background: ocrAccountFilter === 'All' ? colors.All.bg : 'rgba(255, 255, 255, 0.03)',
-                            border: `1px solid ${ocrAccountFilter === 'All' ? colors.All.border : 'rgba(255, 255, 255, 0.1)'}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            transition: 'all 0.2s',
-                            cursor: 'pointer',
-                            opacity: ocrAccountFilter === 'All' ? 1 : 0.6
+                            background: ocrAccountFilter === 'All' ? colors.All.bg : '#ffffff',
+                            border: `1px solid ${ocrAccountFilter === 'All' ? colors.All.border : 'rgba(251,146,60,0.15)'}`,
+                            display: 'flex', alignItems: 'center', gap: '12px',
+                            transition: 'all 0.2s', cursor: 'pointer',
+                            boxShadow: ocrAccountFilter === 'All' ? '0 2px 8px rgba(249,115,22,0.12)' : 'none'
                           }}
-                          onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
-                          onMouseLeave={(e) => e.currentTarget.style.opacity = ocrAccountFilter === 'All' ? 1 : 0.6}
                         >
-                          <span style={{ 
-                            color: colors.All.text, 
-                            fontSize: '11px', 
-                            fontWeight: 800, 
-                            textTransform: 'uppercase', 
-                            letterSpacing: '0.08em',
-                            fontFamily: "'Space Grotesk', sans-serif"
-                          }}>
-                            All
-                          </span>
-                          <span style={{
-                            background: 'rgba(0, 0, 0, 0.3)',
-                            color: colors.All.count,
-                            borderRadius: '8px',
-                            padding: '4px 10px',
-                            fontSize: '13px',
-                            fontWeight: 900,
-                            fontFamily: "'Space Mono', monospace",
-                            minWidth: '32px',
-                            textAlign: 'center'
-                          }}>{allCount}</span>
+                          <span style={{ color: colors.All.text, fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Space Grotesk', sans-serif" }}>All</span>
+                          <span style={{ background: 'rgba(249,115,22,0.1)', color: colors.All.count, borderRadius: '8px', padding: '4px 10px', fontSize: '13px', fontWeight: 900, fontFamily: "'Space Mono', monospace", minWidth: '32px', textAlign: 'center' }}>{allCount}</span>
                         </div>
                         
-                        {/* Account filters */}
                         {accounts.map(acc => {
-                          const count = ocrResults?.filter(r =>
-                            (r.receipt?.account_holder || r.account_holder) === acc
-                          ).length || 0;
+                          const count = ocrResults?.filter(r => (r.receipt?.account_holder || r.account_holder) === acc).length || 0;
                           const c = colors[acc];
                           return (
                             <div 
                               key={acc}
                               onClick={() => setOcrAccountFilter(acc)}
                               style={{
-                                padding: '10px 16px',
-                                borderRadius: '12px',
-                                background: ocrAccountFilter === acc ? c.bg : 'rgba(255, 255, 255, 0.03)',
-                                border: `1px solid ${ocrAccountFilter === acc ? c.border : 'rgba(255, 255, 255, 0.1)'}`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                transition: 'all 0.2s',
-                                cursor: 'pointer',
-                                opacity: ocrAccountFilter === acc ? 1 : 0.6
+                                padding: '10px 16px', borderRadius: '12px',
+                                background: ocrAccountFilter === acc ? c.bg : '#ffffff',
+                                border: `1px solid ${ocrAccountFilter === acc ? c.border : 'rgba(251,146,60,0.15)'}`,
+                                display: 'flex', alignItems: 'center', gap: '12px',
+                                transition: 'all 0.2s', cursor: 'pointer',
+                                boxShadow: ocrAccountFilter === acc ? `0 2px 8px ${c.bg}` : 'none'
                               }}
-                              onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
-                              onMouseLeave={(e) => e.currentTarget.style.opacity = ocrAccountFilter === acc ? 1 : 0.6}
                             >
-                              <span style={{ 
-                                color: c.text, 
-                                fontSize: '11px', 
-                                fontWeight: 800, 
-                                textTransform: 'uppercase', 
-                                letterSpacing: '0.08em',
-                                fontFamily: "'Space Grotesk', sans-serif"
-                              }}>
-                                {acc}
-                              </span>
-                              <span style={{
-                                background: 'rgba(0, 0, 0, 0.3)',
-                                color: c.count,
-                                borderRadius: '8px',
-                                padding: '4px 10px',
-                                fontSize: '13px',
-                                fontWeight: 900,
-                                fontFamily: "'Space Mono', monospace",
-                                minWidth: '32px',
-                                textAlign: 'center'
-                              }}>{count}</span>
+                              <span style={{ color: c.text, fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Space Grotesk', sans-serif" }}>{acc}</span>
+                              <span style={{ background: c.bg, color: c.count, borderRadius: '8px', padding: '4px 10px', fontSize: '13px', fontWeight: 900, fontFamily: "'Space Mono', monospace", minWidth: '32px', textAlign: 'center' }}>{count}</span>
                             </div>
                           );
                         })}
+
+                        {/* Unknown filter pill */}
+                        {unknownCount > 0 && (
+                          <div
+                            onClick={() => setOcrAccountFilter('Unknown')}
+                            style={{
+                              padding: '10px 16px', borderRadius: '12px',
+                              background: ocrAccountFilter === 'Unknown' ? 'rgba(239,68,68,0.1)' : '#ffffff',
+                              border: `1.5px solid ${ocrAccountFilter === 'Unknown' ? 'rgba(239,68,68,0.4)' : 'rgba(239,68,68,0.25)'}`,
+                              display: 'flex', alignItems: 'center', gap: '12px',
+                              transition: 'all 0.2s', cursor: 'pointer',
+                              boxShadow: ocrAccountFilter === 'Unknown' ? '0 2px 8px rgba(239,68,68,0.15)' : 'none'
+                            }}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Space Grotesk', sans-serif" }}>Unknown</span>
+                            <span style={{ background: 'rgba(239,68,68,0.12)', color: '#dc2626', borderRadius: '8px', padding: '4px 10px', fontSize: '13px', fontWeight: 900, fontFamily: "'Space Mono', monospace", minWidth: '32px', textAlign: 'center' }}>{unknownCount}</span>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
 
-                  {/* Results list with filtering and numbering */}
+                  {/* Results list */}
                   <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
                       {(() => {
                         const filteredResults = ocrAccountFilter === 'All' 
                           ? ocrResults 
-                          : ocrResults?.filter(r => (r.receipt?.account_holder || r.account_holder) === ocrAccountFilter);
+                          : ocrAccountFilter === 'Unknown'
+                            ? ocrResults?.filter(r => { const h = r.receipt?.account_holder || r.account_holder; return !h || h === 'Unknown' || h === 'OTHERS'; })
+                            : ocrResults?.filter(r => (r.receipt?.account_holder || r.account_holder) === ocrAccountFilter);
+
+                        // Sort: Unknown/null account holders first, then rest
+                        const sortedResults = [...(filteredResults || [])].sort((a, b) => {
+                          const aHolder = a.receipt?.account_holder || a.account_holder;
+                          const bHolder = b.receipt?.account_holder || b.account_holder;
+                          const aUnknown = !aHolder || aHolder === 'Unknown' || aHolder === 'OTHERS';
+                          const bUnknown = !bHolder || bHolder === 'Unknown' || bHolder === 'OTHERS';
+                          if (aUnknown && !bUnknown) return -1;
+                          if (!aUnknown && bUnknown) return 1;
+                          return 0;
+                        });
                         
-                        return filteredResults?.map((res, i) => {
+                        return sortedResults?.map((res, i) => {
                           const holder = res.receipt?.account_holder || res.account_holder;
                           const receiptId = res.receipt?.id;
+                          const isUnknown = !holder || holder === 'Unknown' || holder === 'OTHERS';
                           const acctColors = {
-                            Babilyn:  { bg: 'rgba(139,92,246,0.1)',  border: 'rgba(139,92,246,0.25)',  text: '#c4b5fd' },
-                            Nixie:    { bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.25)', text: '#f9a8d4' },
-                            Kristine: { bg: 'rgba(56,189,248,0.1)',  border: 'rgba(56,189,248,0.25)',  text: '#7dd3fc' },
+                            Babilyn:  { bg: 'rgba(236,72,153,0.08)',  border: 'rgba(236,72,153,0.2)',  text: '#ec4899' },
+                            Nixie:    { bg: 'rgba(139,92,246,0.08)',  border: 'rgba(139,92,246,0.2)',  text: '#8b5cf6' },
+                            Kristine: { bg: 'rgba(6,182,212,0.08)',   border: 'rgba(6,182,212,0.2)',   text: '#06b6d4' },
                           };
                           const ac = acctColors[holder];
                           return (
                             <div key={i} style={{
-                              background: 'rgba(255, 255, 255, 0.03)',
-                              backdropFilter: 'blur(20px)',
-                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                              background: isUnknown ? 'rgba(239,68,68,0.04)' : '#ffffff',
+                              border: isUnknown ? '1.5px solid rgba(239,68,68,0.3)' : '1px solid rgba(251,146,60,0.15)',
                               borderRadius: '14px',
-                              padding: '18px 20px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '20px',
-                              transition: 'all 0.2s',
-                              cursor: 'pointer',
-                              position: 'relative'
+                              padding: '16px 20px',
+                              display: 'flex', alignItems: 'center', gap: '20px',
+                              transition: 'all 0.2s', cursor: 'pointer', position: 'relative',
+                              boxShadow: isUnknown ? '0 2px 8px rgba(239,68,68,0.08)' : '0 2px 8px rgba(67,20,7,0.04)'
                             }}
-                            onClick={() => {
-                              console.log('Receipt card clicked:', receiptId);
-                              if (res.receipt) {
-                                handleReceiptClick(res.receipt);
-                              } else {
-                                console.error('No receipt object found in result');
-                              }
-                            }}
+                            onClick={() => { if (res.receipt) handleReceiptClick(res.receipt); }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-                              e.currentTarget.style.borderColor = 'rgba(56, 168, 232, 0.4)';
+                              e.currentTarget.style.background = '#fffbf5';
+                              e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)';
                               e.currentTarget.style.transform = 'translateY(-2px)';
-                              e.currentTarget.style.boxShadow = '0 8px 24px rgba(18, 96, 164, 0.3)';
+                              e.currentTarget.style.boxShadow = '0 6px 20px rgba(249,115,22,0.1)';
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-                              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                              e.currentTarget.style.background = '#ffffff';
+                              e.currentTarget.style.borderColor = 'rgba(251,146,60,0.15)';
                               e.currentTarget.style.transform = 'translateY(0)';
-                              e.currentTarget.style.boxShadow = 'none';
+                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(67,20,7,0.04)';
                             }}
-                            title={`Receipt ID: ${receiptId} - Click to edit crop/input`}>
+                            title={`Receipt ID: ${receiptId} - Click to edit`}>
+                              {/* Unknown warning badge */}
+                              {isUnknown && (
+                                <div style={{
+                                  position: 'absolute', top: '10px', left: '60px',
+                                  padding: '3px 8px', borderRadius: '6px',
+                                  background: 'rgba(239,68,68,0.1)',
+                                  border: '1px solid rgba(239,68,68,0.3)',
+                                  display: 'flex', alignItems: 'center', gap: '4px'
+                                }}>
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                                  </svg>
+                                  <span style={{ color: '#ef4444', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: "'Space Grotesk', sans-serif" }}>
+                                    Needs Attention
+                                  </span>
+                                </div>
+                              )}
                               {/* Receipt ID Badge */}
                               <div style={{
-                                position: 'absolute',
-                                top: '10px',
-                                right: '10px',
-                                padding: '4px 10px',
-                                borderRadius: '6px',
-                                background: 'rgba(2, 12, 24, 0.85)',
-                                border: '1px solid rgba(255, 255, 255, 0.15)',
-                                backdropFilter: 'blur(6px)'
+                                position: 'absolute', top: '10px', right: '10px',
+                                padding: '3px 8px', borderRadius: '6px',
+                                background: 'rgba(249,115,22,0.06)',
+                                border: '1px solid rgba(249,115,22,0.15)'
                               }}>
-                                <span style={{
-                                  color: '#94a3b8',
-                                  fontSize: '9px',
-                                  fontWeight: 700,
-                                  letterSpacing: '0.08em',
-                                  fontFamily: "'Space Mono', monospace"
-                                }}>
+                                <span style={{ color: 'rgba(67,20,7,0.45)', fontSize: '9px', fontWeight: 700, letterSpacing: '0.08em', fontFamily: "'Space Mono', monospace" }}>
                                   #{receiptId}
                                 </span>
                               </div>
                               
                               {/* Number */}
                               <div style={{
-                                width: '36px',
-                                height: '36px',
-                                borderRadius: '10px',
-                                background: 'rgba(255, 255, 255, 0.05)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0
+                                width: '36px', height: '36px', borderRadius: '10px',
+                                background: 'rgba(249,115,22,0.08)',
+                                border: '1px solid rgba(249,115,22,0.15)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                               }}>
-                                <span style={{
-                                  color: '#94a3b8',
-                                  fontSize: '14px',
-                                  fontWeight: 900,
-                                  fontFamily: "'Space Mono', monospace"
-                                }}>
-                                  {i + 1}
-                                </span>
+                                <span style={{ color: '#f97316', fontSize: '14px', fontWeight: 900, fontFamily: "'Space Mono', monospace" }}>{i + 1}</span>
                               </div>
                               
                               <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
                                 {/* Account badge */}
                                 <div style={{
-                                  minWidth: '95px',
-                                  padding: '10px 16px',
-                                  borderRadius: '11px',
-                                  textAlign: 'center',
-                                  background: ac ? ac.bg : 'rgba(100,116,139,0.1)',
-                                  border: `1px solid ${ac ? ac.border : 'rgba(100,116,139,0.25)'}`,
-                                  color: ac ? ac.text : '#94a3b8',
-                                  fontSize: '11px',
-                                  fontWeight: 800,
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.06em',
+                                  minWidth: '90px', padding: '8px 14px', borderRadius: '10px', textAlign: 'center',
+                                  background: ac ? ac.bg : 'rgba(249,115,22,0.06)',
+                                  border: `1px solid ${ac ? ac.border : 'rgba(249,115,22,0.15)'}`,
+                                  color: ac ? ac.text : 'rgba(67,20,7,0.5)',
+                                  fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em',
                                   fontFamily: "'Space Grotesk', sans-serif"
                                 }}>
                                   {holder || 'Unknown'}
                                 </div>
                                 {/* Reference */}
                                 <div>
-                                  <div style={{ 
-                                    fontSize: '9px', 
-                                    fontWeight: 900, 
-                                    color: '#64748b', 
-                                    textTransform: 'uppercase', 
-                                    letterSpacing: '0.12em', 
-                                    marginBottom: '6px',
-                                    fontFamily: "'Space Grotesk', sans-serif"
-                                  }}>
-                                    Reference
-                                  </div>
-                                  <div style={{ 
-                                    fontSize: '14px', 
-                                    fontWeight: 700, 
-                                    color: '#e2e8f0', 
-                                    letterSpacing: '0.02em',
-                                    fontFamily: "'Space Mono', monospace"
-                                  }}>
-                                    {res.reference || '—'}
-                                  </div>
+                                  <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px', fontFamily: "'Space Grotesk', sans-serif" }}>Reference</div>
+                                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#431407', letterSpacing: '0.02em', fontFamily: "'Space Mono', monospace" }}>{res.reference || '—'}</div>
                                 </div>
                               </div>
                               {/* Amount */}
                               <div style={{ textAlign: 'right' }}>
-                                <div style={{ 
-                                  fontSize: '9px', 
-                                  fontWeight: 900, 
-                                  color: '#64748b', 
-                                  textTransform: 'uppercase', 
-                                  letterSpacing: '0.12em', 
-                                  marginBottom: '6px',
-                                  fontFamily: "'Space Grotesk', sans-serif"
-                                }}>
-                                  Amount
-                                </div>
-                                <div style={{ 
-                                  fontSize: '20px', 
-                                  fontWeight: 900, 
-                                  color: '#10b981',
-                                  letterSpacing: '-0.01em',
-                                  fontFamily: "'Space Mono', monospace"
-                                }}>
+                                <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px', fontFamily: "'Space Grotesk', sans-serif" }}>Amount</div>
+                                <div style={{ fontSize: '20px', fontWeight: 900, color: '#f97316', letterSpacing: '-0.01em', fontFamily: "'Space Mono', monospace" }}>
                                   ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                                 </div>
                               </div>
@@ -1930,18 +1860,18 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                         <div style={{
                           padding: '10px 18px',
                           borderRadius: '12px',
-                          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%)',
-                          border: '1px solid rgba(59, 130, 246, 0.3)',
+                          background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(234, 88, 12, 0.1) 100%)',
+                          border: '1px solid rgba(249, 115, 22, 0.3)',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '10px'
                         }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M9 11l3 3L22 4" />
                             <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
                           </svg>
                           <span style={{ 
-                            color: '#3b82f6', 
+                            color: '#f97316', 
                             fontSize: '11px', 
                             fontWeight: 900, 
                             textTransform: 'uppercase', 
@@ -2510,6 +2440,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               othersTotal={othersReceipts.length}
               isGcash={isGcash}
               isOthers={isOthers}
+              allReceipts={liveReceipts}
             />
           ) : (
             <WizardStepCrop
@@ -2586,9 +2517,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                           onClick={handleNextCategorize}
                           style={{ 
                             maxWidth: 'none', 
-                            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                            background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
                             color: '#fff',
-                            boxShadow: '0 10px 25px rgba(37, 99, 235, 0.3)',
+                            boxShadow: '0 10px 25px rgba(249, 115, 22, 0.3)',
                             padding: '16px 10px',
                             fontSize: '10px',
                             fontWeight: 900,
@@ -2606,8 +2537,8 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                           onClick={handleNextCrop} 
                           style={{ 
                             maxWidth: 'none',
-                            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                            boxShadow: '0 10px 25px rgba(245, 158, 11, 0.3)',
+                            background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                            boxShadow: '0 10px 25px rgba(249, 115, 22, 0.3)',
                             padding: '16px 10px',
                             fontSize: '10px',
                             fontWeight: 900,
