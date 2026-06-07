@@ -5,12 +5,13 @@ export default function FinalizeStage({
   isFinalizing,
   finalizedBatch,
   ocrResults,
+  verificationSummary,
   onDone,
   onViewSummary,
   onReCrop,
 }) {
-  const verifiedCount = ocrResults?.filter(r => r.verification_status === 'verified').length || 0;
-  const notFoundCount = (ocrResults?.length || 0) - verifiedCount;
+  const verifiedCount = verificationSummary?.confirmed ?? finalizedBatch?.stats?.confirmed ?? 0;
+  const notFoundCount = verificationSummary?.not_found ?? 0;
 
   const handleReceiptClick = (result, idx) => {
     console.log('Receipt clicked:', result, idx);

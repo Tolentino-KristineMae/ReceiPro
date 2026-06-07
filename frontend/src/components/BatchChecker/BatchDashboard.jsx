@@ -1,5 +1,4 @@
 import React from 'react';
-import { getOverallProgress } from './BatchUtils';
 import BillingSummaryModal from './BillingSummaryModal';
 
 const fmt = (n) =>
@@ -66,6 +65,7 @@ const Icon = {
 
 export default function BatchDashboard({ 
   batches, 
+  dashboard,
   fileCount, 
   setFileCount, 
   fileInputRef, 
@@ -92,11 +92,11 @@ export default function BatchDashboard({
 
   const displayBatchName = customBatchName || autoBatchName;
 
-  // Calculate statistics
-  const totalBatches = batches.length;
-  const completedBatches = batches.filter(b => b.checker_status === 'billing_ready').length;
-  const inProgressBatches = batches.filter(b => b.checker_status !== 'billing_ready' && b.receipts?.length > 0).length;
-  const totalReceipts = batches.reduce((sum, b) => sum + (b.receipts?.length || 0), 0);
+  // Dashboard statistics from backend
+  const totalBatches = dashboard?.total_batches ?? batches.length;
+  const completedBatches = dashboard?.completed_batches ?? 0;
+  const inProgressBatches = dashboard?.in_progress_batches ?? 0;
+  const totalReceipts = dashboard?.total_receipts ?? batches.reduce((sum, b) => sum + (b.receipts?.length || 0), 0);
 
   return (
     <div className="bcp-layout">
@@ -531,17 +531,7 @@ export default function BatchDashboard({
           const bd = summaryBatch.billing_data || {};
 
           // Build verified receipts list from actual receipt data
-          const verifiedReceipts = (summaryBatch.receipts || [])
-            .filter(r => r.match_status === 'verified' || r.match_status === 'flagged')
-            .map(r => {
-              const ocr = (typeof r.ocr_data === 'string') ? JSON.parse(r.ocr_data || '{}') : (r.ocr_data || {});
-              return {
-                account_holder: r.account_holder,
-                amount: Number(ocr.amount || 0),
-                reference: ocr.reference || null,
-                source_label: r.source_label,
-              };
-            });
+          const verifiedReceipts = summaryBatch.verified_claims || [];
 
           // Fallback: reconstruct financials from receipts if summary_data wasn't saved
           const grossFallback = verifiedReceipts.reduce((s, r) => s + r.amount, 0);
@@ -583,9 +573,9 @@ export default function BatchDashboard({
 }
 
 function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, delay = 0 }) {
-  const total = batch.receipts?.length || 0;
-  const verified = batch.receipts?.filter(r => r.ocr_status === 'completed').length || 0;
-  const progress = getOverallProgress(batch);
+  const total = batch.stats?.total ?? batch.receipts?.length ?? 0;
+  const verified = batch.stats?.ocr_finished ?? 0;
+  const progress = batch.progress ?? 0;
   
   const [isEditing, setIsEditing] = React.useState(false);
   const [editName, setEditName] = React.useState(batch.name || '');

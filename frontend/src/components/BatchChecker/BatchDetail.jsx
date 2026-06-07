@@ -1,7 +1,7 @@
 import React from 'react';
 import BillingSummaryModal from './BillingSummaryModal';
 import { getApiUrl } from '../../apiConfig';
-import { parseOCRData, calculateBatchStats, getOverallProgress } from './BatchUtils';
+import { parseOCRData, defaultBatchStats } from './BatchUtils';
 
 const Icon = {
   Trash: ({ size = 18 }) => (
@@ -70,7 +70,7 @@ export default function BatchDetail({
     );
   }
 
-  const stats = calculateBatchStats(batch);
+  const stats = batch.stats || defaultBatchStats();
 
   // Define stages logic based on user workflow
   const stages = [
@@ -84,14 +84,14 @@ export default function BatchDetail({
       id: 3, 
       label: 'Crop & Input', 
       status: stats.unsorted === 0 
-        ? (stats.needsCropInput === 0 ? 'done' : 'active') 
+        ? (stats.needs_crop_input === 0 ? 'done' : 'active') 
         : 'pending' 
     },
     { 
       id: 4, 
       label: 'Extraction', 
-      status: (stats.unsorted === 0 && stats.needsCropInput === 0) 
-        ? (stats.ocrFinished === stats.total ? 'done' : 'active') 
+      status: (stats.unsorted === 0 && stats.needs_crop_input === 0) 
+        ? (stats.ocr_finished === stats.total ? 'done' : 'active') 
         : 'pending' 
     },
     { 
@@ -99,14 +99,14 @@ export default function BatchDetail({
       label: 'Run Check', 
       status: (batch.checker_status === 'verified' || batch.checker_status === 'finalized' || batch.checker_status === 'summarized' || batch.checker_status === 'billing_ready')
         ? 'done' 
-        : (stats.ocrFinished === stats.total ? (stats.verified === stats.total && stats.total > 0 ? 'done' : 'active') : 'pending') 
+        : (stats.ocr_finished === stats.total ? (stats.checked === stats.total && stats.total > 0 ? 'done' : 'active') : 'pending') 
     },
     { 
       id: 6, 
       label: 'Finalize', 
       status: (batch.checker_status === 'finalized' || batch.checker_status === 'summarized' || batch.checker_status === 'billing_ready')
         ? 'done' 
-        : (batch.checker_status === 'verified' || (stats.verified === stats.total && stats.total > 0) ? 'active' : 'pending')
+        : (batch.checker_status === 'verified' || (stats.checked === stats.total && stats.total > 0) ? 'active' : 'pending')
     },
     { 
       id: 7, 
@@ -124,7 +124,7 @@ export default function BatchDetail({
     },
   ];
 
-  const progress = getOverallProgress(batch);
+  const progress = batch.progress ?? 0;
 
   const currentStageIndex = stages.findLastIndex(s => s.status === 'done' || s.status === 'active');
   const lineFillWidth = (currentStageIndex / (stages.length - 1)) * 100;
@@ -281,13 +281,13 @@ export default function BatchDetail({
                 return (
                   <button className="btn-primary-modern" style={{ width: 'auto', background: 'var(--gradient-accent)' }} onClick={() => setShowProcessor('crop')}>
                     <Icon.Crop />
-                    Start Crop & Input ({stats.needsCropInput})
+                    Start Crop & Input ({stats.needs_crop_input})
                   </button>
                 );
               }
 
               if (activeStage.id === 4) {
-                const ocrRemaining = stats.total - stats.ocrFinished;
+                const ocrRemaining = stats.total - stats.ocr_finished;
                 return (
                   <button 
                     className="btn-primary-modern" 
@@ -326,7 +326,7 @@ export default function BatchDetail({
                     ) : (
                       <>
                         <Icon.Check size={14} />
-                        Run Final Check ({stats.verified})
+                        Run Final Check ({stats.checked})
                       </>
                     )}
                   </button>
@@ -385,7 +385,7 @@ export default function BatchDetail({
                     style={{ width: 'auto', background: 'var(--gradient-success)' }}
                     onClick={async () => {
                       try {
-                        await fetch(`http://localhost:8000/api/batches/${batch.id}/status`, {
+                        await fetch(getApiUrl(`/api/batches/${batch.id}/status`), {
                           method: 'PATCH',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ checker_status: 'billing_ready' }),
@@ -434,14 +434,14 @@ export default function BatchDetail({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span className="metric-label-sm">Crop & Input</span>
               <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)' }}>
-                {Math.round(((stats.total - stats.needsCropInput) / stats.total) * 100 || 0)}%
+                {Math.round(((stats.total - stats.needs_crop_input) / stats.total) * 100 || 0)}%
               </span>
             </div>
-            <span className={`metric-value-sm ${stats.needsCropInput > 0 ? 'accent' : ''}`}>
-              {stats.total - stats.needsCropInput}/{stats.total}
+            <span className={`metric-value-sm ${stats.needs_crop_input > 0 ? 'accent' : ''}`}>
+              {stats.total - stats.needs_crop_input}/{stats.total}
             </span>
             <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden' }}>
-              <div style={{ width: `${((stats.total - stats.needsCropInput) / stats.total) * 100 || 0}%`, height: '100%', background: 'var(--accent-primary)' }} />
+              <div style={{ width: `${((stats.total - stats.needs_crop_input) / stats.total) * 100 || 0}%`, height: '100%', background: 'var(--accent-primary)' }} />
             </div>
           </div>
 
@@ -450,14 +450,14 @@ export default function BatchDetail({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span className="metric-label-sm">OCR</span>
               <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)' }}>
-                {Math.round((stats.ocrFinished / stats.total) * 100 || 0)}%
+                {Math.round((stats.ocr_finished / stats.total) * 100 || 0)}%
               </span>
             </div>
-            <span className={`metric-value-sm ${stats.ocrFinished > 0 ? 'success' : ''}`}>
-              {stats.ocrFinished}/{stats.total}
+            <span className={`metric-value-sm ${stats.ocr_finished > 0 ? 'success' : ''}`}>
+              {stats.ocr_finished}/{stats.total}
             </span>
             <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden' }}>
-              <div style={{ width: `${(stats.ocrFinished / stats.total) * 100 || 0}%`, height: '100%', background: 'var(--success-primary)' }} />
+              <div style={{ width: `${(stats.ocr_finished / stats.total) * 100 || 0}%`, height: '100%', background: 'var(--success-primary)' }} />
             </div>
           </div>
 
@@ -466,14 +466,19 @@ export default function BatchDetail({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span className="metric-label-sm">Run Check</span>
               <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)' }}>
-                {Math.round((stats.verified / stats.total) * 100 || 0)}%
+                {Math.round((stats.checked / stats.total) * 100 || 0)}%
               </span>
             </div>
             <span className="metric-value-sm success">
-              {stats.verified}/{stats.total}
+              {stats.checked}/{stats.total}
+              {stats.confirmed > 0 && (
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginLeft: '6px' }}>
+                  ({stats.confirmed} confirmed)
+                </span>
+              )}
             </span>
             <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden' }}>
-              <div style={{ width: `${(stats.verified / stats.total) * 100 || 0}%`, height: '100%', background: 'var(--success-primary)' }} />
+              <div style={{ width: `${(stats.checked / stats.total) * 100 || 0}%`, height: '100%', background: 'var(--success-primary)' }} />
             </div>
           </div>
 
@@ -609,18 +614,8 @@ export default function BatchDetail({
         const sd = batch.summary_data || {};
         const bd = batch.billing_data || {};
 
-        // Build verified receipts list from actual receipt data
-        const verifiedReceipts = (batch.receipts || [])
-          .filter(r => r.match_status === 'verified' || r.match_status === 'flagged')
-          .map(r => {
-            const ocr = (typeof r.ocr_data === 'string') ? JSON.parse(r.ocr_data || '{}') : (r.ocr_data || {});
-            return {
-              account_holder: r.account_holder,
-              amount: Number(ocr.amount || 0),
-              reference: ocr.reference || null,
-              source_label: r.source_label,
-            };
-          });
+        // Build verified receipts list from backend-computed claims
+        const verifiedReceipts = batch.verified_claims || [];
 
         // Fallback: reconstruct financials from receipts if summary_data wasn't saved
         const grossFallback = verifiedReceipts.reduce((s, r) => s + r.amount, 0);
@@ -668,8 +663,11 @@ function ReceiptCard({ receipt, parseOCRData, onDelete, isBillingDone }) {
     const mStatus = receipt.match_status?.toLowerCase();
     
     // Stage 5: Verified Status
-    if (mStatus === 'verified') {
+    if (mStatus === 'verified' && receipt.transaction_id) {
       return { label: 'Checked', className: 'success' };
+    }
+    if (mStatus === 'matched') {
+      return { label: 'Needs Confirm', className: 'warning' };
     }
     if (mStatus === 'flagged' || mStatus === 'not_found') {
       return { label: 'Not Found', className: 'danger' };

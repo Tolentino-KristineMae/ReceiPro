@@ -51,6 +51,7 @@ Route::prefix('receipts')->group(function () {
 // Transaction routes
 Route::prefix('transactions')->group(function () {
     Route::post('/', [TransactionController::class, 'store']);
+    Route::get('/report', [TransactionController::class, 'report']);
     Route::get('/', [TransactionController::class, 'index']);
     Route::get('/{transaction}', [TransactionController::class, 'show']);
     Route::patch('/{transaction}', [TransactionController::class, 'update']);

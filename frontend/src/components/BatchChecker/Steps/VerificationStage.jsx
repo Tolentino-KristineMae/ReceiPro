@@ -4,13 +4,15 @@ import './VerificationStage.css';
 export default function VerificationStage({
   isVerifying,
   ocrResults,
+  verificationSummary,
   onStartVerification,
   onFinalize,
   onBack,
 }) {
-  const verifiedCount = ocrResults?.filter(r => r.verification_status === 'verified').length || 0;
-  const totalCount = ocrResults?.length || 0;
-  const notFoundCount = totalCount - verifiedCount;
+  const verifiedCount = verificationSummary?.confirmed ?? 0;
+  const matchedCount = verificationSummary?.matched ?? 0;
+  const totalCount = verificationSummary?.total ?? ocrResults?.length ?? 0;
+  const notFoundCount = verificationSummary?.not_found ?? 0;
 
   return (
     <div className="vs-root">
@@ -39,7 +41,7 @@ export default function VerificationStage({
             {isVerifying 
               ? 'Checking receipts against database...' 
               : ocrResults 
-                ? 'All receipts verified and ready.' 
+                ? 'Review matches and confirm each receipt before finalizing.' 
                 : 'Click below to start verification.'}
           </p>
         </div>
@@ -53,8 +55,12 @@ export default function VerificationStage({
             <div className="vs-stat-value">{totalCount}</div>
           </div>
           <div className="vs-stat-card success">
-            <div className="vs-stat-label">Verified</div>
+            <div className="vs-stat-label">Confirmed</div>
             <div className="vs-stat-value">{verifiedCount}</div>
+          </div>
+          <div className="vs-stat-card" style={{ borderColor: 'rgba(249,115,22,0.25)' }}>
+            <div className="vs-stat-label">Needs Confirm</div>
+            <div className="vs-stat-value">{matchedCount}</div>
           </div>
           <div className="vs-stat-card error">
             <div className="vs-stat-label">Missing</div>

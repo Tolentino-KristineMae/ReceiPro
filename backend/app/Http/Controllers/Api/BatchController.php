@@ -5,24 +5,43 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Batch;
 use App\Models\Receipt;
+use App\Services\BatchStatsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class BatchController extends Controller
 {
+    public function __construct(private BatchStatsService $statsService)
+    {
+    }
+
+    private function loadBatchWithReceipts(Batch $batch): Batch
+    {
+        return $batch->load(['receipts' => function ($query) {
+            $query->orderBy('created_at', 'asc');
+        }]);
+    }
+
+    private function respondWithBatch(Batch $batch)
+    {
+        return response()->json(
+            $this->statsService->enrichBatch($this->loadBatchWithReceipts($batch))
+        );
+    }
+
     /** List all batches with their receipts */
     public function index()
     {
         $batches = Batch::with(['receipts' => function ($query) {
             $query->orderBy('created_at', 'asc');
         }])->orderBy('created_at', 'desc')->get();
-        
-        // Debug logging
-        foreach ($batches as $batch) {
-            \Log::info("Batch {$batch->id}: {$batch->receipts->count()} receipts");
-        }
-        
-        return response()->json($batches);
+
+        $enriched = $batches->map(fn (Batch $batch) => $this->statsService->enrichBatch($batch));
+
+        return response()->json([
+            'batches'   => $enriched,
+            'dashboard' => $this->statsService->dashboardSummary($batches),
+        ]);
     }
 
     /** Create a named batch (before uploading receipts) */
@@ -56,17 +75,30 @@ class BatchController extends Controller
 
         $batch->update($request->only(['name', 'checker_status', 'summary_data', 'billing_data']));
 
-        return response()->json($batch->fresh()->load(['receipts' => function ($query) {
-            $query->orderBy('created_at', 'asc');
-        }]));
+        return $this->respondWithBatch($batch->fresh());
     }
 
     /** Show a single batch with all receipts */
-    public function show(Batch $batch)
+    public function show(Request $request, Batch $batch)
     {
-        return response()->json($batch->load(['receipts' => function ($query) {
-            $query->orderBy('created_at', 'asc');
-        }]));
+        $batch = $this->loadBatchWithReceipts($batch);
+        $filter = (string) $request->get('filter', 'all');
+        $enriched = $this->statsService->enrichBatch($batch);
+
+        if ($filter !== 'all') {
+            $filtered = $batch->receipts->filter(function ($receipt) use ($filter) {
+                return match ($filter) {
+                    'pending'   => $receipt->ocr_status === 'pending',
+                    'completed' => $receipt->ocr_status === 'completed',
+                    'gcash'     => $receipt->category === 'gcash',
+                    'others'    => $receipt->category === 'others' || !$receipt->category,
+                    default     => true,
+                };
+            })->values();
+            $enriched->setRelation('receipts', $filtered);
+        }
+
+        return response()->json($enriched);
     }
 
     /** Update checker_status: open → claiming → verified → finalized → summarized → billing_ready */
@@ -95,43 +127,40 @@ class BatchController extends Controller
 
             $batch->update($data);
 
-            // For each receipt in this batch, find a matching transaction and stamp it
+            // Only link transactions that were explicitly verified during the Run Check step
             $batch->load(['receipts' => function ($query) {
                 $query->orderBy('created_at', 'asc');
             }]);
             foreach ($batch->receipts as $receipt) {
-                $ref    = $receipt->ocr_data['reference'] ?? null;
-                $amount = isset($receipt->ocr_data['amount'])
-                    ? (float) $receipt->ocr_data['amount']
-                    : null;
-                $holder = $receipt->account_holder;
-
-                if (!$ref && !$amount) continue;
-
-                // Match by reference first (most precise), then by amount + account_holder
-                $transaction = null;
-
-                if ($ref) {
-                    $transaction = \App\Models\Transaction::where('reference', $ref)
-                        ->whereNull('batch_id')
-                        ->first();
+                if ($receipt->batch_id !== $batch->id) {
+                    continue;
                 }
 
-                if (!$transaction && $amount && $holder) {
-                    $transaction = \App\Models\Transaction::where('account_holder', $holder)
-                        ->whereRaw('ABS(amount - ?) < 0.01', [$amount])
-                        ->whereNull('batch_id')
-                        ->first();
+                if ($receipt->match_status !== 'verified' || !$receipt->transaction_id) {
+                    continue;
                 }
 
-                if ($transaction) {
-                    $transaction->update(['batch_id' => $batch->id]);
+                $transaction = \App\Models\Transaction::find($receipt->transaction_id);
+                if (!$transaction) {
+                    continue;
                 }
+
+                // Skip if already claimed by a different batch
+                if ($transaction->batch_id && $transaction->batch_id !== $batch->id) {
+                    continue;
+                }
+
+                // Double-check the linked transaction still matches the receipt OCR data
+                $ocrData = $receipt->ocr_data ?? [];
+                $ocrAmount = isset($ocrData['amount']) ? (float) $ocrData['amount'] : null;
+                if ($ocrAmount !== null && abs((float) $transaction->amount - $ocrAmount) >= 0.01) {
+                    continue;
+                }
+
+                $transaction->update(['batch_id' => $batch->id]);
             }
 
-            return response()->json($batch->fresh()->load(['receipts' => function ($query) {
-                $query->orderBy('created_at', 'asc');
-            }]));
+            return $this->respondWithBatch($batch->fresh());
         }
 
         $batch->update($data);
@@ -142,9 +171,7 @@ class BatchController extends Controller
                 ->update(['status' => 'completed']);
         }
 
-        return response()->json($batch->fresh()->load(['receipts' => function ($query) {
-            $query->orderBy('created_at', 'asc');
-        }]));
+        return $this->respondWithBatch($batch->fresh());
     }
 
     /** Update source_label on a receipt (for manual Others entries) */
@@ -184,14 +211,32 @@ class BatchController extends Controller
         $ocrData['reference'] = $transaction->reference ?? $transaction->label ?? $ocrData['reference'] ?? null;
         $ocrData['amount']    = $transaction->amount ?? $ocrData['amount'] ?? 0;
 
+        // Reject if this transaction is already verified in another batch
+        if ($transaction->batch_id && $transaction->batch_id !== $batch->id) {
+            return response()->json(['message' => 'Transaction is already claimed by another batch.'], 422);
+        }
+
+        $ocrAmount = isset($ocrData['amount']) ? (float) $ocrData['amount'] : null;
+        if ($ocrAmount !== null && abs((float) $transaction->amount - $ocrAmount) >= 0.01) {
+            return response()->json(['message' => 'Transaction amount does not match receipt amount.'], 422);
+        }
+
+        $claimedElsewhere = Receipt::where('transaction_id', $transaction->id)
+            ->where('batch_id', '!=', $batch->id)
+            ->where('match_status', 'verified')
+            ->exists();
+
+        if ($claimedElsewhere) {
+            return response()->json(['message' => 'Transaction is already verified in another batch.'], 422);
+        }
+
         $receipt->update([
             'match_status'   => 'verified',
             'transaction_id' => $transaction->id,
             'ocr_data'       => $ocrData,
         ]);
 
-        // Link the transaction to this batch so it shows as claimed
-        $transaction->update(['batch_id' => $batch->id]);
+        // batch_id is stamped on the transaction only when the batch is finalized
 
         return response()->json($receipt->fresh());
     }
@@ -242,7 +287,7 @@ class BatchController extends Controller
 
         // 2. Reset all receipts in this batch back to unverified state
         $batch->receipts()->update([
-            'match_status'   => null,
+            'match_status'   => 'unmatched',
             'transaction_id' => null,
             'ocr_status'     => 'pending',
             'ocr_data'       => null,
@@ -253,7 +298,7 @@ class BatchController extends Controller
 
         // 3. Reset batch checker state and remove final_batch_number
         $batch->update([
-            'checker_status'     => null,
+            'checker_status'     => 'open',
             'final_batch_number' => null,
             'summary_data'       => null,
             'billing_data'       => null,
@@ -272,7 +317,9 @@ class BatchController extends Controller
 
         return response()->json([
             'message' => 'Batch reset successfully',
-            'batch'   => $batch->fresh()->load('receipts'),
+            'batch'   => $this->statsService->enrichBatch($batch->fresh()->load(['receipts' => function ($query) {
+                $query->orderBy('created_at', 'asc');
+            }])),
         ]);
     }
 
@@ -285,6 +332,22 @@ class BatchController extends Controller
         
         $results = [];
         foreach ($batch->receipts as $receipt) {
+            // Preserve receipts that were already manually confirmed
+            if ($receipt->match_status === 'verified' && $receipt->transaction_id) {
+                $ocrData = $receipt->ocr_data ?? [];
+                $results[] = [
+                    'receipt'             => $receipt->fresh(),
+                    'amount'              => $ocrData['amount'] ?? 0,
+                    'reference'           => $ocrData['reference'] ?? 'N/A',
+                    'date'                => $ocrData['date'] ?? 'N/A',
+                    'confidence'          => $ocrData['confidence'] ?? 0,
+                    'manualEntry'         => false,
+                    'verification_status' => 'verified',
+                    'match_details'       => null,
+                ];
+                continue;
+            }
+
             // Use existing OCR data saved from frontend
             $ocrData = $receipt->ocr_data;
             
@@ -298,8 +361,8 @@ class BatchController extends Controller
             }
 
             // Transaction Matching Logic (Phase 4: Run Check)
-            // Match based on amount, account_holder, and reference/label (ignore dates)
-            $isVerified = false;
+            // Auto-match uses exact reference/label + amount only; user must Confirm to verify
+            $isMatched = false;
             $matchDetails = null;
 
             if ($ocrData['reference'] && trim($ocrData['reference']) !== 'MISSING') {
@@ -359,17 +422,11 @@ class BatchController extends Controller
                 }
 
                 $query = \App\Models\Transaction::whereNull('batch_id')
-                    ->where('amount', $ocrData['amount'])
-                    ->where(function($subQuery) use ($reference, $partialMatches, $receipt) {
-                        // Match reference or label with OCR reference (trimmed full value)
+                    ->whereRaw('ABS(amount - ?) < 0.01', [$ocrData['amount'] ?? 0])
+                    ->where(function($subQuery) use ($reference, $receipt) {
+                        // Exact match on reference or label only (no partial digit matching)
                         $subQuery->where('reference', $reference)
                                 ->orWhere('label', $reference);
-
-                        // Partial match on last 4-5 digits when full reference is not enough
-                        foreach ($partialMatches as $part) {
-                            $subQuery->orWhere('reference', 'like', '%' . $part)
-                                    ->orWhere('label', 'like', '%' . $part);
-                        }
 
                         // For others category, also check if source_label matches transaction label
                         if ($receipt->category === 'others' && $receipt->source_label) {
@@ -386,11 +443,11 @@ class BatchController extends Controller
                 \Log::info("Verification result for receipt {$receipt->id}: " . ($transaction ? "FOUND transaction {$transaction->id} (ref: {$transaction->reference}, label: {$transaction->label})" : "NOT FOUND"));
 
                 if ($transaction) {
-                    $isVerified = true;
+                    $isMatched = true;
                     $matchDetails = [
                         'bank' => $receipt->category === 'gcash' ? 'GCash' : ($receipt->source_label ?? 'Bank'),
                         'timestamp' => $transaction->transaction_date ? $transaction->transaction_date->format('H:i') : now()->format('H:i'),
-                        'transaction' => $transaction
+                        'transaction' => $transaction,
                     ];
                 } else {
                     // Find recommended transactions (unclaimed only, must match amount)
@@ -403,17 +460,20 @@ class BatchController extends Controller
                         ->limit(5)
                         ->get();
                     
+                    \Log::info("Potential matches for receipt {$receipt->id} (amount={$ocrData['amount']}): count=" . $potentialMatches->count());
+
                     $matchDetails = [
                         'potential_matches' => $potentialMatches
                     ];
                 }
             }
 
-            $verificationStatus = $isVerified ? 'verified' : 'flagged';
+            $verificationStatus = $isMatched ? 'matched' : 'flagged';
 
-            // Save the status to the DB so the frontend progress bar updates
+            // Save check result — only manualVerify may set match_status to 'verified'
             $receipt->update([
-                'match_status' => $verificationStatus
+                'match_status'   => $verificationStatus,
+                'transaction_id' => null,
             ]);
 
             $results[] = [
@@ -428,6 +488,16 @@ class BatchController extends Controller
             ];
         }
 
-        return response()->json($results);
+        $batch->load(['receipts' => function ($query) {
+            $query->orderBy('created_at', 'asc');
+        }]);
+
+        return response()->json([
+            'results' => $results,
+            'summary' => $this->statsService->summarizeVerificationResults($results),
+            'batch'   => $this->statsService->enrichBatch($batch->fresh()->load(['receipts' => function ($query) {
+                $query->orderBy('created_at', 'asc');
+            }])),
+        ]);
     }
 }

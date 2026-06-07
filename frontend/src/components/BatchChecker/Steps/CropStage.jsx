@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import './CropStage.css';
-
-const API_BASE = 'http://localhost:8000';
+import { getApiUrl } from '../../../apiConfig';
 
 export default function CropStage({
   current,
@@ -129,7 +128,7 @@ export default function CropStage({
     const rect   = pos.rect;
     const bgX    = -(pos.x * ZOOM - LENS_SIZE / 2);
     const bgY    = -(pos.y * ZOOM - LENS_SIZE / 2);
-    const imgSrc = current ? `${API_BASE}/api/receipts/${current.id}/image` : '';
+    const imgSrc = current ? getApiUrl(`/api/receipts/${current.id}/image`) : '';
     return {
       width:               `${LENS_SIZE}px`,
       height:              `${LENS_SIZE}px`,
@@ -201,7 +200,7 @@ export default function CropStage({
             >
               <img
                 ref={imgRef}
-                src={current ? `${API_BASE}/api/receipts/${current.id}/image` : ''}
+                src={current ? getApiUrl(`/api/receipts/${current.id}/image`) : ''}
                 onLoad={onImageLoad}
                 crossOrigin="anonymous"
                 loading="eager"

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import './SortingStage.css';
-
-const API_BASE = 'http://localhost:8000';
+import { getApiUrl } from '../../../apiConfig';
 
 export default function SortingStage({
   receipts,
@@ -126,7 +125,7 @@ export default function SortingStage({
                     {checked ? 'Others' : 'GCash'}
                   </div>
                   <img
-                    src={`${API_BASE}/api/receipts/${r.id}/image`}
+                    src={getApiUrl(`/api/receipts/${r.id}/image`)}
                     alt=""
                     crossOrigin="anonymous"
                   />
@@ -251,7 +250,7 @@ export default function SortingStage({
                     title={`Receipt ID: ${r.id} - Drag to move or click to edit`}
                   >
                     <div className="ss-receipt-id">#{r.id}</div>
-                    <img src={`${API_BASE}/api/receipts/${r.id}/image`} alt="" crossOrigin="anonymous" />
+                    <img src={getApiUrl(`/api/receipts/${r.id}/image`)} alt="" crossOrigin="anonymous" />
                   </div>
                 ))}
               </div>
@@ -290,7 +289,7 @@ export default function SortingStage({
                     title={`Receipt ID: ${r.id} - Drag to move or click to edit`}
                   >
                     <div className="ss-receipt-id">#{r.id}</div>
-                    <img src={`${API_BASE}/api/receipts/${r.id}/image`} alt="" crossOrigin="anonymous" />
+                    <img src={getApiUrl(`/api/receipts/${r.id}/image`)} alt="" crossOrigin="anonymous" />
                   </div>
                 ))}
               </div>

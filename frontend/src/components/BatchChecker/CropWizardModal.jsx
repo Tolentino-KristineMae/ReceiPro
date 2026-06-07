@@ -145,13 +145,12 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       return firstUnsorted !== -1 ? firstUnsorted : 0;
     }
     if (initialPhase === 'crop') {
-      const firstNeedsCrop = receipts.findIndex(r => {
-        const ocr = r.ocr_data ? (typeof r.ocr_data === 'string' ? JSON.parse(r.ocr_data) : r.ocr_data) : null;
-        if (r.category === 'gcash') return !r.cropped_image;
-        if (r.category === 'others') return !ocr?.manual;
-        return true; // unsorted
-      });
-      return firstNeedsCrop !== -1 ? firstNeedsCrop : 0;
+      const ocr = (r) => r.ocr_data ? (typeof r.ocr_data === 'string' ? JSON.parse(r.ocr_data) : r.ocr_data) : null;
+      // Always start with first pending GCash, fall back to first pending Others
+      const firstGcash = receipts.findIndex(r => r.category === 'gcash' && !r.cropped_image);
+      const firstOthers = receipts.findIndex(r => r.category === 'others' && !ocr(r)?.manual);
+      const firstNeedsCrop = firstGcash !== -1 ? firstGcash : firstOthers !== -1 ? firstOthers : 0;
+      return firstNeedsCrop;
     }
     return 0;
   });
@@ -210,9 +209,12 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   const [showBillingSummary, setShowBillingSummary] = useState(false);
   const [showBillingSummaryModal, setShowBillingSummaryModal] = useState(false);
   const [savedBatchInfo, setSavedBatchInfo] = useState(null);
+  const [verificationSummary, setVerificationSummary] = useState(null);
 
   // Calculations for Summary
-  const verifiedClaims = ocrResults?.filter(r => r.verification_status === 'verified') || [];
+  const verifiedClaims = savedBatchInfo?.verified_claims
+    || ocrResults?.filter(r => r.verification_status === 'verified')
+    || [];
   const totalClaimsAmount = verifiedClaims.reduce((sum, r) => sum + Number(r.amount || 0), 0);
   const serviceFee = Math.floor(totalClaimsAmount / 1000) * 10;
   
@@ -246,7 +248,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
   // Try to reconstruct ocrResults from receipts if they have data
   useEffect(() => {
-    if ((phase === 'ocr' || phase === 'verify' || phase === 'finalize' || phase === 'summary' || phase === 'billing') && !ocrResults && receipts.length > 0) {
+    if ((phase === 'ocr' || phase === 'finalize' || phase === 'summary' || phase === 'billing') && !ocrResults && receipts.length > 0) {
       const hasOcrData = receipts.some(r => {
         const ocr = r.ocr_data ? (typeof r.ocr_data === 'string' ? JSON.parse(r.ocr_data) : r.ocr_data) : null;
         return r.ocr_status === 'completed' || (ocr && (ocr.raw_text || ocr.manual));
@@ -271,7 +273,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
         
         // Ensure preview flags are set if we jumped to these phases
         if (phase === 'ocr') setShowOcrPreview(true);
-        if (phase === 'verify') setShowVerifyPreview(true);
       }
     }
   }, [phase, receipts, ocrResults]);
@@ -286,8 +287,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
             headers: { 'Content-Type': 'application/json' }
           });
           if (res.ok) {
-            const results = await res.json();
-            setOcrResults(results);
+            const payload = await res.json();
+            setOcrResults(payload.results || []);
+            setVerificationSummary(payload.summary || null);
             setShowVerifyPreview(true);
           }
         } catch (e) {
@@ -324,6 +326,10 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
             // If already finalized, set the finalized batch state
             if (batch.checker_status === 'finalized' || batch.checker_status === 'summarized' || batch.checker_status === 'billing_ready') {
               setFinalizedBatch(batch);
+            }
+
+            if (batch.verification_summary) {
+              setVerificationSummary(batch.verification_summary);
             }
             
             if (batch.summary_data) {
@@ -600,7 +606,18 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     });
     setSelections(newSelections);
     setPhase('crop');
-    setIndex(0);
+
+    // Start at the first GCash receipt that needs cropping, then others
+    // Build a live view of the new categories so we pick the right starting index
+    const updatedLive = receipts.map((r, i) => ({
+      ...r,
+      category: checkedForOthers.has(r.id) ? 'others' : 'gcash',
+    }));
+    const firstGcash = updatedLive.findIndex(r => r.category === 'gcash' && !r.cropped_image);
+    const firstOthers = updatedLive.findIndex(r => r.category === 'others' && !r.ocr_data?.manual);
+    const startIndex = firstGcash !== -1 ? firstGcash : firstOthers !== -1 ? firstOthers : 0;
+
+    setIndex(startIndex);
     setCrop(null);
     setCompletedCrop(null);
   };
@@ -967,26 +984,22 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       return;
     }
     
-    // Find next item that needs crop/input (normal flow)
-    const nextNeedsCrop = liveReceipts.findIndex((r, i) => {
-      if (i <= index) return false; // Skip current and previous
-      
+    // Find next item that needs crop/input — GCash always first, then Others
+    const needsCrop = (r, i) => {
       const receiptIndex = receipts.findIndex(rec => rec.id === r.id);
-      
-      // For GCash: needs crop if no cropped_image AND no crop in session
-      if (r.category === 'gcash') {
-        return !r.cropped_image && !crops[receiptIndex];
-      }
-      
-      // For Others: needs input if no manual data in DB AND no manual entry in session
+      if (r.category === 'gcash') return !r.cropped_image && !crops[receiptIndex];
       if (r.category === 'others') {
-        const hasManualInDb = r.ocr_data?.manual;
-        const hasManualInSession = manualEntries[receiptIndex];
-        return !hasManualInDb && !hasManualInSession;
+        return !r.ocr_data?.manual && !manualEntries[receiptIndex];
       }
-      
       return false;
-    });
+    };
+
+    // First look for any remaining GCash (anywhere in the list, not just after current)
+    const nextGcash = liveReceipts.findIndex((r, i) => i !== index && r.category === 'gcash' && needsCrop(r, i));
+    // Then look for any remaining Others
+    const nextOthers = liveReceipts.findIndex((r, i) => i !== index && r.category === 'others' && needsCrop(r, i));
+
+    const nextNeedsCrop = nextGcash !== -1 ? nextGcash : nextOthers;
 
     if (nextNeedsCrop !== -1) {
       setIndex(nextNeedsCrop);
@@ -1020,8 +1033,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
         throw new Error(errText || `Server error ${res.status}`);
       }
 
-      const results = await res.json();
-      setOcrResults(results);
+      const payload = await res.json();
+      setOcrResults(payload.results || []);
+      setVerificationSummary(payload.summary || null);
       setShowVerifyPreview(true);
     } catch (e) {
       console.error('Verification failed', e);
@@ -1033,7 +1047,45 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     }
   };
 
+  const confirmTransactionMatch = async (receiptId, tx) => {
+    if (!receiptId || !tx?.id) return false;
+    try {
+      const response = await fetch(getApiUrl(`/api/batches/${batchId}/receipts/${receiptId}/manual-verify`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transaction_id: tx.id }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || `Server error ${response.status}`);
+      }
+      setOcrResults(prev => prev.map(r =>
+        r.receipt?.id === receiptId
+          ? { ...r, verification_status: 'verified', reference: tx.reference || tx.label, amount: tx.amount, match_details: { bank: tx.source_type || 'Database' } }
+          : r
+      ));
+      showToast('Transaction confirmed!', `Ref: ${tx.reference || tx.label}`, 'success');
+      return true;
+    } catch (e) {
+      showToast('Failed to confirm', e.message, 'error');
+      return false;
+    }
+  };
+
   const startFinalizePhase = async () => {
+    const pendingMatches = ocrResults?.filter(r =>
+      r.verification_status === 'matched' ||
+      (r.verification_status !== 'verified' && r.match_details?.potential_matches?.length > 0)
+    ) || [];
+
+    if (pendingMatches.length > 0) {
+      const proceed = window.confirm(
+        `${pendingMatches.length} receipt(s) still need confirmation. ` +
+        'Only explicitly confirmed receipts will receive a batch label. Continue finalizing?'
+      );
+      if (!proceed) return;
+    }
+
     setPhase('finalize');
     setIsFinalizing(true);
     try {
@@ -1143,7 +1195,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
             console.warn(`Receipt #${r.id}: OCR found no amount or reference. Raw text: ${text.substring(0, 100)}`);
           }
 
-          const patchRes = await fetch(`http://localhost:8000/api/receipts/${r.id}`, {
+          const patchRes = await fetch(getApiUrl(`/api/receipts/${r.id}`), {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -1175,16 +1227,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
         } catch (receiptErr) {
           console.error(`OCR failed for receipt #${r.id}:`, receiptErr);
           failedReceipts.push(r.id);
-          // Push a placeholder so the receipt still appears in results
-          results.push({
-            receipt: r,
-            amount: 0,
-            reference: null,
-            date: null,
-            confidence: 0,
-            manualEntry: false,
-            ocrError: receiptErr.message
-          });
         }
       }
 
@@ -1198,7 +1240,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       setShowOcrPreview(true);
 
       if (failedReceipts.length > 0) {
-        alert(`Extraction complete with ${failedReceipts.length} error(s).\nReceipt IDs that failed: ${failedReceipts.join(', ')}.\nYou can still proceed — failed receipts will show ₱0.`);
+        alert(`Extraction complete with ${failedReceipts.length} error(s).\nReceipt IDs that failed: ${failedReceipts.join(', ')}.`);
       }
     } catch (e) {
       console.error('OCR Extraction failed:', e);
@@ -1943,32 +1985,46 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
                           <span style={{ color: '#059669', fontSize: '11px', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>
-                            {ocrResults?.filter(r => r.verification_status === 'verified').length} Verified
+                            {verificationSummary?.confirmed ?? 0} Confirmed
                           </span>
                         </div>
-                        {ocrResults?.filter(r => r.verification_status !== 'verified').length > 0 && (
+                        {(verificationSummary?.matched ?? 0) > 0 && (
+                          <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)' }}>
+                            <span style={{ color: '#ea580c', fontSize: '11px', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>
+                              {verificationSummary.matched} Needs Confirm
+                            </span>
+                          </div>
+                        )}
+                        {(verificationSummary?.not_found ?? 0) > 0 && (
                           <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
                             <span style={{ color: '#dc2626', fontSize: '11px', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>
-                              {ocrResults?.filter(r => r.verification_status !== 'verified').length} Not Found
+                              {verificationSummary.not_found} Not Found
                             </span>
                           </div>
                         )}
                       </div>
                     </div>
                     <p style={{ color: 'rgba(67,20,7,0.55)', fontSize: '13px', fontWeight: 500, fontFamily: "'Space Grotesk', sans-serif", margin: 0 }}>
-                      All receipts have been verified against transaction records
+                      Review matches and confirm each receipt before finalizing
                     </p>
                   </div>
 
                   {/* Results list */}
                   <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
-                      {ocrResults?.sort((a, b) => {
-                        const rank = r => r.verification_status === 'verified' ? 2 : r.verification_status === 'duplicate' ? 1 : 0;
+                      {[...(ocrResults || [])].sort((a, b) => {
+                        const rank = r => {
+                          if (r.verification_status === 'verified') return 3;
+                          if (r.verification_status === 'matched') return 2;
+                          if (r.verification_status === 'duplicate') return 1;
+                          return 0;
+                        };
                         return rank(a) - rank(b);
                       }).map((res, i) => {
                         const isVerified = res.verification_status === 'verified';
+                        const isMatched = res.verification_status === 'matched';
                         const isDuplicate = res.verification_status === 'duplicate';
+                        const suggestedTx = res.match_details?.transaction;
                         const holder = res.receipt?.account_holder || res.account_holder;
                         const acctColors = {
                           Babilyn:  { bg: 'rgba(236,72,153,0.08)',  border: 'rgba(236,72,153,0.2)',  text: '#ec4899' },
@@ -1976,31 +2032,34 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                           Kristine: { bg: 'rgba(6,182,212,0.08)',   border: 'rgba(6,182,212,0.2)',   text: '#06b6d4' },
                         };
                         const ac = acctColors[holder];
-                        const potentialMatches = res.match_details?.potential_matches || [];
+                        const potentialMatches = isMatched && suggestedTx
+                          ? [suggestedTx]
+                          : (res.match_details?.potential_matches || []);
                         const claimedBatch = res.match_details?.claimed_batch;
+                        const rowPositive = isVerified || isMatched;
                         return (
                           <div key={i} style={{
-                            background: isVerified ? '#ffffff' : isDuplicate ? 'rgba(124,58,237,0.03)' : 'rgba(239,68,68,0.03)',
-                            border: `1.5px solid ${isVerified ? 'rgba(251,146,60,0.15)' : isDuplicate ? 'rgba(124,58,237,0.3)' : 'rgba(239,68,68,0.25)'}`,
+                            background: isVerified ? '#ffffff' : isMatched ? 'rgba(249,115,22,0.03)' : isDuplicate ? 'rgba(124,58,237,0.03)' : 'rgba(239,68,68,0.03)',
+                            border: `1.5px solid ${isVerified ? 'rgba(251,146,60,0.15)' : isMatched ? 'rgba(249,115,22,0.25)' : isDuplicate ? 'rgba(124,58,237,0.3)' : 'rgba(239,68,68,0.25)'}`,
                             borderRadius: '14px', padding: '16px 20px',
                             display: 'flex', flexDirection: 'column', gap: '12px',
                             transition: 'all 0.2s',
-                            boxShadow: isVerified ? '0 2px 8px rgba(67,20,7,0.04)' : '0 2px 8px rgba(239,68,68,0.06)'
+                            boxShadow: rowPositive ? '0 2px 8px rgba(67,20,7,0.04)' : '0 2px 8px rgba(239,68,68,0.06)'
                           }}
-                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = isVerified ? '0 6px 20px rgba(249,115,22,0.1)' : '0 6px 20px rgba(239,68,68,0.12)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = isVerified ? '0 2px 8px rgba(67,20,7,0.04)' : '0 2px 8px rgba(239,68,68,0.06)'; }}>
+                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = rowPositive ? '0 6px 20px rgba(249,115,22,0.1)' : '0 6px 20px rgba(239,68,68,0.12)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = rowPositive ? '0 2px 8px rgba(67,20,7,0.04)' : '0 2px 8px rgba(239,68,68,0.06)'; }}>
 
                             {/* Main row */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                               {/* Status icon */}
                               <div style={{
                                 width: '40px', height: '40px', borderRadius: '11px', flexShrink: 0,
-                                background: isVerified ? 'rgba(16,185,129,0.1)' : isDuplicate ? 'rgba(124,58,237,0.1)' : 'rgba(239,68,68,0.1)',
-                                border: `1px solid ${isVerified ? 'rgba(16,185,129,0.25)' : isDuplicate ? 'rgba(124,58,237,0.3)' : 'rgba(239,68,68,0.25)'}`,
+                                background: isVerified ? 'rgba(16,185,129,0.1)' : isMatched ? 'rgba(249,115,22,0.1)' : isDuplicate ? 'rgba(124,58,237,0.1)' : 'rgba(239,68,68,0.1)',
+                                border: `1px solid ${isVerified ? 'rgba(16,185,129,0.25)' : isMatched ? 'rgba(249,115,22,0.25)' : isDuplicate ? 'rgba(124,58,237,0.3)' : 'rgba(239,68,68,0.25)'}`,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: isVerified ? '#10b981' : isDuplicate ? '#7c3aed' : '#ef4444', fontSize: '16px', fontWeight: 900
+                                color: isVerified ? '#10b981' : isMatched ? '#f97316' : isDuplicate ? '#7c3aed' : '#ef4444', fontSize: '16px', fontWeight: 900
                               }}>
-                                {isVerified ? '✓' : isDuplicate ? '⚠' : '✕'}
+                                {isVerified ? '✓' : isMatched ? '?' : isDuplicate ? '⚠' : '✕'}
                               </div>
 
                               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
@@ -2024,8 +2083,12 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                                       )}
                                     </div>
                                   ) : (
-                                    <div style={{ fontSize: '11px', fontWeight: 700, color: isVerified ? '#059669' : '#dc2626', fontFamily: "'Space Grotesk', sans-serif" }}>
-                                      {isVerified ? `Found in ${res.match_details?.bank || 'Database'}` : 'Not found in database'}
+                                    <div style={{ fontSize: '11px', fontWeight: 700, color: isVerified ? '#059669' : isMatched ? '#ea580c' : '#dc2626', fontFamily: "'Space Grotesk', sans-serif" }}>
+                                      {isVerified
+                                        ? `Confirmed in ${res.match_details?.bank || 'Database'}`
+                                        : isMatched
+                                          ? `Match found in ${res.match_details?.bank || 'Database'} — confirm required`
+                                          : 'Not found in database'}
                                     </div>
                                   )}
                                 </div>
@@ -2045,16 +2108,16 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                               {/* Amount */}
                               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                 <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px', fontFamily: "'Space Grotesk', sans-serif" }}>Amount</div>
-                                <div style={{ fontSize: '18px', fontWeight: 900, color: isVerified ? '#f97316' : isDuplicate ? '#7c3aed' : '#ef4444', letterSpacing: '-0.01em', fontFamily: "'Space Mono', monospace" }}>
+                                <div style={{ fontSize: '18px', fontWeight: 900, color: isVerified ? '#f97316' : isMatched ? '#ea580c' : isDuplicate ? '#7c3aed' : '#ef4444', letterSpacing: '-0.01em', fontFamily: "'Space Mono', monospace" }}>
                                   ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                                 </div>
                               </div>
                             </div>
 
-                            {/* Recommendations — only for unverified rows with suggestions */}
+                            {/* Recommendations — for matched or unverified rows with suggestions */}
                             {!isVerified && potentialMatches.length > 0 && (
                               <div style={{
-                                borderTop: '1px dashed rgba(239,68,68,0.2)',
+                                borderTop: `1px dashed ${isMatched ? 'rgba(249,115,22,0.2)' : 'rgba(239,68,68,0.2)'}`,
                                 paddingTop: '10px',
                                 display: 'flex', flexDirection: 'column', gap: '6px'
                               }}>
@@ -2062,7 +2125,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                                   </svg>
-                                  Unclaimed transactions with matching amount
+                                  {isMatched ? 'Suggested match — click Confirm to link' : 'Unclaimed transactions with matching amount'}
                                 </div>
                                 {potentialMatches.map((tx, j) => (
                                   <div key={j} style={{
@@ -2100,28 +2163,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                                     </div>
                                     {/* Confirm button */}
                                     <button
-                                      onClick={async () => {
-                                        const receiptId = res.receipt?.id;
-                                        if (!receiptId || !tx.id) return;
-                                        try {
-                                          // Call manual-verify which links both the receipt AND the transaction to this batch
-                                          const response = await fetch(getApiUrl(`/api/batches/${batchId}/receipts/${receiptId}/manual-verify`), {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ transaction_id: tx.id }),
-                                          });
-                                          if (!response.ok) throw new Error(`Server error ${response.status}`);
-                                          // Update local ocrResults so row flips to verified immediately
-                                          setOcrResults(prev => prev.map(r =>
-                                            r.receipt?.id === receiptId
-                                              ? { ...r, verification_status: 'verified', reference: tx.reference || tx.label, amount: tx.amount, match_details: { bank: tx.source_type || 'Database' } }
-                                              : r
-                                          ));
-                                          showToast('Transaction confirmed!', `Ref: ${tx.reference || tx.label}`, 'success');
-                                        } catch (e) {
-                                          showToast('Failed to confirm', e.message, 'error');
-                                        }
-                                      }}
+                                      onClick={() => confirmTransactionMatch(res.receipt?.id, tx)}
                                       style={{
                                         flexShrink: 0, padding: '6px 12px', borderRadius: '8px',
                                         background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
@@ -2167,13 +2209,20 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
                           <span style={{ color: '#059669', fontSize: '11px', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>
-                            {ocrResults?.filter(r => r.verification_status === 'verified').length} Verified
+                            {verificationSummary?.confirmed ?? 0} Confirmed
                           </span>
                         </div>
-                        {ocrResults?.filter(r => r.verification_status !== 'verified').length > 0 && (
+                        {(verificationSummary?.matched ?? 0) > 0 && (
+                          <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)' }}>
+                            <span style={{ color: '#ea580c', fontSize: '11px', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>
+                              {verificationSummary.matched} Needs Confirm
+                            </span>
+                          </div>
+                        )}
+                        {(verificationSummary?.not_found ?? 0) > 0 && (
                           <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
                             <span style={{ color: '#dc2626', fontSize: '11px', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>
-                              {ocrResults?.filter(r => r.verification_status !== 'verified').length} Not Found
+                              {verificationSummary.not_found} Not Found
                             </span>
                           </div>
                         )}
@@ -2187,7 +2236,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   {/* Receipt list */}
                   <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
-                      {ocrResults?.sort((a, b) => {
+                      {[...(ocrResults || [])].sort((a, b) => {
                         if (a.verification_status !== 'verified' && b.verification_status === 'verified') return -1;
                         if (a.verification_status === 'verified' && b.verification_status !== 'verified') return 1;
                         return 0;
@@ -2483,7 +2532,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               onChange={onChange}
               onComplete={onComplete}
               imgRef={imgRef}
-              src={current ? `http://localhost:8000/api/receipts/${current.id}/image` : ''}
+              src={current ? getApiUrl(`/api/receipts/${current.id}/image`) : ''}
               onLoad={onImageLoad}
               disabled={true}
               category={currentCategory}
@@ -2513,6 +2562,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               <VerificationStage
                 isVerifying={isVerifying}
                 ocrResults={ocrResults}
+                verificationSummary={verificationSummary}
                 onStartVerification={startVerifyPhase}
                 onFinalize={startFinalizePhase}
                 onBack={() => {
@@ -2527,6 +2577,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 isFinalizing={isFinalizing}
                 finalizedBatch={finalizedBatch}
                 ocrResults={ocrResults}
+                verificationSummary={verificationSummary}
                 onDone={onDone}
                 onViewSummary={() => {
                   setPhase('summary');
@@ -2952,7 +3003,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                     disabled={!isBillingBalanced}
                     onClick={async () => {
                       try {
-                        const res = await fetch(`http://localhost:8000/api/batches/${batchId}/status`, {
+                        const res = await fetch(getApiUrl(`/api/batches/${batchId}/status`), {
                           method: 'PATCH',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({

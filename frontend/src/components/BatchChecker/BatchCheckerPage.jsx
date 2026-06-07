@@ -12,6 +12,7 @@ export default function BatchCheckerPage() {
   const { batchId } = useParams();
   const navigate = useNavigate();
   const [batches, setBatches] = useState([]);
+  const [dashboard, setDashboard] = useState(null);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showProcessor, setShowProcessor] = useState(false);
@@ -70,7 +71,8 @@ export default function BatchCheckerPage() {
     try {
       const res = await fetch(getApiUrl(`/api/batches?t=${Date.now()}`), { cache: 'no-store' });
       const data = await res.json();
-      setBatches(Array.isArray(data) ? data : []);
+      setBatches(Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []));
+      if (data?.dashboard) setDashboard(data.dashboard);
     } catch (e) { 
       console.error(e); 
     } finally { 
@@ -78,27 +80,29 @@ export default function BatchCheckerPage() {
     }
   };
 
+  const fetchSelectedBatch = async (id, receiptFilter = filter) => {
+    const query = receiptFilter && receiptFilter !== 'all' ? `?filter=${receiptFilter}&t=${Date.now()}` : `?t=${Date.now()}`;
+    const res = await fetch(getApiUrl(`/api/batches/${id}${query}`), { cache: 'no-store' });
+    if (!res.ok) throw new Error(`Failed to fetch batch ${id}`);
+    return res.json();
+  };
+
   useEffect(() => {
     if (batches.length > 0 && batchId) {
       const batch = batches.find(b => String(b.id) === String(batchId));
       if (batch) {
-        console.log(`Batch ${batchId} found with ${batch.receipts?.length || 0} receipts`);
-        setSelectedBatch(batch);
+        fetchSelectedBatch(batchId, filter)
+          .then(setSelectedBatch)
+          .catch(console.error);
       } else {
-        // If batch not found in list, fetch it directly
-        console.log(`Batch ${batchId} not in list, fetching directly...`);
-        fetch(getApiUrl(`/api/batches/${batchId}?t=${Date.now()}`), { cache: 'no-store' })
-          .then(r => r.json())
-          .then(batch => {
-            console.log(`Fetched batch ${batchId} with ${batch.receipts?.length || 0} receipts`);
-            setSelectedBatch(batch);
-          })
+        fetchSelectedBatch(batchId, filter)
+          .then(setSelectedBatch)
           .catch(console.error);
       }
     } else if (!batchId) {
       setSelectedBatch(null);
     }
-  }, [batches, batchId]);
+  }, [batches, batchId, filter]);
 
   const handleCreateAndUpload = async (e, batchName) => {
     e.preventDefault();
@@ -123,16 +127,8 @@ export default function BatchCheckerPage() {
 
       if (res.ok) {
         const newBatch = await res.json();
-        
-        // Add batch to list immediately with a "placeholder" for receipts
-        // so the user sees the expected count while uploading
-        const placeholderBatch = {
-          ...newBatch,
-          receipts: new Array(files.length).fill({ ocr_status: 'uploading' })
-        };
-        
-        setBatches(prev => [placeholderBatch, ...prev]);
-        setSelectedBatch(placeholderBatch);
+        setBatches(prev => [newBatch, ...prev]);
+        setSelectedBatch(newBatch);
 
         // Upload files in chunks to avoid server-side max_file_uploads limits (often 20)
         const fileArray = Array.from(files);
@@ -282,14 +278,7 @@ export default function BatchCheckerPage() {
     }
   };
 
-  const filteredReceipts = selectedBatch?.receipts?.filter(r => {
-    if (filter === 'all') return true;
-    if (filter === 'pending') return r.ocr_status === 'pending';
-    if (filter === 'completed') return r.ocr_status === 'completed';
-    if (filter === 'gcash') return r.category === 'gcash';
-    if (filter === 'others') return r.category === 'others' || !r.category;
-    return true;
-  }) || [];
+  const filteredReceipts = selectedBatch?.receipts || [];
 
   if (loading) {
     return (
@@ -340,6 +329,7 @@ export default function BatchCheckerPage() {
       {!batchId ? (
         <BatchDashboard
           batches={batches}
+          dashboard={dashboard}
           fileCount={fileCount}
           setFileCount={setFileCount}
           fileInputRef={fileInputRef}
@@ -377,20 +367,15 @@ export default function BatchCheckerPage() {
             // Force immediate batch refresh to sync progress
             await fetchBatches(false);
             if (batchId) {
-              // Also refresh the selected batch detail
-              const res = await fetch(getApiUrl(`/api/batches/${batchId}?t=${Date.now()}`), { cache: 'no-store' });
-              const batch = await res.json();
+              const batch = await fetchSelectedBatch(batchId, filter);
               setSelectedBatch(batch);
             }
           }}
           onDone={async () => {
             setShowProcessor(false);
-            // Force immediate batch refresh to sync progress
             await fetchBatches(false);
             if (batchId) {
-              // Also refresh the selected batch detail
-              const res = await fetch(getApiUrl(`/api/batches/${batchId}?t=${Date.now()}`), { cache: 'no-store' });
-              const batch = await res.json();
+              const batch = await fetchSelectedBatch(batchId, filter);
               setSelectedBatch(batch);
             }
           }}

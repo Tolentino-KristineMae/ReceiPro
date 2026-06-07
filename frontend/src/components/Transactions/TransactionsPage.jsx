@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getApiUrl } from '../../apiConfig';
 import { playTransactionSound } from '../../utils/sound';
 
@@ -1254,7 +1254,13 @@ export default function TransactionsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [editingTransaction, setEditingTransaction] = useState(null);
-  const [allAccountsData, setAllAccountsData] = useState({});
+  const [transactionMeta, setTransactionMeta] = useState({
+    opening_balance: 0,
+    total_credit: 0,
+    total_debit: 0,
+    current_balance: 0,
+  });
+  const [reportData, setReportData] = useState({ accounts: {}, completed_batches: [], can_print: false });
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
 
@@ -1269,11 +1275,22 @@ export default function TransactionsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(getApiUrl(`/api/transactions?account_holder=${activeAccount}&t=${Date.now()}`), { 
-        cache: 'no-store' 
+      const params = new URLSearchParams({
+        account_holder: activeAccount,
+        sort_order: sortOrder,
+        t: String(Date.now()),
       });
+      if (searchQuery.trim()) params.set('search', searchQuery.trim());
+
+      const response = await fetch(getApiUrl(`/api/transactions?${params.toString()}`), { cache: 'no-store' });
       const data = await response.json();
-      setTransactions(Array.isArray(data) ? data : []);
+      setTransactions(Array.isArray(data?.data) ? data.data : []);
+      setTransactionMeta(data?.meta || {
+        opening_balance: 0,
+        total_credit: 0,
+        total_debit: 0,
+        current_balance: 0,
+      });
     } catch {
       setTransactions([]);
     } finally {
@@ -1281,64 +1298,29 @@ export default function TransactionsPage() {
     }
   };
 
+  const fetchReport = async () => {
+    try {
+      const response = await fetch(getApiUrl('/api/transactions/report'), { cache: 'no-store' });
+      if (response.ok) {
+        setReportData(await response.json());
+      }
+    } catch {
+      setReportData({ accounts: {}, completed_batches: [], can_print: false });
+    }
+  };
+
   useEffect(() => {
     fetchTransactions();
-  }, [activeAccount]);
+  }, [activeAccount, searchQuery, sortOrder]);
 
-  // Fetch all accounts data to check for completed batches
   useEffect(() => {
-    const fetchAllAccountsData = async () => {
-      const data = {};
-      for (const account of ACCOUNTS) {
-        try {
-          const response = await fetch(getApiUrl(`/api/transactions?account_holder=${account}&t=${Date.now()}`), { 
-            cache: 'no-store' 
-          });
-          const transactions = await response.json();
-          data[account] = Array.isArray(transactions) ? transactions : [];
-        } catch {
-          data[account] = [];
-        }
-      }
-      setAllAccountsData(data);
-    };
-    fetchAllAccountsData();
-  }, [transactions]); // Re-fetch when transactions change
+    fetchReport();
+  }, [transactions.length]);
 
-  const filteredTransactions = useMemo(() => {
-    let list = [...transactions];
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(t => 
-        (t.label || '').toLowerCase().includes(q) ||
-        (t.amount || '').toString().includes(q) ||
-        (t.entry_type || '').toLowerCase().includes(q) ||
-        (t.transaction_date || '').includes(q)
-      );
-    }
-    
-    return list.sort((a, b) => {
-      const dateA = new Date(a.transaction_date);
-      const dateB = new Date(b.transaction_date);
-      if (dateA > dateB) return sortOrder === 'desc' ? -1 : 1;
-      if (dateA < dateB) return sortOrder === 'desc' ? 1 : -1;
-      return sortOrder === 'desc' ? (b.id - a.id) : (a.id - b.id);
-    });
-  }, [transactions, searchQuery, sortOrder]);
-
-  const openingBalance = transactions.length > 0
-    ? parseFloat(transactions[0].opening_balance ?? 0)
-    : parseFloat(form?.opening_balance || 0);
-
-  const totalCredit = transactions
-    .filter(t => t.entry_type === 'credit')
-    .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-    
-  const totalDebit = transactions
-    .filter(t => t.entry_type === 'debit')
-    .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-    
-  const currentBalance = (isNaN(openingBalance) ? 0 : openingBalance) + totalCredit - totalDebit;
+  const openingBalance = parseFloat(transactionMeta.opening_balance ?? form?.opening_balance ?? 0);
+  const totalCredit = parseFloat(transactionMeta.total_credit ?? 0);
+  const totalDebit = parseFloat(transactionMeta.total_debit ?? 0);
+  const currentBalance = parseFloat(transactionMeta.current_balance ?? 0);
 
   const previewAmount = parseFloat(form.amount || 0) || 0;
   const previewBalance = form.entry_type === 'credit' 
@@ -1350,9 +1332,7 @@ export default function TransactionsPage() {
     setError(null);
     setSubmitting(true);
     
-    const ob = transactions.length > 0 
-      ? parseFloat(transactions[0].opening_balance ?? 0) 
-      : parseFloat(form.opening_balance || 0);
+    const ob = parseFloat(transactionMeta.opening_balance ?? form.opening_balance ?? 0);
       
     const payload = {
       transaction_date: form.transaction_date,
@@ -1367,7 +1347,7 @@ export default function TransactionsPage() {
     };
 
     try {
-      const res = await fetch('http://localhost:8000/api/transactions', {
+      const res = await fetch(getApiUrl('/api/transactions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -1433,21 +1413,8 @@ export default function TransactionsPage() {
     await handleSaveEdit(editingTransaction.id, updatedData);
   };
 
-  // Check if we have 5 or more completed batches
-  const getCompletedBatches = () => {
-    const batchSet = new Set();
-    Object.values(allAccountsData).forEach(transactions => {
-      transactions.forEach(t => {
-        if (t.batch?.final_batch_number) {
-          batchSet.add(t.batch.final_batch_number);
-        }
-      });
-    });
-    return Array.from(batchSet).sort();
-  };
-
-  const completedBatches = getCompletedBatches();
-  const canPrint = completedBatches.length >= 5;
+  const completedBatches = reportData.completed_batches || [];
+  const canPrint = !!reportData.can_print;
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
@@ -1595,29 +1562,14 @@ export default function TransactionsPage() {
     `;
 
     ACCOUNTS.forEach(account => {
-      // Get transactions and sort ASC for balance calculation
-      const accountTransactions = [...(allAccountsData[account] || [])].sort((a, b) => {
-        const dateA = new Date(a.transaction_date);
-        const dateB = new Date(b.transaction_date);
-        if (dateA !== dateB) return dateA - dateB;
-        return (a.id || 0) - (b.id || 0);
-      });
-      
+      const accountReport = reportData.accounts?.[account];
+      const accountTransactions = accountReport?.transactions || [];
       if (accountTransactions.length === 0) return;
 
-      const totalCredit = accountTransactions
-        .filter(t => t.entry_type === 'credit')
-        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-      
-      const totalDebit = accountTransactions
-        .filter(t => t.entry_type === 'debit')
-        .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-      
-      const openingBalance = accountTransactions.length > 0
-        ? parseFloat(accountTransactions[0].opening_balance ?? 0)
-        : 0;
-      
-      const currentBalance = openingBalance + totalCredit - totalDebit;
+      const totalCredit = accountReport.meta?.total_credit ?? 0;
+      const totalDebit = accountReport.meta?.total_debit ?? 0;
+      const openingBalance = accountReport.meta?.opening_balance ?? 0;
+      const currentBalance = accountReport.meta?.current_balance ?? 0;
 
       html += `
         <div class="account-section">
@@ -1636,16 +1588,10 @@ export default function TransactionsPage() {
             <tbody>
       `;
 
-      let running = openingBalance;
       accountTransactions.forEach(t => {
         const amt = parseFloat(t.amount || 0);
-        running = t.entry_type === 'credit' ? running + amt : running - amt;
-        const batchLabel = t.batch?.final_batch_number || t.batch?.batch_number || '—';
-        
-        // For debit transactions, show descriptive word instead of batch number
-        const displayLabel = t.entry_type === 'debit' 
-          ? (t.label || 'Deduction')
-          : batchLabel;
+        const batchLabel = t.batch_label || '—';
+        const displayLabel = t.display_label || (t.entry_type === 'debit' ? (t.label || 'Deduction') : batchLabel);
         
         const color = t.entry_type === 'debit'
           ? { bg: 'rgba(239, 68, 68, 0.1)', border: 'rgba(239, 68, 68, 0.3)', text: '#ef4444' }
@@ -1662,7 +1608,7 @@ export default function TransactionsPage() {
             <td>₱${fmt(amt)}</td>
             <td>${t.label || '—'}</td>
             <td><span class="batch-tag" style="${batchStyle}">${displayLabel}</span></td>
-            <td>₱${fmt(running)}</td>
+            <td>₱${fmt(t.running_balance ?? 0)}</td>
           </tr>
         `;
       });
@@ -1941,7 +1887,7 @@ export default function TransactionsPage() {
                       {sortOrder === 'desc' ? 'Newest' : 'Oldest'}
                     </button>
                     <div className="table-stats">
-                      {filteredTransactions.length} transactions
+                      {transactions.length} transactions
                     </div>
                   </div>
                 </div>
@@ -1977,33 +1923,13 @@ export default function TransactionsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(() => {
-                        // Calculate balances in ASC order first
-                        const sortedAsc = [...transactions].sort((a, b) => {
-                          const dateA = new Date(a.transaction_date);
-                          const dateB = new Date(b.transaction_date);
-                          if (dateA > dateB) return 1;
-                          if (dateA < dateB) return -1;
-                          return (a.id || 0) - (b.id || 0);
-                        });
-
-                        let currentRunning = openingBalance;
-                        const balances = {};
-                        sortedAsc.forEach(t => {
+                      {transactions.map(t => {
                           const amt = parseFloat(t.amount || 0);
-                          if (t.entry_type === 'credit') currentRunning += amt;
-                          else currentRunning -= amt;
-                          balances[t.id] = currentRunning;
-                        });
-
-                        // Display in current state order (DESC)
-                        return filteredTransactions.map(t => {
-                          const amt = parseFloat(t.amount || 0);
-                          const running = balances[t.id];
+                          const running = t.running_balance ?? 0;
                           
                           const d = fmtDate(t.transaction_date);
                           const batch = t.batch;
-                          const batchLabel = batch?.final_batch_number || batch?.batch_number;
+                          const batchLabel = batch?.final_batch_number;
                           
                           // For debit transactions, show descriptive word instead of batch number
                           const displayLabel = t.entry_type === 'debit' 
@@ -2201,8 +2127,7 @@ export default function TransactionsPage() {
                               </td>
                             </tr>
                           );
-                        });
-                      })()}
+                        })}
                     </tbody>
                     <tfoot className="table-footer">
                       <tr>
