@@ -330,3 +330,46 @@
   border-color: #f97316;
   box-shadow: 0 4px 12px rgba(249, 115, 22, 0.1);
 }
+
+/* ─── Processing Container (progress bar shown during extraction) ─────────── */
+.es-processing-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.es-processing-bar {
+  height: 8px;
+  background: rgba(251, 146, 60, 0.12);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.es-processing-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f97316, #fb923c);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.3);
+}
+
+.es-processing-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: rgba(67, 20, 7, 0.6);
+}
+
+.es-processing-percentage {
+  font-weight: 900;
+  color: #f97316;
+  font-family: 'Space Mono', monospace;
+}
+
+.es-status-badge {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #059669;
+}

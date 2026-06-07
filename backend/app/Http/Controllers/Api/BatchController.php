@@ -179,12 +179,18 @@ class BatchController extends Controller
 
         $transaction = \App\Models\Transaction::findOrFail($request->transaction_id);
 
+        // Update receipt: mark verified, link transaction, update ocr_data with confirmed ref/amount
+        $ocrData = $receipt->ocr_data ?? [];
+        $ocrData['reference'] = $transaction->reference ?? $transaction->label ?? $ocrData['reference'] ?? null;
+        $ocrData['amount']    = $transaction->amount ?? $ocrData['amount'] ?? 0;
+
         $receipt->update([
-            'match_status' => 'verified',
-            'transaction_id' => $transaction->id
+            'match_status'   => 'verified',
+            'transaction_id' => $transaction->id,
+            'ocr_data'       => $ocrData,
         ]);
 
-        // Link the transaction to this batch
+        // Link the transaction to this batch so it shows as claimed
         $transaction->update(['batch_id' => $batch->id]);
 
         return response()->json($receipt->fresh());
@@ -271,7 +277,46 @@ class BatchController extends Controller
 
                 \Log::info("Verification attempt for receipt {$receipt->id}: ref='{$reference}', amount={$ocrData['amount']}, category={$receipt->category}, account_holder=" . ($receipt->account_holder ?? 'null') . ", source_label=" . ($receipt->source_label ?? 'null'));
 
-                $query = \App\Models\Transaction::where('amount', $ocrData['amount'])
+                // ── Duplicate detection: check if this ref+amount is already claimed by another batch ──
+                $duplicateQuery = \App\Models\Transaction::whereNotNull('batch_id')
+                    ->whereRaw('ABS(amount - ?) < 0.01', [$ocrData['amount'] ?? 0])
+                    ->where(function($q) use ($reference, $partialMatches) {
+                        $q->where('reference', $reference)
+                          ->orWhere('label', $reference);
+                        foreach ($partialMatches as $part) {
+                            $q->orWhere('reference', 'like', '%' . $part)
+                              ->orWhere('label', 'like', '%' . $part);
+                        }
+                    });
+                if ($receipt->category === 'gcash') {
+                    $duplicateQuery->where('account_holder', $receipt->account_holder);
+                }
+                $duplicateTx = $duplicateQuery->with('batch')->first();
+
+                if ($duplicateTx && $duplicateTx->batch_id !== $batch->id) {
+                    // Already claimed by a different batch
+                    $claimedBatch = $duplicateTx->batch;
+                    $receipt->update(['match_status' => 'flagged']);
+                    $results[] = [
+                        'receipt'             => $receipt->fresh(),
+                        'amount'              => $ocrData['amount'] ?? 0,
+                        'reference'           => $ocrData['reference'] ?? 'N/A',
+                        'date'                => $ocrData['date'] ?? 'N/A',
+                        'confidence'          => $ocrData['confidence'] ?? 0,
+                        'manualEntry'         => false,
+                        'verification_status' => 'duplicate',
+                        'match_details'       => [
+                            'duplicate'        => true,
+                            'claimed_batch_id' => $duplicateTx->batch_id,
+                            'claimed_batch'    => $claimedBatch ? ($claimedBatch->final_batch_number ?? $claimedBatch->name ?? "Batch #{$duplicateTx->batch_id}") : "Batch #{$duplicateTx->batch_id}",
+                            'transaction_id'   => $duplicateTx->id,
+                        ],
+                    ];
+                    continue;
+                }
+
+                $query = \App\Models\Transaction::whereNull('batch_id')
+                    ->where('amount', $ocrData['amount'])
                     ->where(function($subQuery) use ($reference, $partialMatches, $receipt) {
                         // Match reference or label with OCR reference (trimmed full value)
                         $subQuery->where('reference', $reference)
@@ -305,26 +350,13 @@ class BatchController extends Controller
                         'transaction' => $transaction
                     ];
                 } else {
-                    // Find recommended transactions (no batch record)
-                    // Priority 1: Match reference and specific labels (like "Int")
-                    // Priority 2: Match amount and partial reference
+                    // Find recommended transactions (unclaimed only, must match amount)
                     $potentialMatches = \App\Models\Transaction::whereNull('batch_id')
-                        ->where(function($q) use ($reference, $ocrData) {
-                            // Match by reference
-                            $q->where('reference', $reference)
-                              ->orWhere('label', 'like', '%Int%') // Check for "Int" (Inbound Transfer)
-                              ->orWhere('label', 'like', '%' . $reference . '%');
-                            
-                            // Also include matches by amount as fallback in the query
-                            if (isset($ocrData['amount']) && $ocrData['amount'] > 0) {
-                                $q->orWhere('amount', $ocrData['amount']);
-                            }
-                        })
+                        ->whereRaw('ABS(amount - ?) < 0.01', [$ocrData['amount'] ?? 0])
                         ->orderByRaw("CASE 
                             WHEN reference = ? THEN 1 
-                            WHEN label LIKE '%Int%' AND ABS(amount - ?) < 0.01 THEN 2
-                            WHEN ABS(amount - ?) < 0.01 THEN 3
-                            ELSE 4 END", [$reference, $ocrData['amount'] ?? 0, $ocrData['amount'] ?? 0])
+                            WHEN label = ? THEN 2
+                            ELSE 3 END", [$reference, $reference])
                         ->limit(5)
                         ->get();
                     

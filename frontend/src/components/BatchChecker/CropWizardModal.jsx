@@ -1969,6 +1969,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                         return 0;
                       }).map((res, i) => {
                         const isVerified = res.verification_status === 'verified';
+                        const isDuplicate = res.verification_status === 'duplicate';
                         const holder = res.receipt?.account_holder || res.account_holder;
                         const acctColors = {
                           Babilyn:  { bg: 'rgba(236,72,153,0.08)',  border: 'rgba(236,72,153,0.2)',  text: '#ec4899' },
@@ -1977,10 +1978,11 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                         };
                         const ac = acctColors[holder];
                         const potentialMatches = res.match_details?.potential_matches || [];
+                        const claimedBatch = res.match_details?.claimed_batch;
                         return (
                           <div key={i} style={{
-                            background: isVerified ? '#ffffff' : 'rgba(239,68,68,0.03)',
-                            border: `1.5px solid ${isVerified ? 'rgba(251,146,60,0.15)' : 'rgba(239,68,68,0.25)'}`,
+                            background: isVerified ? '#ffffff' : isDuplicate ? 'rgba(124,58,237,0.03)' : 'rgba(239,68,68,0.03)',
+                            border: `1.5px solid ${isVerified ? 'rgba(251,146,60,0.15)' : isDuplicate ? 'rgba(124,58,237,0.3)' : 'rgba(239,68,68,0.25)'}`,
                             borderRadius: '14px', padding: '16px 20px',
                             display: 'flex', flexDirection: 'column', gap: '12px',
                             transition: 'all 0.2s',
@@ -1994,12 +1996,12 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                               {/* Status icon */}
                               <div style={{
                                 width: '40px', height: '40px', borderRadius: '11px', flexShrink: 0,
-                                background: isVerified ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                                border: `1px solid ${isVerified ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`,
+                                background: isVerified ? 'rgba(16,185,129,0.1)' : isDuplicate ? 'rgba(124,58,237,0.1)' : 'rgba(239,68,68,0.1)',
+                                border: `1px solid ${isVerified ? 'rgba(16,185,129,0.25)' : isDuplicate ? 'rgba(124,58,237,0.3)' : 'rgba(239,68,68,0.25)'}`,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: isVerified ? '#10b981' : '#ef4444', fontSize: '16px', fontWeight: 900
+                                color: isVerified ? '#10b981' : isDuplicate ? '#7c3aed' : '#ef4444', fontSize: '16px', fontWeight: 900
                               }}>
-                                {isVerified ? '✓' : '✕'}
+                                {isVerified ? '✓' : isDuplicate ? '⚠' : '✕'}
                               </div>
 
                               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
@@ -2011,9 +2013,22 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                                 {/* Status */}
                                 <div style={{ flex: 1 }}>
                                   <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px', fontFamily: "'Space Grotesk', sans-serif" }}>Status</div>
-                                  <div style={{ fontSize: '11px', fontWeight: 700, color: isVerified ? '#059669' : '#dc2626', fontFamily: "'Space Grotesk', sans-serif" }}>
-                                    {isVerified ? `Found in ${res.match_details?.bank || 'Database'}` : 'Not found in database'}
-                                  </div>
+                                  {isDuplicate ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#7c3aed', fontFamily: "'Space Grotesk', sans-serif" }}>
+                                        Already Claimed
+                                      </div>
+                                      {claimedBatch && (
+                                        <div style={{ padding: '2px 8px', borderRadius: '6px', background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.25)', fontSize: '9px', fontWeight: 900, color: '#7c3aed', fontFamily: "'Space Mono', monospace" }}>
+                                          {claimedBatch}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div style={{ fontSize: '11px', fontWeight: 700, color: isVerified ? '#059669' : '#dc2626', fontFamily: "'Space Grotesk', sans-serif" }}>
+                                      {isVerified ? `Found in ${res.match_details?.bank || 'Database'}` : 'Not found in database'}
+                                    </div>
+                                  )}
                                 </div>
                                 {/* Account badge */}
                                 <div style={{
@@ -2031,7 +2046,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                               {/* Amount */}
                               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                 <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px', fontFamily: "'Space Grotesk', sans-serif" }}>Amount</div>
-                                <div style={{ fontSize: '18px', fontWeight: 900, color: isVerified ? '#f97316' : '#ef4444', letterSpacing: '-0.01em', fontFamily: "'Space Mono', monospace" }}>
+                                <div style={{ fontSize: '18px', fontWeight: 900, color: isVerified ? '#f97316' : isDuplicate ? '#7c3aed' : '#ef4444', letterSpacing: '-0.01em', fontFamily: "'Space Mono', monospace" }}>
                                   ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                                 </div>
                               </div>
@@ -2048,7 +2063,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                                   </svg>
-                                  Possible matches in database
+                                  Unclaimed transactions with matching amount
                                 </div>
                                 {potentialMatches.map((tx, j) => (
                                   <div key={j} style={{
@@ -2057,15 +2072,19 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                                     background: 'rgba(249,115,22,0.04)',
                                     border: '1px solid rgba(249,115,22,0.15)',
                                   }}>
-                                    <div style={{ flex: 1, display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                    <div style={{ flex: 1, display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                      {/* Available badge */}
+                                      <div style={{ padding: '2px 8px', borderRadius: '6px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', fontSize: '8px', fontWeight: 900, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif", flexShrink: 0 }}>
+                                        Unclaimed
+                                      </div>
                                       <div>
                                         <div style={{ fontSize: '8px', fontWeight: 800, color: 'rgba(67,20,7,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>Ref</div>
-                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#431407', fontFamily: "'Space Mono', monospace" }}>{tx.reference || tx.label || '—'}</div>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#431407', fontFamily: "'Space Mono', monospace" }}>{tx.reference || '—'}</div>
                                       </div>
-                                      {tx.label && tx.label !== tx.reference && (
+                                      {tx.label && (
                                         <div>
-                                          <div style={{ fontSize: '8px', fontWeight: 800, color: 'rgba(67,20,7,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>Label</div>
-                                          <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(67,20,7,0.6)', fontFamily: "'Space Grotesk', sans-serif" }}>{tx.label}</div>
+                                          <div style={{ fontSize: '8px', fontWeight: 800, color: 'rgba(67,20,7,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>Bank Description</div>
+                                          <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(67,20,7,0.5)', fontFamily: "'Space Grotesk', sans-serif", fontStyle: 'italic' }}>{tx.label}</div>
                                         </div>
                                       )}
                                       {tx.account_holder && (
@@ -2084,24 +2103,19 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                                     <button
                                       onClick={async () => {
                                         const receiptId = res.receipt?.id;
-                                        if (!receiptId) return;
+                                        if (!receiptId || !tx.id) return;
                                         try {
-                                          await fetch(getApiUrl(`/api/receipts/${receiptId}`), {
-                                            method: 'PATCH',
+                                          // Call manual-verify which links both the receipt AND the transaction to this batch
+                                          const response = await fetch(getApiUrl(`/api/batches/${batchId}/receipts/${receiptId}/manual-verify`), {
+                                            method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({
-                                              match_status: 'verified',
-                                              ocr_data: {
-                                                ...(typeof res.receipt?.ocr_data === 'string' ? JSON.parse(res.receipt.ocr_data) : res.receipt?.ocr_data || {}),
-                                                reference: tx.reference || tx.label,
-                                                amount: tx.amount,
-                                              }
-                                            }),
+                                            body: JSON.stringify({ transaction_id: tx.id }),
                                           });
-                                          // Update local ocrResults
+                                          if (!response.ok) throw new Error(`Server error ${response.status}`);
+                                          // Update local ocrResults so row flips to verified immediately
                                           setOcrResults(prev => prev.map(r =>
                                             r.receipt?.id === receiptId
-                                              ? { ...r, verification_status: 'verified', reference: tx.reference || tx.label, amount: tx.amount, match_details: { bank: tx.bank || 'Database', ...r.match_details } }
+                                              ? { ...r, verification_status: 'verified', reference: tx.reference || tx.label, amount: tx.amount, match_details: { bank: tx.source_type || 'Database' } }
                                               : r
                                           ));
                                           showToast('Transaction confirmed!', `Ref: ${tx.reference || tx.label}`, 'success');
@@ -2488,6 +2502,11 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 onStartExtraction={handleRunOcrExtraction}
                 receiptsCount={receipts.length}
                 ocrProgress={ocrProgress}
+                onReExtract={() => {
+                  setOcrResults(null);
+                  setShowOcrPreview(false);
+                  handleRunOcrExtraction();
+                }}
               />
             )}
 
