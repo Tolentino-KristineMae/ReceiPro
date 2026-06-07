@@ -33,6 +33,7 @@ Route::prefix('batches')->group(function () {
     Route::delete('/{batch}', [BatchController::class, 'destroy']);
     Route::post('/{batch}/process', [BatchController::class, 'process']);
     Route::post('/{batch}/receipts/{receipt}/manual-verify', [BatchController::class, 'manualVerify']);
+    Route::post('/{batch}/reset', [BatchController::class, 'reset']);
 });
 
 // Receipt routes

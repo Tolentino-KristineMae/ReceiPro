@@ -195,6 +195,39 @@ export default function BatchDetail({
               <Icon.Plus />
             </button>
 
+            {/* Reset Batch — clear all checker progress */}
+            {batch.checker_status && (
+              <button
+                title="Reset Batch — clears all verification, transactions links, and receipt data"
+                onClick={async () => {
+                  if (!window.confirm('Reset this batch? This will unlink all claimed transactions, clear all receipt OCR data, and reset the batch back to its initial state. This cannot be undone.')) return;
+                  try {
+                    const res = await fetch(getApiUrl(`/api/batches/${batch.id}/reset`), { method: 'POST' });
+                    if (!res.ok) throw new Error(`Server error ${res.status}`);
+                    window.location.reload();
+                  } catch (e) {
+                    alert(`Reset failed: ${e.message}`);
+                  }
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '0 14px', height: '40px', borderRadius: '12px',
+                  background: 'rgba(234,88,12,0.08)', border: '1px solid rgba(234,88,12,0.25)',
+                  color: '#ea580c', fontWeight: 900, fontSize: '10px',
+                  textTransform: 'uppercase', letterSpacing: '0.1em',
+                  cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(234,88,12,0.15)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(234,88,12,0.08)'; }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="23 4 23 10 17 10"/>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                </svg>
+                Reset
+              </button>
+            )}
+
             <button
               className="btn-icon-modern danger"
               onClick={(e) => handleDeleteBatch(e, batch.id)}

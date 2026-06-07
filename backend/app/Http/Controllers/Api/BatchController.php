@@ -233,6 +233,49 @@ class BatchController extends Controller
         return response()->json(['message' => 'Deleted and batches re-sequenced']);
     }
 
+    /** Reset a batch — clears all checker progress, unlinking transactions and resetting receipt statuses */
+    public function reset(Batch $batch)
+    {
+        // 1. Unlink all transactions that were claimed by this batch
+        \App\Models\Transaction::where('batch_id', $batch->id)
+            ->update(['batch_id' => null, 'status' => 'pending']);
+
+        // 2. Reset all receipts in this batch back to unverified state
+        $batch->receipts()->update([
+            'match_status'   => null,
+            'transaction_id' => null,
+            'ocr_status'     => 'pending',
+            'ocr_data'       => null,
+            'cropped_image'  => null,
+            'category'       => 'unsorted',
+            'account_holder' => null,
+        ]);
+
+        // 3. Reset batch checker state and remove final_batch_number
+        $batch->update([
+            'checker_status'     => null,
+            'final_batch_number' => null,
+            'summary_data'       => null,
+            'billing_data'       => null,
+        ]);
+
+        // 4. Re-sequence final_batch_numbers for remaining finalized batches
+        $finalizedBatches = Batch::whereNotNull('final_batch_number')
+            ->orderBy('created_at', 'asc')
+            ->get();
+        foreach ($finalizedBatches as $index => $b) {
+            $newNumber = 'B-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT);
+            if ($b->final_batch_number !== $newNumber) {
+                $b->update(['final_batch_number' => $newNumber]);
+            }
+        }
+
+        return response()->json([
+            'message' => 'Batch reset successfully',
+            'batch'   => $batch->fresh()->load('receipts'),
+        ]);
+    }
+
     /** Run verification check and match with transactions using existing OCR data */
     public function process(Batch $batch)
     {

@@ -1964,9 +1964,8 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
                       {ocrResults?.sort((a, b) => {
-                        if (a.verification_status !== 'verified' && b.verification_status === 'verified') return -1;
-                        if (a.verification_status === 'verified' && b.verification_status !== 'verified') return 1;
-                        return 0;
+                        const rank = r => r.verification_status === 'verified' ? 2 : r.verification_status === 'duplicate' ? 1 : 0;
+                        return rank(a) - rank(b);
                       }).map((res, i) => {
                         const isVerified = res.verification_status === 'verified';
                         const isDuplicate = res.verification_status === 'duplicate';
