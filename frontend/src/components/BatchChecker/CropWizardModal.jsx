@@ -11,6 +11,7 @@ import VerificationStage from './Steps/VerificationStage';
 import FinalizeStage from './Steps/FinalizeStage';
 import SummaryStage from './Steps/SummaryStage';
 import { getApiUrl } from '../../apiConfig';
+import qrJonarld from '../../assets/qr-jonarld.jpg';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const CSS = `
@@ -85,7 +86,9 @@ const CSS = `
      padding: 40px;
      overflow-y: auto;
      border-left: 1px solid rgba(251, 146, 60, 0.1);
-   }
+     scrollbar-width: none;
+  }
+  .cw-sidebar::-webkit-scrollbar { display: none; }
 
   .cw-footer { padding: 30px 40px; border-top: 1px solid rgba(251, 146, 60, 0.1); display: flex; justify-content: center; background: #ffffff; }
   .cw-btn-confirm {
@@ -181,6 +184,15 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   const [showOcrPreview, setShowOcrPreview] = useState(() => initialPhase === 'ocr');
   const [showVerifyPreview, setShowVerifyPreview] = useState(() => initialPhase === 'verify');
   const [finalizedBatch, setFinalizedBatch] = useState(null);
+
+  // Toast notification state
+  const [toast, setToast] = useState(null); // { message, detail, type: 'success' | 'error' }
+  const toastTimerRef = useRef(null);
+  const showToast = useCallback((message, detail = null, type = 'success', duration = 4000) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, detail, type });
+    toastTimerRef.current = setTimeout(() => setToast(null), duration);
+  }, []);
   
   // Stage 7: Summary State
   const [deductionType, setDeductionType] = useState('none');
@@ -194,7 +206,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     '1000': 0, '500': 0, '200': 0, '100': 0, '50': 0, '20': 0, // Bills
     'c20': 0, 'c10': 0, 'c5': 0, 'c1': 0 // Coins
   });
-  const [bankTransferAmount, setBankTransferAmount] = useState(0);
+  const [bankTransferAmounts, setBankTransferAmounts] = useState([0]); // Array of partial transfers (max ₱50k each)
   const [showBillingSummary, setShowBillingSummary] = useState(false);
   const [showBillingSummaryModal, setShowBillingSummaryModal] = useState(false);
   const [savedBatchInfo, setSavedBatchInfo] = useState(null);
@@ -227,7 +239,8 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     const val = key.startsWith('c') ? Number(key.substring(1)) : Number(key);
     return sum + (val * count);
   }, 0);
-  const billingTotal = cashTotal + Number(bankTransferAmount || 0);
+  const bankTransferAmount = bankTransferAmounts.reduce((sum, v) => sum + Number(v || 0), 0);
+  const billingTotal = cashTotal + bankTransferAmount;
   const billingDiff = netAmount - billingTotal;
   const isBillingBalanced = Math.abs(billingDiff) < 0.01;
 
@@ -331,8 +344,14 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               if (batch.billing_data.cash_denominations) {
                 setCashDenominations(batch.billing_data.cash_denominations);
               }
-              if (batch.billing_data.bank_transfer_amount) {
-                setBankTransferAmount(batch.billing_data.bank_transfer_amount);
+              if (batch.billing_data.bank_transfer_amount !== undefined) {
+                // Support both old single value and new array format
+                const saved = batch.billing_data.bank_transfer_amount;
+                if (Array.isArray(saved)) {
+                  setBankTransferAmounts(saved.length > 0 ? saved : [0]);
+                } else {
+                  setBankTransferAmounts(saved ? [saved] : [0]);
+                }
               }
             }
           }
@@ -468,7 +487,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     }
   }, [phase, index, crop]);
 
-  const getCroppedDataUrl = () => {
+  const getCroppedDataUrl = useCallback(() => {
     if (!completedCrop || !imgRef.current) return null;
     const image = imgRef.current;
     const canvas = document.createElement('canvas');
@@ -483,7 +502,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       0, 0, canvas.width, canvas.height
     );
     return canvas.toDataURL('image/png');
-  };
+  }, [completedCrop]);
 
   const handlePrev = () => {
     if (index > 0) {
@@ -773,7 +792,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     setShowVerifyPreview(false);
   }, [receipts]);
 
-  const handleNextCrop = async () => {
+  const handleNextCrop = useCallback(async () => {
     if (!current) return;
 
     // Validate manual input for 'others' receipts
@@ -921,7 +940,11 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
         setPhase('ocr');
         setShowOcrPreview(true);
         
-        alert(`✅ Re-extraction complete!\n\nAmount: ₱${extracted.amount || 0}\nReference: ${extracted.reference || 'N/A'}`);
+        showToast(
+          'Re-extraction complete!',
+          `Amount: ₱${extracted.amount || 0}  ·  Reference: ${extracted.reference || 'N/A'}`,
+          'success'
+        );
         
         return; // Exit early, don't proceed to next receipt
       } catch (e) {
@@ -940,7 +963,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     if (isReCropping) {
       setPhase('ocr');
       setShowOcrPreview(true);
-      alert('✅ Manual data updated successfully!');
+      showToast('Manual data updated successfully!', null, 'success');
       return;
     }
     
@@ -974,7 +997,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       // Phase 2 complete -> Automatically start Phase 3
       startOcrPhase();
     }
-  };
+  }, [current, currentCategory, manualAmount, manualReference, manualDate, currentAccount, ocrResults, crops, index, liveReceipts, receipts, manualEntries, accountEntries, getCroppedDataUrl]);
 
   const startOcrPhase = () => {
     setPhase('ocr');
@@ -1204,6 +1227,58 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
   return (
     <>
+    {/* ── Upper-right toast notification ── */}
+    {toast && (
+      <div style={{
+        position: 'fixed', top: '24px', right: '24px', zIndex: 9999,
+        minWidth: '280px', maxWidth: '380px',
+        background: toast.type === 'success' ? '#ffffff' : '#fff5f5',
+        border: `1.5px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.35)'}`,
+        borderRadius: '16px',
+        boxShadow: toast.type === 'success'
+          ? '0 8px 32px rgba(16,185,129,0.15), 0 2px 8px rgba(0,0,0,0.08)'
+          : '0 8px 32px rgba(239,68,68,0.15), 0 2px 8px rgba(0,0,0,0.08)',
+        padding: '16px 18px',
+        display: 'flex', flexDirection: 'column', gap: '6px',
+        animation: 'toastSlideIn 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+        fontFamily: "'Space Grotesk', 'DM Sans', sans-serif",
+      }}>
+        <style>{`
+          @keyframes toastSlideIn {
+            from { opacity: 0; transform: translateX(40px) scale(0.95); }
+            to   { opacity: 1; transform: translateX(0)   scale(1);    }
+          }
+        `}</style>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {toast.type === 'success' ? (
+            <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+            </div>
+          ) : (
+            <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+          )}
+          <span style={{ fontSize: '13px', fontWeight: 800, color: toast.type === 'success' ? '#064e3b' : '#7f1d1d', flex: 1, letterSpacing: '-0.01em' }}>
+            {toast.message}
+          </span>
+          <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(0,0,0,0.3)', padding: '2px', lineHeight: 1, flexShrink: 0 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        {toast.detail && (
+          <div style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(0,0,0,0.45)', paddingLeft: '38px', fontFamily: "'Space Mono', monospace", letterSpacing: '0.01em' }}>
+            {toast.detail}
+          </div>
+        )}
+      </div>
+    )}
     <div className="cw-overlay">
       <style>{CSS}</style>
       <div className="cw-card">
@@ -1349,9 +1424,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   {/* Stage pill */}
                   <span style={{
                     padding: '4px 12px', borderRadius: '100px',
-                    background: 'rgba(249, 115, 22, 0.1)',
-                    border: '1.5px solid rgba(249, 115, 22, 0.3)',
-                    color: '#f97316',
+                    background: '#f97316',
+                    border: '1.5px solid #f97316',
+                    color: '#fff',
                     fontSize: '10px', fontWeight: 800,
                     textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Space Grotesk', system-ui, sans-serif",
@@ -1362,7 +1437,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 {/* Title */}
                 <div style={{
                   fontSize: '20px', fontWeight: 900,
-                  color: '#431407',
+                  color: '#f97316',
                   letterSpacing: '-0.02em', lineHeight: 1.2,
                   textTransform: 'uppercase',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
@@ -1385,9 +1460,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   {/* Stage pill */}
                   <span style={{
                     padding: '4px 12px', borderRadius: '100px',
-                    background: 'rgba(249, 115, 22, 0.1)',
-                    border: '1.5px solid rgba(249, 115, 22, 0.3)',
-                    color: '#f97316',
+                    background: '#f97316',
+                    border: '1.5px solid #f97316',
+                    color: '#fff',
                     fontSize: '10px', fontWeight: 800,
                     textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Space Grotesk', system-ui, sans-serif",
@@ -1398,7 +1473,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 {/* Title */}
                 <div style={{
                   fontSize: '20px', fontWeight: 900,
-                  color: '#431407',
+                  color: '#f97316',
                   letterSpacing: '-0.02em', lineHeight: 1.2,
                   textTransform: 'uppercase',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
@@ -1421,9 +1496,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   {/* Stage pill */}
                   <span style={{
                     padding: '4px 12px', borderRadius: '100px',
-                    background: 'rgba(249, 115, 22, 0.1)',
-                    border: '1.5px solid rgba(249, 115, 22, 0.3)',
-                    color: '#f97316',
+                    background: '#f97316',
+                    border: '1.5px solid #f97316',
+                    color: '#fff',
                     fontSize: '10px', fontWeight: 800,
                     textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Space Grotesk', system-ui, sans-serif",
@@ -1434,7 +1509,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 {/* Title */}
                 <div style={{
                   fontSize: '20px', fontWeight: 900,
-                  color: '#431407',
+                  color: '#f97316',
                   letterSpacing: '-0.02em', lineHeight: 1.2,
                   textTransform: 'uppercase',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
@@ -1457,9 +1532,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   {/* Stage pill */}
                   <span style={{
                     padding: '4px 12px', borderRadius: '100px',
-                    background: 'rgba(249, 115, 22, 0.1)',
-                    border: '1.5px solid rgba(249, 115, 22, 0.3)',
-                    color: '#f97316',
+                    background: '#f97316',
+                    border: '1.5px solid #f97316',
+                    color: '#fff',
                     fontSize: '10px', fontWeight: 800,
                     textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Space Grotesk', system-ui, sans-serif",
@@ -1470,7 +1545,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 {/* Title */}
                 <div style={{
                   fontSize: '20px', fontWeight: 900,
-                  color: '#431407',
+                  color: '#f97316',
                   letterSpacing: '-0.02em', lineHeight: 1.2,
                   textTransform: 'uppercase',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
@@ -1493,9 +1568,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   {/* Stage pill */}
                   <span style={{
                     padding: '4px 12px', borderRadius: '100px',
-                    background: 'rgba(249, 115, 22, 0.1)',
-                    border: '1.5px solid rgba(249, 115, 22, 0.3)',
-                    color: '#f97316',
+                    background: '#f97316',
+                    border: '1.5px solid #f97316',
+                    color: '#fff',
                     fontSize: '10px', fontWeight: 800,
                     textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Space Grotesk', system-ui, sans-serif",
@@ -1506,7 +1581,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 {/* Title */}
                 <div style={{
                   fontSize: '20px', fontWeight: 900,
-                  color: '#431407',
+                  color: '#f97316',
                   letterSpacing: '-0.02em', lineHeight: 1.2,
                   textTransform: 'uppercase',
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
@@ -1564,8 +1639,8 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
         {/* Content Area */}
         <div className="cw-content">
-          {(phase === 'ocr' || phase === 'verify' || phase === 'finalize' || phase === 'summary' || phase === 'categorize') ? (
-            <div className="flex-1 flex flex-col bg-black/20 overflow-hidden">
+          {(phase === 'ocr' || phase === 'verify' || phase === 'finalize' || phase === 'summary' || phase === 'categorize' || phase === 'billing') ? (
+            <div className={`flex-1 flex flex-col overflow-hidden ${phase === 'billing' ? '' : 'bg-black/20'}`} style={phase === 'billing' ? { overflow: 'auto' } : {}}>
 
               {/* ── Stage 2: Sorting ── */}
               {phase === 'categorize' && (
@@ -1791,26 +1866,19 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                                   </span>
                                 </div>
                               )}
-                              {/* Receipt ID Badge */}
-                              <div style={{
-                                position: 'absolute', top: '10px', right: '10px',
-                                padding: '3px 8px', borderRadius: '6px',
-                                background: 'rgba(249,115,22,0.06)',
-                                border: '1px solid rgba(249,115,22,0.15)'
-                              }}>
-                                <span style={{ color: 'rgba(67,20,7,0.45)', fontSize: '9px', fontWeight: 700, letterSpacing: '0.08em', fontFamily: "'Space Mono', monospace" }}>
+                              {/* Number + Receipt ID */}
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                                <div style={{
+                                  width: '36px', height: '36px', borderRadius: '10px',
+                                  background: 'rgba(249,115,22,0.08)',
+                                  border: '1px solid rgba(249,115,22,0.15)',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                }}>
+                                  <span style={{ color: '#f97316', fontSize: '14px', fontWeight: 900, fontFamily: "'Space Mono', monospace" }}>{i + 1}</span>
+                                </div>
+                                <span style={{ color: 'rgba(67,20,7,0.4)', fontSize: '8px', fontWeight: 700, letterSpacing: '0.06em', fontFamily: "'Space Mono', monospace" }}>
                                   #{receiptId}
                                 </span>
-                              </div>
-                              
-                              {/* Number */}
-                              <div style={{
-                                width: '36px', height: '36px', borderRadius: '10px',
-                                background: 'rgba(249,115,22,0.08)',
-                                border: '1px solid rgba(249,115,22,0.15)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                              }}>
-                                <span style={{ color: '#f97316', fontSize: '14px', fontWeight: 900, fontFamily: "'Space Mono', monospace" }}>{i + 1}</span>
                               </div>
                               
                               <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
@@ -1850,88 +1918,51 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               {/* Phase 4 Preview */}
               {phase === 'verify' && showVerifyPreview && (
                 <div className="flex-1 flex flex-col overflow-hidden" style={{ 
-                  background: 'radial-gradient(ellipse 80% 50% at 10% -10%, rgba(18, 96, 164, 0.18) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 90% 100%, rgba(26, 127, 203, 0.12) 0%, transparent 55%), #020c18',
+                  background: '#fffbf5',
                   padding: '40px'
                 }}>
                   {/* Header */}
-                  <div style={{ marginBottom: '32px' }}>
+                  <div style={{ marginBottom: '28px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <div style={{
-                          padding: '10px 18px',
-                          borderRadius: '12px',
-                          background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(234, 88, 12, 0.1) 100%)',
-                          border: '1px solid rgba(249, 115, 22, 0.3)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px'
+                          padding: '10px 18px', borderRadius: '12px',
+                          background: 'rgba(249,115,22,0.08)',
+                          border: '1px solid rgba(249,115,22,0.25)',
+                          display: 'flex', alignItems: 'center', gap: '10px'
                         }}>
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M9 11l3 3L22 4" />
                             <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
                           </svg>
-                          <span style={{ 
-                            color: '#f97316', 
-                            fontSize: '11px', 
-                            fontWeight: 900, 
-                            textTransform: 'uppercase', 
-                            letterSpacing: '0.1em',
-                            fontFamily: "'Space Grotesk', sans-serif"
-                          }}>
+                          <span style={{ color: '#f97316', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>
                             Verification Check
                           </span>
                         </div>
                       </div>
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{
-                          padding: '8px 16px',
-                          borderRadius: '10px',
-                          background: 'rgba(16, 185, 129, 0.12)',
-                          border: '1px solid rgba(16, 185, 129, 0.3)'
-                        }}>
-                          <span style={{ 
-                            color: '#10b981', 
-                            fontSize: '11px', 
-                            fontWeight: 800,
-                            fontFamily: "'Space Grotesk', sans-serif"
-                          }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                          <span style={{ color: '#059669', fontSize: '11px', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>
                             {ocrResults?.filter(r => r.verification_status === 'verified').length} Verified
                           </span>
                         </div>
                         {ocrResults?.filter(r => r.verification_status !== 'verified').length > 0 && (
-                          <div style={{
-                            padding: '8px 16px',
-                            borderRadius: '10px',
-                            background: 'rgba(239, 68, 68, 0.12)',
-                            border: '1px solid rgba(239, 68, 68, 0.3)'
-                          }}>
-                            <span style={{ 
-                              color: '#ef4444', 
-                              fontSize: '11px', 
-                              fontWeight: 800,
-                              fontFamily: "'Space Grotesk', sans-serif"
-                            }}>
+                          <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                            <span style={{ color: '#dc2626', fontSize: '11px', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>
                               {ocrResults?.filter(r => r.verification_status !== 'verified').length} Not Found
                             </span>
                           </div>
                         )}
                       </div>
                     </div>
-                    <p style={{ 
-                      color: '#64748b', 
-                      fontSize: '13px', 
-                      fontWeight: 500,
-                      fontFamily: "'Space Grotesk', sans-serif",
-                      margin: 0
-                    }}>
+                    <p style={{ color: 'rgba(67,20,7,0.55)', fontSize: '13px', fontWeight: 500, fontFamily: "'Space Grotesk', sans-serif", margin: 0 }}>
                       All receipts have been verified against transaction records
                     </p>
                   </div>
-                  
+
                   {/* Results list */}
                   <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
                       {ocrResults?.sort((a, b) => {
                         if (a.verification_status !== 'verified' && b.verification_status === 'verified') return -1;
                         if (a.verification_status === 'verified' && b.verification_status !== 'verified') return 1;
@@ -1940,142 +1971,267 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                         const isVerified = res.verification_status === 'verified';
                         const holder = res.receipt?.account_holder || res.account_holder;
                         const acctColors = {
-                          Babilyn:  { bg: 'rgba(139,92,246,0.1)',  border: 'rgba(139,92,246,0.25)',  text: '#c4b5fd' },
-                          Nixie:    { bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.25)', text: '#f9a8d4' },
-                          Kristine: { bg: 'rgba(56,189,248,0.1)',  border: 'rgba(56,189,248,0.25)',  text: '#7dd3fc' },
+                          Babilyn:  { bg: 'rgba(236,72,153,0.08)',  border: 'rgba(236,72,153,0.2)',  text: '#ec4899' },
+                          Nixie:    { bg: 'rgba(139,92,246,0.08)',  border: 'rgba(139,92,246,0.2)',  text: '#8b5cf6' },
+                          Kristine: { bg: 'rgba(6,182,212,0.08)',   border: 'rgba(6,182,212,0.2)',   text: '#06b6d4' },
                         };
                         const ac = acctColors[holder];
-                        
+                        const potentialMatches = res.match_details?.potential_matches || [];
                         return (
                           <div key={i} style={{
-                            background: 'rgba(255, 255, 255, 0.03)',
-                            backdropFilter: 'blur(20px)',
-                            border: `1px solid ${isVerified ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
-                            borderRadius: '14px',
-                            padding: '18px 20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '20px',
+                            background: isVerified ? '#ffffff' : 'rgba(239,68,68,0.03)',
+                            border: `1.5px solid ${isVerified ? 'rgba(251,146,60,0.15)' : 'rgba(239,68,68,0.25)'}`,
+                            borderRadius: '14px', padding: '16px 20px',
+                            display: 'flex', flexDirection: 'column', gap: '12px',
                             transition: 'all 0.2s',
-                            cursor: 'default'
+                            boxShadow: isVerified ? '0 2px 8px rgba(67,20,7,0.04)' : '0 2px 8px rgba(239,68,68,0.06)'
                           }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                            e.currentTarget.style.borderColor = isVerified ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)';
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-                            e.currentTarget.style.borderColor = isVerified ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
-                            e.currentTarget.style.transform = 'translateY(0)';
-                          }}>
-                            {/* Status Icon */}
-                            <div style={{
-                              width: '48px',
-                              height: '48px',
-                              borderRadius: '12px',
-                              background: isVerified ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                              border: `1px solid ${isVerified ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0,
-                              fontSize: '20px'
-                            }}>
-                              {isVerified ? '✓' : '✕'}
-                            </div>
-                            
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
-                              {/* Reference */}
-                              <div style={{ minWidth: '140px' }}>
-                                <div style={{ 
-                                  fontSize: '9px', 
-                                  fontWeight: 900, 
-                                  color: '#64748b', 
-                                  textTransform: 'uppercase', 
-                                  letterSpacing: '0.12em', 
-                                  marginBottom: '6px',
-                                  fontFamily: "'Space Grotesk', sans-serif"
-                                }}>
-                                  Reference
-                                </div>
-                                <div style={{ 
-                                  fontSize: '14px', 
-                                  fontWeight: 700, 
-                                  color: '#e2e8f0', 
-                                  letterSpacing: '0.02em',
-                                  fontFamily: "'Space Mono', monospace"
-                                }}>
-                                  {res.reference || '—'}
-                                </div>
-                              </div>
-                              
-                              {/* Status Message */}
-                              <div style={{ flex: 1 }}>
-                                <div style={{ 
-                                  fontSize: '9px', 
-                                  fontWeight: 900, 
-                                  color: '#64748b', 
-                                  textTransform: 'uppercase', 
-                                  letterSpacing: '0.12em', 
-                                  marginBottom: '6px',
-                                  fontFamily: "'Space Grotesk', sans-serif"
-                                }}>
-                                  Status
-                                </div>
-                                <div style={{ 
-                                  fontSize: '12px', 
-                                  fontWeight: 700, 
-                                  color: isVerified ? '#10b981' : '#ef4444',
-                                  fontFamily: "'Space Grotesk', sans-serif"
-                                }}>
-                                  {isVerified 
-                                    ? `Found in ${res.match_details?.bank || 'Database'}` 
-                                    : 'Not found in database'}
-                                </div>
-                              </div>
-                              
-                              {/* Account badge */}
+                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = isVerified ? '0 6px 20px rgba(249,115,22,0.1)' : '0 6px 20px rgba(239,68,68,0.12)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = isVerified ? '0 2px 8px rgba(67,20,7,0.04)' : '0 2px 8px rgba(239,68,68,0.06)'; }}>
+
+                            {/* Main row */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                              {/* Status icon */}
                               <div style={{
-                                minWidth: '95px',
-                                padding: '10px 16px',
-                                borderRadius: '11px',
-                                textAlign: 'center',
-                                background: ac ? ac.bg : 'rgba(100,116,139,0.1)',
-                                border: `1px solid ${ac ? ac.border : 'rgba(100,116,139,0.25)'}`,
-                                color: ac ? ac.text : '#94a3b8',
-                                fontSize: '11px',
-                                fontWeight: 800,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.06em',
+                                width: '40px', height: '40px', borderRadius: '11px', flexShrink: 0,
+                                background: isVerified ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                                border: `1px solid ${isVerified ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: isVerified ? '#10b981' : '#ef4444', fontSize: '16px', fontWeight: 900
+                              }}>
+                                {isVerified ? '✓' : '✕'}
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
+                                {/* Reference */}
+                                <div style={{ minWidth: '130px' }}>
+                                  <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px', fontFamily: "'Space Grotesk', sans-serif" }}>Reference</div>
+                                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#431407', letterSpacing: '0.02em', fontFamily: "'Space Mono', monospace" }}>{res.reference || '—'}</div>
+                                </div>
+                                {/* Status */}
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px', fontFamily: "'Space Grotesk', sans-serif" }}>Status</div>
+                                  <div style={{ fontSize: '11px', fontWeight: 700, color: isVerified ? '#059669' : '#dc2626', fontFamily: "'Space Grotesk', sans-serif" }}>
+                                    {isVerified ? `Found in ${res.match_details?.bank || 'Database'}` : 'Not found in database'}
+                                  </div>
+                                </div>
+                                {/* Account badge */}
+                                <div style={{
+                                  minWidth: '90px', padding: '8px 14px', borderRadius: '10px', textAlign: 'center',
+                                  background: ac ? ac.bg : 'rgba(249,115,22,0.06)',
+                                  border: `1px solid ${ac ? ac.border : 'rgba(249,115,22,0.15)'}`,
+                                  color: ac ? ac.text : 'rgba(67,20,7,0.5)',
+                                  fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em',
+                                  fontFamily: "'Space Grotesk', sans-serif"
+                                }}>
+                                  {holder || 'Unknown'}
+                                </div>
+                              </div>
+
+                              {/* Amount */}
+                              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px', fontFamily: "'Space Grotesk', sans-serif" }}>Amount</div>
+                                <div style={{ fontSize: '18px', fontWeight: 900, color: isVerified ? '#f97316' : '#ef4444', letterSpacing: '-0.01em', fontFamily: "'Space Mono', monospace" }}>
+                                  ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Recommendations — only for unverified rows with suggestions */}
+                            {!isVerified && potentialMatches.length > 0 && (
+                              <div style={{
+                                borderTop: '1px dashed rgba(239,68,68,0.2)',
+                                paddingTop: '10px',
+                                display: 'flex', flexDirection: 'column', gap: '6px'
+                              }}>
+                                <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '2px', fontFamily: "'Space Grotesk', sans-serif", display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                                  </svg>
+                                  Possible matches in database
+                                </div>
+                                {potentialMatches.map((tx, j) => (
+                                  <div key={j} style={{
+                                    display: 'flex', alignItems: 'center', gap: '12px',
+                                    padding: '8px 12px', borderRadius: '9px',
+                                    background: 'rgba(249,115,22,0.04)',
+                                    border: '1px solid rgba(249,115,22,0.15)',
+                                  }}>
+                                    <div style={{ flex: 1, display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                      <div>
+                                        <div style={{ fontSize: '8px', fontWeight: 800, color: 'rgba(67,20,7,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>Ref</div>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#431407', fontFamily: "'Space Mono', monospace" }}>{tx.reference || tx.label || '—'}</div>
+                                      </div>
+                                      {tx.label && tx.label !== tx.reference && (
+                                        <div>
+                                          <div style={{ fontSize: '8px', fontWeight: 800, color: 'rgba(67,20,7,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>Label</div>
+                                          <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(67,20,7,0.6)', fontFamily: "'Space Grotesk', sans-serif" }}>{tx.label}</div>
+                                        </div>
+                                      )}
+                                      {tx.account_holder && (
+                                        <div>
+                                          <div style={{ fontSize: '8px', fontWeight: 800, color: 'rgba(67,20,7,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>Account</div>
+                                          <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(67,20,7,0.6)', fontFamily: "'Space Grotesk', sans-serif" }}>{tx.account_holder}</div>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                      <div style={{ fontSize: '13px', fontWeight: 900, color: '#f97316', fontFamily: "'Space Mono', monospace" }}>
+                                        ₱{Number(tx.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                      </div>
+                                    </div>
+                                    {/* Confirm button */}
+                                    <button
+                                      onClick={async () => {
+                                        const receiptId = res.receipt?.id;
+                                        if (!receiptId) return;
+                                        try {
+                                          await fetch(getApiUrl(`/api/receipts/${receiptId}`), {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                              match_status: 'verified',
+                                              ocr_data: {
+                                                ...(typeof res.receipt?.ocr_data === 'string' ? JSON.parse(res.receipt.ocr_data) : res.receipt?.ocr_data || {}),
+                                                reference: tx.reference || tx.label,
+                                                amount: tx.amount,
+                                              }
+                                            }),
+                                          });
+                                          // Update local ocrResults
+                                          setOcrResults(prev => prev.map(r =>
+                                            r.receipt?.id === receiptId
+                                              ? { ...r, verification_status: 'verified', reference: tx.reference || tx.label, amount: tx.amount, match_details: { bank: tx.bank || 'Database', ...r.match_details } }
+                                              : r
+                                          ));
+                                          showToast('Transaction confirmed!', `Ref: ${tx.reference || tx.label}`, 'success');
+                                        } catch (e) {
+                                          showToast('Failed to confirm', e.message, 'error');
+                                        }
+                                      }}
+                                      style={{
+                                        flexShrink: 0, padding: '6px 12px', borderRadius: '8px',
+                                        background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
+                                        color: '#059669', fontSize: '9px', fontWeight: 900,
+                                        textTransform: 'uppercase', letterSpacing: '0.1em',
+                                        cursor: 'pointer', transition: 'all 0.2s',
+                                        fontFamily: "'Space Grotesk', sans-serif",
+                                        display: 'flex', alignItems: 'center', gap: '5px'
+                                      }}
+                                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(16,185,129,0.2)'; e.currentTarget.style.borderColor = 'rgba(16,185,129,0.5)'; }}
+                                      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(16,185,129,0.1)'; e.currentTarget.style.borderColor = 'rgba(16,185,129,0.3)'; }}
+                                    >
+                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M20 6L9 17l-5-5"/>
+                                      </svg>
+                                      Confirm
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* Finalized Claims View (Left Side) */}
+              {phase === 'finalize' && finalizedBatch && (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fffbf5', padding: '40px' }}>
+                  {/* Header */}
+                  <div style={{ marginBottom: '28px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ padding: '10px 18px', borderRadius: '12px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                          </svg>
+                          <span style={{ color: '#f97316', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>Batch Summary</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                          <span style={{ color: '#059669', fontSize: '11px', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>
+                            {ocrResults?.filter(r => r.verification_status === 'verified').length} Verified
+                          </span>
+                        </div>
+                        {ocrResults?.filter(r => r.verification_status !== 'verified').length > 0 && (
+                          <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                            <span style={{ color: '#dc2626', fontSize: '11px', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>
+                              {ocrResults?.filter(r => r.verification_status !== 'verified').length} Not Found
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <p style={{ color: 'rgba(67,20,7,0.55)', fontSize: '13px', fontWeight: 500, fontFamily: "'Space Grotesk', sans-serif", margin: 0 }}>
+                      Final receipt list — verified and ready for summary
+                    </p>
+                  </div>
+
+                  {/* Receipt list */}
+                  <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                      {ocrResults?.sort((a, b) => {
+                        if (a.verification_status !== 'verified' && b.verification_status === 'verified') return -1;
+                        if (a.verification_status === 'verified' && b.verification_status !== 'verified') return 1;
+                        return 0;
+                      }).map((res, i) => {
+                        const isVerified = res.verification_status === 'verified';
+                        const holder = res.receipt?.account_holder || res.account_holder;
+                        const acctColors = {
+                          Babilyn:  { bg: 'rgba(236,72,153,0.08)',  border: 'rgba(236,72,153,0.2)',  text: '#ec4899' },
+                          Nixie:    { bg: 'rgba(139,92,246,0.08)',  border: 'rgba(139,92,246,0.2)',  text: '#8b5cf6' },
+                          Kristine: { bg: 'rgba(6,182,212,0.08)',   border: 'rgba(6,182,212,0.2)',   text: '#06b6d4' },
+                        };
+                        const ac = acctColors[holder];
+                        return (
+                          <div key={i} style={{
+                            background: isVerified ? '#ffffff' : 'rgba(239,68,68,0.03)',
+                            border: `1px solid ${isVerified ? 'rgba(251,146,60,0.15)' : 'rgba(239,68,68,0.2)'}`,
+                            borderRadius: '12px', padding: '12px 16px',
+                            display: 'flex', alignItems: 'center', gap: '14px',
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(249,115,22,0.08)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                            {/* Status */}
+                            <div style={{
+                              width: '32px', height: '32px', borderRadius: '9px', flexShrink: 0,
+                              background: isVerified ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                              border: `1px solid ${isVerified ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              color: isVerified ? '#10b981' : '#ef4444', fontSize: '13px', fontWeight: 900
+                            }}>
+                              {isVerified ? '✓' : '!'}
+                            </div>
+                            {/* Reference + account */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '12px', fontWeight: 700, color: '#431407', fontFamily: "'Space Mono', monospace", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {res.reference || `REF-${res.receipt?.id}`}
+                              </div>
+                              <div style={{
+                                display: 'inline-block', marginTop: '3px',
+                                padding: '2px 8px', borderRadius: '6px',
+                                background: ac ? ac.bg : 'rgba(249,115,22,0.06)',
+                                border: `1px solid ${ac ? ac.border : 'rgba(249,115,22,0.15)'}`,
+                                color: ac ? ac.text : 'rgba(67,20,7,0.5)',
+                                fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em',
                                 fontFamily: "'Space Grotesk', sans-serif"
                               }}>
                                 {holder || 'Unknown'}
                               </div>
                             </div>
-                            
                             {/* Amount */}
-                            <div style={{ textAlign: 'right' }}>
-                              <div style={{ 
-                                fontSize: '9px', 
-                                fontWeight: 900, 
-                                color: '#64748b', 
-                                textTransform: 'uppercase', 
-                                letterSpacing: '0.12em', 
-                                marginBottom: '6px',
-                                fontFamily: "'Space Grotesk', sans-serif"
-                              }}>
-                                Amount
-                              </div>
-                              <div style={{ 
-                                fontSize: '20px', 
-                                fontWeight: 900, 
-                                color: isVerified ? '#10b981' : '#ef4444',
-                                letterSpacing: '-0.01em',
-                                fontFamily: "'Space Mono', monospace"
-                              }}>
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                              <div style={{ fontSize: '14px', fontWeight: 900, color: isVerified ? '#f97316' : '#ef4444', fontFamily: "'Space Mono', monospace" }}>
                                 ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                               </div>
+                              {!isVerified && (
+                                <div style={{ fontSize: '8px', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Space Grotesk', sans-serif" }}>Not Found</div>
+                              )}
                             </div>
                           </div>
                         );
@@ -2085,139 +2241,92 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 </div>
               )}
 
-              {/* Finalized Claims View (Left Side) */}
-              {phase === 'finalize' && finalizedBatch && (
-                <div className="flex-1 flex flex-col p-10 overflow-hidden animate-in fade-in duration-500 text-left">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-2xl font-black text-white uppercase tracking-tight">Batch Summary</h3>
-                    <div className="flex items-center gap-3">
-                      <span className="px-4 py-1.5 rounded-full bg-green-500/10 text-green-400 text-[10px] font-black uppercase tracking-widest border border-green-500/20">
-                        {ocrResults?.filter(r => r.verification_status === 'verified').length} Verified
-                      </span>
-                      <span className="px-4 py-1.5 rounded-full bg-red-500/10 text-red-400 text-[10px] font-black uppercase tracking-widest border border-red-500/20">
-                        {ocrResults?.filter(r => r.verification_status !== 'verified').length} Not Found
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
-                    <div className="grid grid-cols-1 gap-3">
-                      {ocrResults?.sort((a, b) => {
-                        // Sort Not Found items to the top
-                        if (a.verification_status !== 'verified' && b.verification_status === 'verified') return -1;
-                        if (a.verification_status === 'verified' && b.verification_status !== 'verified') return 1;
-                        return 0;
-                      }).map((res, i) => (
-                        <div key={i} className={`p-4 bg-white/5 rounded-2xl border ${res.verification_status === 'verified' ? 'border-white/5' : 'border-red-500/20'} flex items-center justify-between group hover:bg-white/10 transition-all`}>
-                          <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-xl ${res.verification_status === 'verified' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'} flex items-center justify-center text-sm font-bold border`}>
-                              {res.verification_status === 'verified' ? '✓' : '!'}
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-[11px] font-black text-white uppercase tracking-tight">
-                                {res.reference || 'REF-' + res.receipt.id}
-                              </span>
-                              <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">{res.receipt.account_holder}</span>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className={`text-sm font-black ${res.verification_status === 'verified' ? 'text-green-400' : 'text-red-400'}`}>
-                              ₱{Number(res.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                            </div>
-                            {res.verification_status !== 'verified' && (
-                              <div className="text-[8px] font-black text-red-500/60 uppercase tracking-tighter">Not Found</div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Stage 7: Summary View (Main Content) */}
               {phase === 'summary' && (
-                <div className="flex-1 flex flex-col p-10 overflow-hidden animate-in slide-in-from-left duration-500 text-left">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-3xl font-black text-white uppercase tracking-tight">Financial Summary</h3>
-                    <div className="px-6 py-2 rounded-full bg-purple-500/10 text-purple-400 border-purple-500/20 text-[12px] font-black uppercase tracking-[0.2em] border">
-                      {verifiedClaims.length} VERIFIED CLAIMS
-                    </div>
-                  </div>
-                  
-                  <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
-                    <div className="grid grid-cols-1 gap-8">
-                      {/* Summary Cards - Only show Gross and Service Fee, not Net (calculated in sidebar) */}
-                      <div className="grid grid-cols-2 gap-6">
-                        <div className="p-8 bg-white/5 rounded-[32px] border border-white/10 text-center">
-                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Gross Claims</div>
-                          <div className="text-3xl font-black text-green-400 tracking-tighter">
-                            ₱{totalClaimsAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                          </div>
-                          <div className="text-[9px] text-slate-500 font-medium uppercase mt-2">
-                            Sum of all verified receipts
-                          </div>
-                        </div>
-                        <div className="p-8 bg-white/5 rounded-[32px] border border-white/10 text-center">
-                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Service Fee</div>
-                          <div className="text-3xl font-black text-red-400 tracking-tighter">
-                            − ₱{serviceFee.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                          </div>
-                          <div className="text-[9px] text-slate-500 font-medium uppercase mt-2">
-                            ₱10.00 per ₱1,000.00
-                          </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fffbf5', padding: '40px' }}>
+                  {/* Header */}
+                  <div style={{ marginBottom: '28px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ padding: '10px 18px', borderRadius: '12px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                          </svg>
+                          <span style={{ color: '#f97316', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>Financial Summary</span>
                         </div>
                       </div>
+                      <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)' }}>
+                        <span style={{ color: '#f97316', fontSize: '11px', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>{verifiedClaims.length} Verified Claims</span>
+                      </div>
+                    </div>
+                    <p style={{ color: 'rgba(67,20,7,0.55)', fontSize: '13px', fontWeight: 500, fontFamily: "'Space Grotesk', sans-serif", margin: 0 }}>
+                      Review breakdown and add deductions before proceeding to billing
+                    </p>
+                  </div>
 
-                      {/* Breakdown Visualization */}
-                      <div className="bg-white/5 rounded-[40px] border border-white/10 p-10">
-                        <h4 className="text-sm font-black text-white uppercase tracking-widest mb-8">Claims Breakdown</h4>
-                        
-                        <div className="space-y-6">
-                          {/* Account Holder Summary */}
-                          {(() => {
-                            const accountSummary = {};
-                            verifiedClaims.forEach(claim => {
-                              const holder = claim.receipt?.account_holder || claim.account_holder || 'Unknown';
-                              if (!accountSummary[holder]) {
-                                accountSummary[holder] = { count: 0, total: 0 };
-                              }
-                              accountSummary[holder].count++;
-                              accountSummary[holder].total += Number(claim.amount || 0);
-                            });
+                  <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {/* Gross + Service Fee cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div style={{ padding: '20px', borderRadius: '16px', background: '#ffffff', border: '1px solid rgba(16,185,129,0.2)', textAlign: 'center', boxShadow: '0 2px 8px rgba(16,185,129,0.06)' }}>
+                        <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px', fontFamily: "'Space Grotesk', sans-serif" }}>Gross Claims</div>
+                        <div style={{ fontSize: '24px', fontWeight: 900, color: '#059669', letterSpacing: '-0.02em', fontFamily: "'Space Mono', monospace" }}>
+                          ₱{totalClaimsAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        </div>
+                        <div style={{ fontSize: '9px', color: 'rgba(67,20,7,0.4)', fontWeight: 600, textTransform: 'uppercase', marginTop: '6px', fontFamily: "'Space Grotesk', sans-serif" }}>Sum of verified receipts</div>
+                      </div>
+                      <div style={{ padding: '20px', borderRadius: '16px', background: '#ffffff', border: '1px solid rgba(239,68,68,0.2)', textAlign: 'center', boxShadow: '0 2px 8px rgba(239,68,68,0.06)' }}>
+                        <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px', fontFamily: "'Space Grotesk', sans-serif" }}>Service Fee</div>
+                        <div style={{ fontSize: '24px', fontWeight: 900, color: '#dc2626', letterSpacing: '-0.02em', fontFamily: "'Space Mono', monospace" }}>
+                          − ₱{serviceFee.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        </div>
+                        <div style={{ fontSize: '9px', color: 'rgba(67,20,7,0.4)', fontWeight: 600, textTransform: 'uppercase', marginTop: '6px', fontFamily: "'Space Grotesk', sans-serif" }}>₱10 per ₱1,000</div>
+                      </div>
+                    </div>
 
-                            return Object.entries(accountSummary).map(([holder, data]) => (
-                              <div key={holder} className="flex items-center justify-between p-6 bg-white/[0.02] rounded-2xl border border-white/5 hover:bg-white/[0.04] transition-all">
-                                <div className="flex items-center gap-4">
-                                  <div className="w-12 h-12 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-                                    <span className="text-xl">👤</span>
-                                  </div>
+                    {/* Claims Breakdown by account */}
+                    <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid rgba(251,146,60,0.15)', padding: '20px', boxShadow: '0 2px 8px rgba(67,20,7,0.03)' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 900, color: 'rgba(67,20,7,0.5)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: "'Space Grotesk', sans-serif" }}>Claims Breakdown</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {(() => {
+                          const accountSummary = {};
+                          verifiedClaims.forEach(claim => {
+                            const holder = claim.receipt?.account_holder || claim.account_holder || 'Unknown';
+                            if (!accountSummary[holder]) accountSummary[holder] = { count: 0, total: 0 };
+                            accountSummary[holder].count++;
+                            accountSummary[holder].total += Number(claim.amount || 0);
+                          });
+                          const acctColors = {
+                            Babilyn:  { bg: 'rgba(236,72,153,0.08)',  border: 'rgba(236,72,153,0.2)',  text: '#ec4899' },
+                            Nixie:    { bg: 'rgba(139,92,246,0.08)',  border: 'rgba(139,92,246,0.2)',  text: '#8b5cf6' },
+                            Kristine: { bg: 'rgba(6,182,212,0.08)',   border: 'rgba(6,182,212,0.2)',   text: '#06b6d4' },
+                          };
+                          return Object.entries(accountSummary).map(([holder, data]) => {
+                            const ac = acctColors[holder];
+                            return (
+                              <div key={holder} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '10px', background: ac ? ac.bg : 'rgba(249,115,22,0.04)', border: `1px solid ${ac ? ac.border : 'rgba(249,115,22,0.12)'}` }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#ffffff', border: `1px solid ${ac ? ac.border : 'rgba(249,115,22,0.15)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>👤</div>
                                   <div>
-                                    <div className="text-sm font-bold text-white">{holder}</div>
-                                    <div className="text-[10px] text-slate-500 font-medium uppercase mt-1">
-                                      {data.count} {data.count === 1 ? 'Claim' : 'Claims'}
-                                    </div>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: ac ? ac.text : '#f97316', fontFamily: "'Space Grotesk', sans-serif" }}>{holder}</div>
+                                    <div style={{ fontSize: '9px', color: 'rgba(67,20,7,0.45)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Space Grotesk', sans-serif" }}>{data.count} {data.count === 1 ? 'claim' : 'claims'}</div>
                                   </div>
                                 </div>
-                                <div className="text-right">
-                                  <div className="text-lg font-black text-white">
-                                    ₱{data.total.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                  </div>
+                                <div style={{ fontSize: '16px', fontWeight: 900, color: '#431407', fontFamily: "'Space Mono', monospace" }}>
+                                  ₱{data.total.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                                 </div>
                               </div>
-                            ));
-                          })()}
-                        </div>
+                            );
+                          });
+                        })()}
                       </div>
+                    </div>
 
-                      {/* Info Box */}
-                      <div className="p-6 bg-purple-500/5 rounded-2xl border border-purple-500/10 flex gap-4 items-start">
-                        <div className="text-xl">💡</div>
-                        <div className="text-[11px] text-purple-200/60 leading-relaxed font-medium">
-                          Review the claims breakdown and add any additional deductions in the sidebar on the right. 
-                          The final net amount will be calculated automatically and used for billing in the next stage.
-                        </div>
-                      </div>
+                    {/* Info tip */}
+                    <div style={{ padding: '14px 18px', background: 'rgba(249,115,22,0.05)', borderRadius: '12px', border: '1px solid rgba(249,115,22,0.15)', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: '16px', flexShrink: 0 }}>💡</span>
+                      <span style={{ fontSize: '11px', color: 'rgba(67,20,7,0.6)', fontWeight: 500, lineHeight: 1.6, fontFamily: "'Space Grotesk', sans-serif" }}>
+                        Review the breakdown and add any deductions in the sidebar. The net amount updates automatically and carries forward to billing.
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -2225,93 +2334,27 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
               {/* Stage 8: Billing View (Main Content) */}
               {phase === 'billing' && (
-                <div className="flex-1 flex flex-col p-10 overflow-hidden animate-in slide-in-from-left duration-500 text-left bg-[#fffbf5]">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-3xl font-black text-orange-900 uppercase tracking-tight">Payment Details</h3>
-                    <div className={`px-6 py-2 rounded-full ${isBillingBalanced ? 'bg-green-500/10 text-green-600 border-green-500/20' : 'bg-orange-500/10 text-orange-600 border-orange-500/20'} text-[12px] font-black uppercase tracking-[0.2em] border transition-all`}>
-                      {isBillingBalanced ? '✓ FUNDS BALANCED' : `₱${Math.abs(billingDiff).toLocaleString()} REMAINING`}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px', background: '#fffbf5', gap: '20px', overflow: 'visible' }}>
+                  {/* Big QR */}
+                  <div style={{ padding: '16px', background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)', borderRadius: '28px', boxShadow: '0 16px 48px rgba(249,115,22,0.25)', border: '2px solid rgba(249,115,22,0.25)', flexShrink: 0 }}>
+                    <img src={qrJonarld} alt="QR Code" style={{ width: '340px', height: '340px', objectFit: 'contain', display: 'block', borderRadius: '14px' }} />
+                  </div>
+                  {/* Label */}
+                  <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                    <div style={{ fontSize: '15px', fontWeight: 900, color: '#431407', fontFamily: "'Space Grotesk', sans-serif" }}>Scan to Send via QR</div>
+                    <div style={{ fontSize: '12px', color: 'rgba(67,20,7,0.5)', fontWeight: 500, marginTop: '6px', fontFamily: "'Space Grotesk', sans-serif" }}>
+                      Send ₱{netAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
-                  
-                  <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
-                    <div className="grid grid-cols-1 gap-8">
-                      {/* Summary Cards */}
-                      <div className="grid grid-cols-3 gap-6">
-                        <div className="p-8 bg-white border border-orange-100 rounded-[32px] shadow-sm text-center">
-                          <div className="text-[10px] font-black text-orange-800/40 uppercase tracking-widest mb-2">Net Amount Due</div>
-                          <div className="text-3xl font-black text-orange-900 tracking-tighter">
-                            ₱{netAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                          </div>
-                          <div className="text-[9px] text-orange-800/30 font-medium uppercase mt-2">
-                            Target amount
-                          </div>
-                        </div>
-                        <div className="p-8 bg-white border border-orange-100 rounded-[32px] shadow-sm text-center">
-                          <div className="text-[10px] font-black text-orange-800/40 uppercase tracking-widest mb-2">Total Prepared</div>
-                          <div className={`text-3xl font-black ${isBillingBalanced ? 'text-green-600' : 'text-orange-600'} tracking-tighter`}>
-                            ₱{billingTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                          </div>
-                          <div className="text-[9px] text-orange-800/30 font-medium uppercase mt-2">
-                            Cash + Bank
-                          </div>
-                        </div>
-                        <div className="p-8 bg-white border border-orange-100 rounded-[32px] shadow-sm text-center">
-                          <div className="text-[10px] font-black text-orange-800/40 uppercase tracking-widest mb-2">Difference</div>
-                          <div className={`text-3xl font-black ${billingDiff === 0 ? 'text-green-600' : 'text-red-600'} tracking-tighter`}>
-                            {billingDiff === 0 ? '✓' : `₱${Math.abs(billingDiff).toLocaleString()}`}
-                          </div>
-                          <div className="text-[9px] text-orange-800/30 font-medium uppercase mt-2">
-                            {billingDiff === 0 ? 'Balanced' : billingDiff > 0 ? 'Short' : 'Over'}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* QR Code Payment Section */}
-                      <div className="bg-white border border-orange-100 rounded-[40px] shadow-md p-10">
-                        <h4 className="text-sm font-black text-orange-900 uppercase tracking-widest mb-8">GCash Payment</h4>
-                        
-                        <div className="flex flex-col items-center justify-center gap-6">
-                          {/* QR Code Image */}
-                          <div className="p-6 bg-white rounded-3xl shadow-xl border border-orange-50/50">
-                            <img 
-                              src="/src/assets/qr-jonarld.jpg" 
-                              alt="GCash QR Code" 
-                              className="w-64 h-64 object-contain"
-                            />
-                          </div>
-                          
-                          {/* Payment Instructions */}
-                          <div className="text-center space-y-2">
-                            <div className="text-lg font-black text-orange-900">
-                              Scan to Pay via GCash
-                            </div>
-                            <div className="text-sm text-orange-800/60 font-medium">
-                              Send ₱{netAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })} to complete the transaction
-                            </div>
-                          </div>
-
-                          {/* Payment Details */}
-                          <div className="w-full max-w-md space-y-3 mt-4">
-                            <div className="flex items-center justify-between p-4 bg-orange-50/30 rounded-xl border border-orange-100/50">
-                              <span className="text-xs font-bold text-orange-800/60 uppercase tracking-wider">Account Name</span>
-                              <span className="text-sm font-black text-orange-950">Jonarld</span>
-                            </div>
-                            <div className="flex items-center justify-between p-4 bg-orange-50/30 rounded-xl border border-orange-100/50">
-                              <span className="text-xs font-bold text-orange-800/60 uppercase tracking-wider">Payment Method</span>
-                              <span className="text-sm font-black text-orange-600">GCash</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Info Box */}
-                      <div className="p-6 bg-orange-500/5 rounded-2xl border border-orange-500/10 flex gap-4 items-start">
-                        <div className="text-xl">💳</div>
-                        <div className="text-[11px] text-orange-800/60 leading-relaxed font-medium">
-                          Scan the QR code using your GCash app to send the payment. 
-                          You can also enter cash denominations and bank transfer details in the sidebar to track the funds received.
-                        </div>
-                      </div>
+                  {/* Account details */}
+                  <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', gap: '12px', padding: '10px 16px', background: 'rgba(249,115,22,0.05)', borderRadius: '10px', border: '1px solid rgba(249,115,22,0.12)', alignItems: 'center' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(67,20,7,0.5)', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Space Grotesk', sans-serif" }}>Account</span>
+                      <span style={{ fontSize: '11px', fontWeight: 900, color: '#431407', fontFamily: "'Space Grotesk', sans-serif" }}>Jonarld</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', padding: '10px 16px', background: 'rgba(249,115,22,0.05)', borderRadius: '10px', border: '1px solid rgba(249,115,22,0.12)', alignItems: 'center' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(67,20,7,0.5)', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Space Grotesk', sans-serif" }}>Method</span>
+                      <span style={{ fontSize: '11px', fontWeight: 900, color: '#f97316', fontFamily: "'Space Grotesk', sans-serif" }}>QR</span>
                     </div>
                   </div>
                 </div>
@@ -2319,45 +2362,24 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
               {/* Loading & Start States */}
               {((phase === 'ocr' && !showOcrPreview) || (phase === 'verify' && !showVerifyPreview) || (phase === 'finalize' && !finalizedBatch)) && (
-                <div className="flex-1 flex flex-col items-center justify-center p-20 text-center" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' }}>
+                <div className="flex-1 flex flex-col items-center justify-center p-20 text-center" style={{ background: '#fffbf5' }}>
                   
                   {/* Stage 4: OCR Extraction */}
                   {phase === 'ocr' && (
                     <div className="max-w-xl w-full">
-                      {/* Icon Circle */}
                       <div className="relative mb-12 inline-block">
-                        <div className={`w-32 h-32 rounded-full flex items-center justify-center ${
-                          isProcessingOcr 
-                            ? 'bg-gradient-to-br from-amber-500/20 to-orange-500/20 border-4 border-amber-500/30' 
-                            : 'bg-gradient-to-br from-slate-700/30 to-slate-800/30 border-4 border-slate-600/30'
-                        } transition-all duration-500`}>
-                          {isProcessingOcr ? (
-                            <div className="relative">
-                              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
-                                <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" />
-                                <circle cx="12" cy="12" r="3" />
-                              </svg>
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-16 h-16 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
-                              </div>
-                            </div>
-                          ) : (
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" />
-                              <circle cx="12" cy="12" r="3" />
-                            </svg>
-                          )}
+                        <div className="w-32 h-32 rounded-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-50 border-4 border-orange-200 transition-all duration-500">
+                          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
                         </div>
                       </div>
-
-                      {/* Title */}
-                      <h3 className="text-3xl font-black text-white uppercase tracking-tight mb-4" style={{ fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.02em' }}>
+                      <h3 className="text-3xl font-black uppercase tracking-tight mb-4" style={{ color: '#431407', fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.02em' }}>
                         {isProcessingOcr ? 'Extracting Data' : 'Ready to Extract'}
                       </h3>
-
-                      {/* Description - Only when not processing */}
                       {!isProcessingOcr && (
-                        <p className="text-base font-medium leading-relaxed mb-8" style={{ color: '#94a3b8', fontFamily: "'DM Sans', sans-serif" }}>
+                        <p className="text-base font-medium leading-relaxed mb-8" style={{ color: 'rgba(67,20,7,0.5)', fontFamily: "'DM Sans', sans-serif" }}>
                           Click "Start OCR Extraction" in the sidebar
                         </p>
                       )}
@@ -2369,15 +2391,15 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                     <div className="max-w-xl w-full">
                       <div className="relative mb-12 inline-block">
                         <div className={`w-32 h-32 rounded-full border-4 ${
-                          isVerifying ? 'border-indigo-500/10 border-t-indigo-500 animate-spin' : 'border-indigo-500/20'
+                          isVerifying ? 'border-orange-200 border-t-orange-500 animate-spin' : 'border-orange-200'
                         } flex items-center justify-center text-5xl`}>
                           ⚖️
                         </div>
                       </div>
-                      <h3 className="text-3xl font-black text-white uppercase tracking-tight mb-4">
+                      <h3 className="text-3xl font-black uppercase tracking-tight mb-4" style={{ color: '#431407' }}>
                         Verifying Claims
                       </h3>
-                      <p className="text-base font-medium leading-relaxed" style={{ color: '#94a3b8' }}>
+                      <p className="text-base font-medium leading-relaxed" style={{ color: 'rgba(67,20,7,0.5)' }}>
                         Matching with transaction records
                       </p>
                     </div>
@@ -2387,14 +2409,14 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   {phase === 'finalize' && (
                     <div className="max-w-xl w-full">
                       <div className="relative mb-12 inline-block">
-                        <div className="w-32 h-32 rounded-full border-4 border-green-500/10 border-t-green-500 animate-spin flex items-center justify-center text-5xl">
+                        <div className="w-32 h-32 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin flex items-center justify-center text-5xl">
                           📦
                         </div>
                       </div>
-                      <h3 className="text-3xl font-black text-white uppercase tracking-tight mb-4">
+                      <h3 className="text-3xl font-black uppercase tracking-tight mb-4" style={{ color: '#431407' }}>
                         Finalizing Batch
                       </h3>
-                      <p className="text-base font-medium leading-relaxed" style={{ color: '#94a3b8' }}>
+                      <p className="text-base font-medium leading-relaxed" style={{ color: 'rgba(67,20,7,0.5)' }}>
                         Linking verified transactions
                       </p>
                     </div>
@@ -2587,13 +2609,13 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                         fontWeight: 900,
                         textTransform: 'uppercase',
                         letterSpacing: '0.15em',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(249, 115, 22, 0.25)',
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                         position: 'relative',
                         overflow: 'hidden',
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        color: '#64748b',
+                        background: 'rgba(249, 115, 22, 0.08)',
+                        color: '#f97316',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -2605,12 +2627,12 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                         setIndex(total - 1);
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                        e.currentTarget.style.color = '#fff';
+                        e.currentTarget.style.background = 'rgba(249, 115, 22, 0.15)';
+                        e.currentTarget.style.borderColor = 'rgba(249, 115, 22, 0.4)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                        e.currentTarget.style.color = '#64748b';
+                        e.currentTarget.style.background = 'rgba(249, 115, 22, 0.08)';
+                        e.currentTarget.style.borderColor = 'rgba(249, 115, 22, 0.25)';
                       }}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -2628,14 +2650,14 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                         fontWeight: 900,
                         textTransform: 'uppercase',
                         letterSpacing: '0.15em',
-                        border: '1px solid rgba(56, 168, 232, 0.35)',
+                        border: '1px solid rgba(251, 146, 60, 0.35)',
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                         position: 'relative',
                         overflow: 'hidden',
-                        background: 'linear-gradient(135deg, #1a7fcb 0%, #1260a4 60%, #0f4c91 100%)',
+                        background: 'linear-gradient(135deg, #f97316 0%, #ea580c 60%, #c2410c 100%)',
                         color: '#fff',
-                        boxShadow: '0 6px 28px rgba(18, 96, 164, 0.45)',
+                        boxShadow: '0 6px 28px rgba(249, 115, 22, 0.45)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -2645,11 +2667,11 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                       onClick={startVerifyPhase}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 12px 36px rgba(18, 96, 164, 0.55)';
+                        e.currentTarget.style.boxShadow = '0 12px 36px rgba(249, 115, 22, 0.55)';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 6px 28px rgba(18, 96, 164, 0.45)';
+                        e.currentTarget.style.boxShadow = '0 6px 28px rgba(249, 115, 22, 0.45)';
                       }}
                       onMouseDown={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                     >
@@ -2726,105 +2748,199 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               )}
 
             {phase === 'billing' && (
-              <div className="flex flex-col gap-6 animate-in slide-in-from-right-4 duration-300">
-                <div className={`${isBillingBalanced ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/10 border-red-500/20'} border rounded-[32px] p-8 text-center transition-all`}>
-                  <div className="text-4xl mb-4">{isBillingBalanced ? '📊' : '⚖️'}</div>
-                  <h4 className="text-white font-black uppercase tracking-widest text-sm mb-2">Stage 8: Billing</h4>
-                  <p className="text-slate-400 text-[10px] font-medium leading-relaxed">
-                    Prepare the funds to tally with the net total.
-                  </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '4px 0' }}>
+                {/* Method toggle */}
+                <div style={{ display: 'flex', padding: '4px', background: 'rgba(249,115,22,0.06)', borderRadius: '14px', border: '1px solid rgba(249,115,22,0.15)', gap: '4px' }}>
+                  {['cash', 'bank', 'both'].map(method => (
+                    <button key={method} onClick={() => setBillingMethod(method)} style={{
+                      flex: 1, padding: '8px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      background: billingMethod === method ? '#f97316' : 'transparent',
+                      color: billingMethod === method ? '#fff' : 'rgba(67,20,7,0.5)',
+                      fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.12em',
+                      fontFamily: "'Space Grotesk', sans-serif",
+                      boxShadow: billingMethod === method ? '0 2px 8px rgba(249,115,22,0.3)' : 'none'
+                    }}>
+                      {method}
+                    </button>
+                  ))}
                 </div>
 
-                <div className="space-y-6">
-                  {/* Method Selection Toggles */}
-                  <div className="flex p-1 bg-black/40 rounded-2xl border border-white/5">
-                    {['cash', 'bank', 'both'].map(method => (
-                      <button
-                        key={method}
-                        onClick={() => setBillingMethod(method)}
-                        className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
-                          billingMethod === method ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300'
-                        }`}
-                      >
-                        {method}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Dynamic Inputs Based on Method */}
-                  <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar space-y-4">
-                    {(billingMethod === 'cash' || billingMethod === 'both') && (
-                      <div className="space-y-3">
-                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-2">Cash Denominations</div>
-                        {[1000, 500, 200, 100, 50, 20].map(val => (
-                          <div key={val} className="flex items-center gap-3">
-                            <div className="w-12 text-[10px] font-bold text-slate-400">₱{val}</div>
-                            <input 
-                              type="number" 
-                              min="0"
-                              value={cashDenominations[val] || ''}
-                              onChange={(e) => setCashDenominations(prev => ({ ...prev, [val]: parseInt(e.target.value) || 0 }))}
-                              className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white text-xs font-bold focus:border-amber-500 outline-none"
-                              placeholder="Count"
-                            />
-                          </div>
-                        ))}
-                        <div className="h-[1px] bg-white/5 my-2" />
-                        {[20, 10, 5, 1].map(val => (
-                          <div key={`c${val}`} className="flex items-center gap-3">
-                            <div className="w-12 text-[10px] font-bold text-slate-400">₱{val}</div>
-                            <input 
-                              type="number" 
-                              min="0"
-                              value={cashDenominations[`c${val}`] || ''}
-                              onChange={(e) => setCashDenominations(prev => ({ ...prev, [`c${val}`]: parseInt(e.target.value) || 0 }))}
-                              className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white text-xs font-bold focus:border-amber-500 outline-none"
-                              placeholder="Count"
-                            />
-                          </div>
-                        ))}
+                {/* Inputs */}
+                <div style={{ maxHeight: '360px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '4px' }}>
+                  {(billingMethod === 'cash' || billingMethod === 'both') && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {/* Bills */}
+                      <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.4)', textTransform: 'uppercase', letterSpacing: '0.16em', fontFamily: "'Space Grotesk', sans-serif", padding: '2px 2px 4px' }}>
+                        Bills
                       </div>
-                    )}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {[1000, 500, 200, 100, 50, 20].map(val => {
+                          const count = cashDenominations[val] || 0;
+                          const subtotal = val * count;
+                          return (
+                            <div key={val} style={{
+                              display: 'flex', alignItems: 'center', gap: '10px',
+                              background: count > 0 ? 'rgba(249,115,22,0.06)' : '#fafafa',
+                              border: `1.5px solid ${count > 0 ? 'rgba(249,115,22,0.3)' : 'rgba(0,0,0,0.06)'}`,
+                              borderRadius: '12px', padding: '8px 12px',
+                              transition: 'all 0.15s'
+                            }}>
+                              {/* Denomination label */}
+                              <div style={{ width: '44px', flexShrink: 0 }}>
+                                <div style={{ fontSize: '12px', fontWeight: 900, color: count > 0 ? '#f97316' : 'rgba(67,20,7,0.4)', fontFamily: "'Space Mono', monospace", lineHeight: 1 }}>₱{val >= 1000 ? `${val/1000}K` : val}</div>
+                              </div>
+                              {/* Stepper */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, justifyContent: 'center' }}>
+                                <button onClick={() => setCashDenominations(prev => ({ ...prev, [val]: Math.max(0, (prev[val] || 0) - 1) }))}
+                                  style={{ width: '24px', height: '24px', borderRadius: '8px', border: '1.5px solid rgba(249,115,22,0.2)', background: '#fff', color: '#f97316', fontSize: '14px', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, flexShrink: 0 }}>−</button>
+                                <input type="number" min="0"
+                                  value={count || ''}
+                                  onChange={(e) => setCashDenominations(prev => ({ ...prev, [val]: Math.max(0, parseInt(e.target.value) || 0) }))}
+                                  style={{ width: '36px', background: 'transparent', border: 'none', outline: 'none', color: '#431407', fontSize: '13px', fontWeight: 800, fontFamily: "'Space Mono', monospace", textAlign: 'center', padding: 0 }}
+                                  placeholder="0"
+                                />
+                                <button onClick={() => setCashDenominations(prev => ({ ...prev, [val]: (prev[val] || 0) + 1 }))}
+                                  style={{ width: '24px', height: '24px', borderRadius: '8px', border: '1.5px solid rgba(249,115,22,0.2)', background: '#fff', color: '#f97316', fontSize: '14px', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, flexShrink: 0 }}>+</button>
+                              </div>
+                              {/* Subtotal */}
+                              <div style={{ width: '56px', textAlign: 'right', flexShrink: 0 }}>
+                                <div style={{ fontSize: '11px', fontWeight: 800, color: count > 0 ? '#431407' : 'rgba(67,20,7,0.2)', fontFamily: "'Space Mono', monospace" }}>
+                                  {count > 0 ? `₱${subtotal.toLocaleString()}` : '—'}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
 
-                    {(billingMethod === 'bank' || billingMethod === 'both') && (
-                      <div className="space-y-3 pt-4 border-t border-white/5">
-                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-2">Bank Transfer Amount</div>
-                        <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xs">₱</span>
-                          <input 
-                            type="number" 
-                            min="0"
-                            value={bankTransferAmount || ''}
-                            onChange={(e) => setBankTransferAmount(Math.max(0, parseFloat(e.target.value) || 0))}
-                            className="w-full bg-black/40 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white text-sm font-bold focus:border-blue-500 outline-none"
-                            placeholder="0.00"
-                          />
+                      {/* Coins */}
+                      <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.4)', textTransform: 'uppercase', letterSpacing: '0.16em', fontFamily: "'Space Grotesk', sans-serif", padding: '6px 2px 4px', marginTop: '4px', borderTop: '1px solid rgba(249,115,22,0.1)' }}>
+                        Coins
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                        {[20, 10, 5, 1].map(val => {
+                          const count = cashDenominations[`c${val}`] || 0;
+                          return (
+                            <div key={`c${val}`} style={{
+                              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                              background: count > 0 ? 'rgba(249,115,22,0.06)' : '#fafafa',
+                              border: `1.5px solid ${count > 0 ? 'rgba(249,115,22,0.3)' : 'rgba(0,0,0,0.06)'}`,
+                              borderRadius: '12px', padding: '10px 6px',
+                              transition: 'all 0.15s'
+                            }}>
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: count > 0 ? '#f97316' : 'rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
+                                <span style={{ fontSize: '10px', fontWeight: 900, color: count > 0 ? '#fff' : 'rgba(67,20,7,0.35)', fontFamily: "'Space Mono', monospace", lineHeight: 1 }}>₱{val}</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <button onClick={() => setCashDenominations(prev => ({ ...prev, [`c${val}`]: Math.max(0, (prev[`c${val}`] || 0) - 1) }))}
+                                  style={{ width: '18px', height: '18px', borderRadius: '6px', border: '1px solid rgba(249,115,22,0.2)', background: '#fff', color: '#f97316', fontSize: '12px', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, flexShrink: 0 }}>−</button>
+                                <input type="number" min="0"
+                                  value={count || ''}
+                                  onChange={(e) => setCashDenominations(prev => ({ ...prev, [`c${val}`]: Math.max(0, parseInt(e.target.value) || 0) }))}
+                                  style={{ width: '24px', background: 'transparent', border: 'none', outline: 'none', color: '#431407', fontSize: '12px', fontWeight: 800, fontFamily: "'Space Mono', monospace", textAlign: 'center', padding: 0 }}
+                                  placeholder="0"
+                                />
+                                <button onClick={() => setCashDenominations(prev => ({ ...prev, [`c${val}`]: (prev[`c${val}`] || 0) + 1 }))}
+                                  style={{ width: '18px', height: '18px', borderRadius: '6px', border: '1px solid rgba(249,115,22,0.2)', background: '#fff', color: '#f97316', fontSize: '12px', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, flexShrink: 0 }}>+</button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {(billingMethod === 'bank' || billingMethod === 'both') && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: billingMethod === 'both' ? '8px' : '0', borderTop: billingMethod === 'both' ? '1px solid rgba(249,115,22,0.12)' : 'none' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.14em', fontFamily: "'Space Grotesk', sans-serif", padding: '0 4px' }}>Bank Transfers</div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button 
+                            disabled={!bankTransferAmounts[0] || bankTransferAmounts[0] <= 0}
+                            onClick={() => {
+                              if (bankTransferAmounts[0] > 0) {
+                                setBankTransferAmounts([...bankTransferAmounts, 0]);
+                              }
+                            }} 
+                            style={{ fontSize: '9px', fontWeight: 700, color: bankTransferAmounts[0] > 0 ? '#059669' : '#ccc', background: bankTransferAmounts[0] > 0 ? 'rgba(5,150,105,0.1)' : 'rgba(0,0,0,0.05)', border: bankTransferAmounts[0] > 0 ? '1px solid rgba(5,150,105,0.2)' : '1px solid rgba(0,0,0,0.1)', padding: '4px 12px', borderRadius: '6px', cursor: bankTransferAmounts[0] > 0 ? 'pointer' : 'not-allowed', transition: 'all 0.2s', fontFamily: "'Space Grotesk', sans-serif" }} 
+                            onMouseEnter={(e) => { if (bankTransferAmounts[0] > 0) { e.target.style.background = 'rgba(5,150,105,0.15)'; e.target.style.borderColor = 'rgba(5,150,105,0.4)'; } }} 
+                            onMouseLeave={(e) => { if (bankTransferAmounts[0] > 0) { e.target.style.background = 'rgba(5,150,105,0.1)'; e.target.style.borderColor = 'rgba(5,150,105,0.2)'; } }}>
+                            + Add
+                          </button>
+                          <button onClick={() => {
+                            const remaining = Math.max(0, netAmount - cashTotal - bankTransferAmounts.slice(0, -1).reduce((sum, v) => sum + Number(v || 0), 0));
+                            const updated = [...bankTransferAmounts];
+                            updated[updated.length - 1] = remaining;
+                            setBankTransferAmounts(updated);
+                          }} style={{ fontSize: '9px', fontWeight: 700, color: '#f97316', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)', padding: '4px 12px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Space Grotesk', sans-serif" }} onMouseEnter={(e) => { e.target.style.background = 'rgba(249,115,22,0.15)'; e.target.style.borderColor = 'rgba(249,115,22,0.4)'; }} onMouseLeave={(e) => { e.target.style.background = 'rgba(249,115,22,0.1)'; e.target.style.borderColor = 'rgba(249,115,22,0.2)'; }}>
+                            Max
+                          </button>
                         </div>
                       </div>
-                    )}
-                  </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {bankTransferAmounts.map((amount, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                              <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(67,20,7,0.4)', fontSize: '13px', fontWeight: 700, fontFamily: "'Space Mono', monospace" }}>₱</span>
+                              <input type="number" min="0"
+                                value={amount || ''}
+                                onChange={(e) => {
+                                  const updated = [...bankTransferAmounts];
+                                  updated[idx] = Math.max(0, parseFloat(e.target.value) || 0);
+                                  setBankTransferAmounts(updated);
+                                }}
+                                style={{ width: '100%', background: '#ffffff', border: '1.5px solid rgba(249,115,22,0.2)', borderRadius: '10px', padding: '10px 14px 10px 30px', color: '#431407', fontSize: '13px', fontWeight: 700, outline: 'none', fontFamily: "'Space Mono', monospace", boxSizing: 'border-box' }}
+                                placeholder="0.00"
+                              />
+                            </div>
+                            {bankTransferAmounts.length > 1 && (
+                              <button onClick={() => {
+                                const updated = bankTransferAmounts.filter((_, i) => i !== idx);
+                                setBankTransferAmounts(updated.length > 0 ? updated : [0]);
+                              }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '34px', height: '34px', color: '#dc2626', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0 }} onMouseEnter={(e) => { e.target.style.background = 'rgba(220,38,38,0.15)'; e.target.style.borderColor = 'rgba(220,38,38,0.4)'; }} onMouseLeave={(e) => { e.target.style.background = 'rgba(220,38,38,0.08)'; e.target.style.borderColor = 'rgba(220,38,38,0.2)'; }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-                  <button 
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => setPhase('summary')}
+                    style={{
+                      flexShrink: 0, padding: '14px 16px', borderRadius: '14px', border: '1.5px solid rgba(249,115,22,0.3)', cursor: 'pointer',
+                      background: '#fff', color: '#f97316', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em',
+                      fontFamily: "'Space Grotesk', sans-serif",
+                      transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      whiteSpace: 'nowrap'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(249,115,22,0.05)'; e.currentTarget.style.borderColor = 'rgba(249,115,22,0.5)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)'; }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+                    </svg>
+                    Back to Summary
+                  </button>
+                  <button
                     disabled={!isBillingBalanced}
                     onClick={async () => {
                       try {
                         const res = await fetch(`http://localhost:8000/api/batches/${batchId}/status`, {
                           method: 'PATCH',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ 
+                          body: JSON.stringify({
                             checker_status: 'billing_ready',
-                            summary_data: {
-                              gross_amount: totalClaimsAmount,
-                              service_fee: serviceFee,
-                              deductions: savedDeductions,
-                              net_amount: finalNetAmount || netAmount
-                            },
-                            billing_data: {
-                              method: billingMethod,
-                              cash_denominations: cashDenominations,
-                              bank_transfer_amount: bankTransferAmount,
-                              total_prepared: billingTotal
-                            }
+                            summary_data: { gross_amount: totalClaimsAmount, service_fee: serviceFee, deductions: savedDeductions, net_amount: finalNetAmount || netAmount },
+                            billing_data: { method: billingMethod, cash_denominations: cashDenominations, bank_transfer_amount: bankTransferAmounts, total_prepared: billingTotal }
                           }),
                         });
                         if (!res.ok) throw new Error(`Server error ${res.status}`);
@@ -2836,28 +2952,37 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                         alert(`Failed to save billing: ${e.message}. Please try again.`);
                       }
                     }}
-                    className="w-full py-5 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black text-[11px] uppercase tracking-[0.2em] hover:scale-[1.02] transition-all shadow-2xl shadow-green-500/20 flex items-center justify-center gap-3 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
+                    style={{
+                      flex: 1, padding: '14px 16px', borderRadius: '14px', border: 'none', cursor: isBillingBalanced ? 'pointer' : 'not-allowed',
+                      background: isBillingBalanced ? 'linear-gradient(135deg, #f97316 0%, #ea580c 60%, #c2410c 100%)' : '#fed7aa',
+                      color: '#fff', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em',
+                      fontFamily: "'Space Grotesk', sans-serif",
+                      boxShadow: isBillingBalanced ? '0 6px 20px rgba(249,115,22,0.4)' : 'none',
+                      transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                      whiteSpace: 'nowrap'
+                    }}
+                    onMouseEnter={(e) => { if (isBillingBalanced) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(249,115,22,0.5)'; }}}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = isBillingBalanced ? '0 6px 20px rgba(249,115,22,0.4)' : 'none'; }}
                   >
-                    Finish & Generate Billing
-                  </button>
-
-                  {/* Hint when button is disabled */}
-                  {!isBillingBalanced && (
-                    <div className="text-center text-[10px] font-bold text-red-400/80 px-2">
-                      {billingDiff > 0
-                        ? `PHP ${billingDiff.toLocaleString('en-PH', { minimumFractionDigits: 2 })} still unallocated`
-                        : `PHP ${Math.abs(billingDiff).toLocaleString('en-PH', { minimumFractionDigits: 2 })} over-allocated`}
-                      {' -- funds must match net amount exactly.'}
-                    </div>
-                  )}
-                  
-                  <button 
-                    onClick={() => setPhase('summary')}
-                    className="w-full py-3 text-[9px] font-black text-slate-600 uppercase tracking-widest hover:text-white transition-colors"
-                  >
-                    Back to Summary
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    Finish & Confirm
                   </button>
                 </div>
+
+                {/* Unallocated warning */}
+                {!isBillingBalanced && (
+                  <div style={{ textAlign: 'center', padding: '10px 14px', borderRadius: '10px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 800, color: '#dc2626', fontFamily: "'Space Grotesk', sans-serif" }}>
+                      {billingDiff > 0
+                        ? `₱${billingDiff.toLocaleString('en-PH', { minimumFractionDigits: 2 })} still unallocated`
+                        : `₱${Math.abs(billingDiff).toLocaleString('en-PH', { minimumFractionDigits: 2 })} over-allocated`}
+                      {' — funds must match net amount exactly.'}
+                    </span>
+                  </div>
+                )}
+
               </div>
             )}
           </div>
@@ -2888,6 +3013,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
           billingMethod={billingMethod}
           cashDenominations={cashDenominations}
           bankTransferAmount={bankTransferAmount}
+          bankTransferAmounts={bankTransferAmounts}
           totalPrepared={billingTotal}
           verifiedClaims={verifiedClaims.map(r => ({
             account_holder: r.receipt?.account_holder || r.account_holder,

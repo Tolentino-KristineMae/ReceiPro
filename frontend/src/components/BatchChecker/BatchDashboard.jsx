@@ -556,6 +556,7 @@ export default function BatchDashboard({
           const billingMethod      = bd.method              || 'both';
           const cashDenoms         = bd.cash_denominations  || {};
           const bankAmt            = bd.bank_transfer_amount || 0;
+          const bankAmts           = Array.isArray(bd.bank_transfer_amount) ? bd.bank_transfer_amount : (bd.bank_transfer_amount ? [bd.bank_transfer_amount] : []);
           const totalPrepared      = bd.total_prepared       || netAmount;
 
           return (
@@ -569,7 +570,8 @@ export default function BatchDashboard({
               netAmount={netAmount}
               billingMethod={billingMethod}
               cashDenominations={cashDenoms}
-              bankTransferAmount={bankAmt}
+              bankTransferAmount={Array.isArray(bankAmt) ? bankAmts.reduce((s,v)=>s+Number(v||0),0) : bankAmt}
+              bankTransferAmounts={bankAmts}
               totalPrepared={totalPrepared}
               verifiedClaims={verifiedReceipts}
             />

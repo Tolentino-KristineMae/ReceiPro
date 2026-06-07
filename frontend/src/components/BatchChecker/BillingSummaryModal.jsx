@@ -79,14 +79,19 @@ const BillingSummaryModal = ({
   finalBatchNumber,
   grossAmount,
   serviceFee,
-  deductions = [], // Array of { type: string, amount: number }
+  deductions = [],
   netAmount,
   billingMethod,
   cashDenominations,
   bankTransferAmount,
+  bankTransferAmounts,
   totalPrepared,
   verifiedClaims,
 }) => {
+  // Resolve partial transfers — prefer array, fall back to single value
+  const resolvedTransfers = Array.isArray(bankTransferAmounts) && bankTransferAmounts.length > 0
+    ? bankTransferAmounts.filter(v => Number(v) > 0)
+    : bankTransferAmount > 0 ? [bankTransferAmount] : [];
   const cardRef = useRef(null);
   const [copying, setCopying] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -464,24 +469,40 @@ const BillingSummaryModal = ({
               {(billingMethod === 'bank' || billingMethod === 'both') && (
                 <>
                   {billingMethod === 'both' && <Divider style={{ margin: '16px 0' }} />}
-                  <div style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '14px 18px', borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #0f2448 0%, #0e3a6e 100%)',
-                    border: '1px solid #1e5fa8',
-                  }}>
-                    <div>
-                      <div style={{ fontSize: '9px', fontWeight: 700, color: '#7dd3fc', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                        Bank Transfer
+                  {resolvedTransfers.length > 0 ? resolvedTransfers.map((amt, i) => (
+                    <div key={i} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '14px 18px', borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #0f2448 0%, #0e3a6e 100%)',
+                      border: '1px solid #1e5fa8',
+                      marginBottom: i < resolvedTransfers.length - 1 ? '8px' : '0',
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '9px', fontWeight: 700, color: '#7dd3fc', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                          Bank Transfer {resolvedTransfers.length > 1 ? `#${i + 1}` : ''}
+                        </div>
+                        <div style={{ fontSize: '8px', color: '#5ba4f5', marginTop: '2px', fontWeight: 500 }}>
+                          Electronic Settlement
+                        </div>
                       </div>
-                      <div style={{ fontSize: '8px', color: '#5ba4f5', marginTop: '2px', fontWeight: 500 }}>
-                        Electronic Settlement
-                      </div>
+                      <span style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', fontFamily: "'DM Mono', monospace" }}>
+                        ₱{fmt(amt)}
+                      </span>
                     </div>
-                    <span style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', fontFamily: "'DM Mono', monospace" }}>
-                      ₱{fmt(bankTransferAmount)}
-                    </span>
-                  </div>
+                  )) : (
+                    <div style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '14px 18px', borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #0f2448 0%, #0e3a6e 100%)',
+                      border: '1px solid #1e5fa8',
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '9px', fontWeight: 700, color: '#7dd3fc', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Bank Transfer</div>
+                        <div style={{ fontSize: '8px', color: '#5ba4f5', marginTop: '2px', fontWeight: 500 }}>Electronic Settlement</div>
+                      </div>
+                      <span style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', fontFamily: "'DM Mono', monospace" }}>₱{fmt(bankTransferAmount)}</span>
+                    </div>
+                  )}
                 </>
               )}
             </div>

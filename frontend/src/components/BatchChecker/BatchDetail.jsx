@@ -603,6 +603,8 @@ export default function BatchDetail({
         const billingMethod      = bd.method              || 'both';
         const cashDenoms         = bd.cash_denominations  || {};
         const bankAmt            = bd.bank_transfer_amount || 0;
+        // Support array of partial transfers saved from wizard
+        const bankAmts           = Array.isArray(bd.bank_transfer_amount) ? bd.bank_transfer_amount : (bd.bank_transfer_amount ? [bd.bank_transfer_amount] : []);
         const totalPrepared      = bd.total_prepared       || netAmount;
 
         return (
@@ -616,7 +618,8 @@ export default function BatchDetail({
             netAmount={netAmount}
             billingMethod={billingMethod}
             cashDenominations={cashDenoms}
-            bankTransferAmount={bankAmt}
+            bankTransferAmount={Array.isArray(bankAmt) ? bankAmts.reduce((s,v)=>s+Number(v||0),0) : bankAmt}
+            bankTransferAmounts={bankAmts}
             totalPrepared={totalPrepared}
             verifiedClaims={verifiedReceipts}
           />

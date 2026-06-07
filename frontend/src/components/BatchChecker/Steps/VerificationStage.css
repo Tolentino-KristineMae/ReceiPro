@@ -216,3 +216,119 @@
   cursor: not-allowed;
   box-shadow: none;
 }
+
+/* ─── Stats Grid ──────────────────────────────────────────────────────────── */
+.vs-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.vs-stat-card {
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid rgba(251, 146, 60, 0.15);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(67, 20, 7, 0.03);
+}
+
+.vs-stat-card.success { border-color: rgba(16, 185, 129, 0.2); background: rgba(16, 185, 129, 0.04); }
+.vs-stat-card.error   { border-color: rgba(239, 68, 68, 0.2);  background: rgba(239, 68, 68, 0.04); }
+
+.vs-stat-label {
+  font-size: 9px;
+  font-weight: 800;
+  color: rgba(67, 20, 7, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: var(--font-display);
+}
+
+.vs-stat-value {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--cw-text-main);
+  letter-spacing: -0.02em;
+  font-family: 'Space Mono', monospace;
+}
+
+.vs-stat-card.success .vs-stat-value { color: #059669; }
+.vs-stat-card.error   .vs-stat-value { color: #dc2626; }
+
+/* ─── Navigation ──────────────────────────────────────────────────────────── */
+.vs-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.vs-nav-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.vs-nav-btn {
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.vs-nav-btn.back {
+  flex: 1;
+  background: rgba(249, 115, 22, 0.08);
+  color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.25);
+}
+.vs-nav-btn.back:hover {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.4);
+}
+
+.vs-nav-btn.finalize {
+  flex: 2;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 60%, #c2410c 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.35);
+}
+.vs-nav-btn.finalize:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(249, 115, 22, 0.45);
+}
+
+.vs-nav-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vs-nav-divider {
+  flex: 1;
+  height: 1px;
+  background: rgba(251, 146, 60, 0.15);
+}
+
+.vs-nav-text {
+  font-size: 9px;
+  font-weight: 900;
+  color: rgba(67, 20, 7, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  white-space: nowrap;
+  font-family: var(--font-display);
+}
