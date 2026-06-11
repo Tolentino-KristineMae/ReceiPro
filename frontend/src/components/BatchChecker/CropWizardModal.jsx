@@ -134,9 +134,23 @@ const CSS = `
   .cw-stat-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: #431407; }
   .cw-stat-label { font-size: 9px; font-weight: 700; color: #9a3412; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
 
+  @keyframes spin { to { transform: rotate(360deg); } }
+
 `;
 
-const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'categorize' }) => {
+function summarizeVerificationFromResults(results = []) {
+  const summary = { total: results.length, confirmed: 0, matched: 0, not_found: 0, duplicate: 0 };
+  for (const row of results) {
+    const status = row.verification_status;
+    if (status === 'verified') summary.confirmed++;
+    else if (status === 'matched') summary.matched++;
+    else if (status === 'duplicate') summary.duplicate++;
+    else summary.not_found++;
+  }
+  return summary;
+}
+
+const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialPhase = 'categorize' }) => {
   // 1. Initial state
   const [phase, setPhase] = useState(initialPhase); 
   const [index, setIndex] = useState(() => {
@@ -172,6 +186,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   });
 
   const [isSavingSorting, setIsSavingSorting] = useState(false);
+  const [isSavingProgress, setIsSavingProgress] = useState(false);
+  const summaryDeductionsRef = useRef([]);
+  const summaryNetRef = useRef(0);
   const [selections, setSelections] = useState({}); // { index: { category, account } } — used in crop phase
   const [crops, setCrops] = useState({}); // { index: dataUrl }
   const [isProcessingOcr, setIsProcessingOcr] = useState(false);
@@ -181,7 +198,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   const [ocrResults, setOcrResults] = useState(null);
   const [ocrAccountFilter, setOcrAccountFilter] = useState('All'); // Filter for OCR results
   const [showOcrPreview, setShowOcrPreview] = useState(() => initialPhase === 'ocr');
-  const [showVerifyPreview, setShowVerifyPreview] = useState(() => initialPhase === 'verify');
+  const [showVerifyPreview, setShowVerifyPreview] = useState(false);
   const [finalizedBatch, setFinalizedBatch] = useState(null);
 
   // Toast notification state
@@ -226,16 +243,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   const calculatedNet = totalClaimsAmount - serviceFee - totalDeductionsAmount;
   const netAmount = (finalNetAmount > 0 && phase === 'billing') ? finalNetAmount : calculatedNet;
   
-  console.log('=== Net Amount Calculation ===');
-  console.log('Total Claims:', totalClaimsAmount);
-  console.log('Service Fee:', serviceFee);
-  console.log('Saved Deductions:', savedDeductions);
-  console.log('Total Deductions Amount:', totalDeductionsAmount);
-  console.log('Calculated Net:', calculatedNet);
-  console.log('Final Net Amount:', finalNetAmount);
-  console.log('Using Net Amount:', netAmount);
-  console.log('Phase:', phase);
-
   // Billing Calculations
   const cashTotal = Object.entries(cashDenominations).reduce((sum, [key, count]) => {
     const val = key.startsWith('c') ? Number(key.substring(1)) : Number(key);
@@ -277,10 +284,12 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     }
   }, [phase, receipts, ocrResults]);
 
-  // Initialize OCR results if jumping to verify (Keep as fallback for backend-driven verification)
+  // Initialize verification when opening directly at the verify stage
   useEffect(() => {
     if (initialPhase === 'verify' && !ocrResults && receipts.length > 0) {
       const triggerProcess = async () => {
+        setIsVerifying(true);
+        setShowVerifyPreview(false);
         try {
           const res = await fetch(getApiUrl(`/api/batches/${batchId}/process`), { 
             method: 'POST',
@@ -300,7 +309,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       };
       triggerProcess();
     }
-  }, [initialPhase, batchId]);
+  }, [initialPhase, batchId, receipts.length, ocrResults]);
 
   // Load saved deductions when entering summary or billing phase
   useEffect(() => {
@@ -523,30 +532,221 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     }
   };
 
+  const buildSortingPayload = useCallback(() => (
+    receipts.map(r => {
+      const cat = checkedForOthers.has(r.id) ? 'others' : 'gcash';
+      return {
+        id: r.id,
+        category: cat,
+        account_holder: cat === 'others' ? 'OTHERS' : null,
+      };
+    })
+  ), [receipts, checkedForOthers]);
+
+  const saveSortingProgress = useCallback(async () => {
+    const res = await fetch(getApiUrl('/api/receipts/bulk-update-category'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ receipts: buildSortingPayload() }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Failed to save sorting (HTTP ${res.status})`);
+    }
+    if (onSaved) await onSaved();
+    return true;
+  }, [buildSortingPayload, onSaved]);
+
+  const saveCropDraft = useCallback(async ({ allowEmpty = false } = {}) => {
+    if (!current) return allowEmpty;
+
+    const dataUrl = getCroppedDataUrl();
+    const payload = {};
+    if (dataUrl) payload.cropped_image = dataUrl;
+
+    if (currentCategory === 'others') {
+      const hasData = manualAmount || manualReference?.trim() || manualDate;
+      if (!hasData) {
+        if (allowEmpty) return false;
+        throw new Error('Enter amount, label, or date before saving');
+      }
+      const amt = Number(manualAmount);
+      const mData = {
+        amount: !isNaN(amt) && amt > 0 ? amt : 0,
+        reference: manualReference?.trim() || null,
+        date: manualDate || null,
+        manual: !isNaN(amt) && amt > 0,
+      };
+      if (mData.manual) payload.ocr_status = 'completed';
+      payload.ocr_data = mData;
+      if (currentAccount) payload.account_holder = currentAccount;
+      setManualEntries(prev => ({ ...prev, [index]: mData }));
+      if (currentAccount && current) {
+        setAccountEntries(prev => ({ ...prev, [current.id]: currentAccount }));
+      }
+      setSelections(prev => ({
+        ...prev,
+        [index]: { ...prev[index], category: 'others', account: currentAccount || 'OTHERS' },
+      }));
+    } else if (currentCategory === 'gcash') {
+      if (!dataUrl) {
+        if (allowEmpty) return false;
+        throw new Error('Adjust the crop area before saving');
+      }
+      if (currentAccount) payload.account_holder = currentAccount;
+    }
+
+    const response = await fetch(getApiUrl(`/api/receipts/${current.id}`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `Failed to save receipt (HTTP ${response.status})`);
+    }
+
+    if (dataUrl) setCrops(prev => ({ ...prev, [index]: dataUrl }));
+    if (onSaved) await onSaved();
+    return true;
+  }, [current, currentCategory, currentAccount, manualAmount, manualReference, manualDate, index, getCroppedDataUrl, onSaved]);
+
+  const saveCropDraftOrSkip = useCallback(
+    (options) => saveCropDraft(options).then((saved) => saved ? 'Receipt progress saved' : 'No pending crop changes'),
+    [saveCropDraft]
+  );
+
+  const saveSummaryDraft = useCallback(async (deductions, calculatedNetAmount) => {
+    const res = await fetch(getApiUrl(`/api/batches/${batchId}`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        summary_data: {
+          gross_amount: totalClaimsAmount,
+          service_fee: serviceFee,
+          deductions: deductions || [],
+          net_amount: calculatedNetAmount,
+        },
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Failed to save summary (HTTP ${res.status})`);
+    }
+    setSavedDeductions(deductions || []);
+    setFinalNetAmount(calculatedNetAmount);
+    if (onSaved) await onSaved();
+    return true;
+  }, [batchId, totalClaimsAmount, serviceFee, onSaved]);
+
+  const saveBillingDraft = useCallback(async () => {
+    const res = await fetch(getApiUrl(`/api/batches/${batchId}`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        billing_data: {
+          method: billingMethod,
+          cash_denominations: cashDenominations,
+          bank_transfer_amount: bankTransferAmounts,
+          total_prepared: billingTotal,
+        },
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Failed to save billing (HTTP ${res.status})`);
+    }
+    if (onSaved) await onSaved();
+    return true;
+  }, [batchId, billingMethod, cashDenominations, bankTransferAmounts, billingTotal, onSaved]);
+
+  const saveCurrentStageProgress = useCallback(async () => {
+    switch (phase) {
+      case 'categorize':
+        await saveSortingProgress();
+        return 'Sorting saved';
+      case 'crop':
+        return saveCropDraftOrSkip({ allowEmpty: true });
+      case 'ocr':
+      case 'verify':
+      case 'finalize':
+        return 'Progress already saved on server';
+      case 'summary':
+        await saveSummaryDraft(summaryDeductionsRef.current, summaryNetRef.current);
+        return 'Summary saved';
+      case 'billing':
+        await saveBillingDraft();
+        return 'Billing draft saved';
+      default:
+        return 'Nothing to save';
+    }
+  }, [phase, saveSortingProgress, saveCropDraftOrSkip, saveSummaryDraft, saveBillingDraft]);
+
+  const handleDeductionsChange = useCallback((deductions, calculatedNetAmount) => {
+    summaryDeductionsRef.current = deductions;
+    summaryNetRef.current = calculatedNetAmount;
+  }, []);
+
+  useEffect(() => {
+    if (phase === 'summary' || phase === 'billing') {
+      summaryDeductionsRef.current = savedDeductions;
+      summaryNetRef.current = finalNetAmount || calculatedNet;
+    }
+  }, [phase, savedDeductions, finalNetAmount, calculatedNet]);
+
+  const handleSaveProgress = useCallback(async () => {
+    if (isSavingProgress || isProcessingOcr || isVerifying || isFinalizing) return;
+    setIsSavingProgress(true);
+    try {
+      let message;
+      if (phase === 'crop') {
+        await saveCropDraft({ allowEmpty: false });
+        message = 'Receipt progress saved';
+      } else {
+        message = await saveCurrentStageProgress();
+      }
+      const isNoop = message.includes('already saved') || message.includes('No pending');
+      showToast(isNoop ? 'Up to date' : 'Progress saved', message, 'success');
+    } catch (e) {
+      console.error('Save progress failed', e);
+      showToast('Save failed', e.message, 'error', 6000);
+    } finally {
+      setIsSavingProgress(false);
+    }
+  }, [phase, isSavingProgress, isProcessingOcr, isVerifying, isFinalizing, saveCropDraft, saveCurrentStageProgress, showToast]);
+
+  const handleClose = useCallback(async () => {
+    if (isProcessingOcr || isVerifying || isFinalizing) {
+      showToast('Please wait', 'An operation is still running. Try again shortly.', 'error');
+      return;
+    }
+    setIsSavingProgress(true);
+    try {
+      const message = await saveCurrentStageProgress();
+      if (!message.includes('No pending')) {
+        showToast('Progress saved', 'Your work has been saved before closing.', 'success', 2500);
+      }
+    } catch (e) {
+      console.error('Auto-save on close failed', e);
+      const proceed = window.confirm(
+        `Could not save progress: ${e.message}\n\nClose anyway? Unsaved changes may be lost.`
+      );
+      if (!proceed) return;
+    } finally {
+      setIsSavingProgress(false);
+    }
+    await onClose?.();
+  }, [isProcessingOcr, isVerifying, isFinalizing, saveCurrentStageProgress, showToast, onClose]);
+
   // Bulk apply: save all receipts as gcash or others based on checkbox state
   const handleApplySorting = async () => {
     setIsSavingSorting(true);
     try {
-      // Prepare bulk update payload
-      const receiptsToUpdate = receipts.map(r => {
-        const cat = checkedForOthers.has(r.id) ? 'others' : 'gcash';
-        return {
-          id: r.id,
-          category: cat,
-          account_holder: cat === 'others' ? 'OTHERS' : null,
-        };
-      });
-
-      // Single bulk API call instead of multiple individual calls
-      await fetch(getApiUrl('/api/receipts/bulk-update-category'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ receipts: receiptsToUpdate }),
-      });
-
+      await saveSortingProgress();
       setSortingView('review');
+      showToast('Sorting saved', 'Categories applied successfully.', 'success');
     } catch (e) {
-      alert(`Failed to save sorting: ${e.message}. Please try again.`);
+      showToast('Save failed', e.message, 'error', 6000);
     } finally {
       setIsSavingSorting(false);
     }
@@ -597,8 +797,18 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   };
 
 
-  // Proceed from review to crop phase
-  const handleProceedToCrop = () => {
+  // Proceed from review to crop phase — always persist sorting first
+  const handleProceedToCrop = async () => {
+    setIsSavingSorting(true);
+    try {
+      await saveSortingProgress();
+    } catch (e) {
+      showToast('Save failed', `${e.message}. Sorting was not saved.`, 'error', 6000);
+      return;
+    } finally {
+      setIsSavingSorting(false);
+    }
+
     const newSelections = {};
     receipts.forEach((r, i) => {
       const cat = checkedForOthers.has(r.id) ? 'others' : 'gcash';
@@ -607,9 +817,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     setSelections(newSelections);
     setPhase('crop');
 
-    // Start at the first GCash receipt that needs cropping, then others
-    // Build a live view of the new categories so we pick the right starting index
-    const updatedLive = receipts.map((r, i) => ({
+    const updatedLive = receipts.map((r) => ({
       ...r,
       category: checkedForOthers.has(r.id) ? 'others' : 'gcash',
     }));
@@ -649,15 +857,20 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     setCrop(null);
     setCompletedCrop(null);
     
-    // Update the receipt category in the database
     try {
-      await fetch(getApiUrl(`/api/receipts/${current.id}`), {
+      const res = await fetch(getApiUrl(`/api/receipts/${current.id}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: 'others' }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `HTTP ${res.status}`);
+      }
+      if (onSaved) await onSaved();
     } catch (e) {
-      console.error('Failed to update category', e);
+      showToast('Update failed', e.message, 'error');
+      return;
     }
     
     // Automatically proceed to next GCash receipt (skip this one, will see it later in Others section)
@@ -713,15 +926,20 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
     setManualReference('');
     setManualDate(new Date().toISOString().split('T')[0]);
     
-    // Update the receipt category in the database
     try {
-      await fetch(getApiUrl(`/api/receipts/${current.id}`), {
+      const res = await fetch(getApiUrl(`/api/receipts/${current.id}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: 'gcash' }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `HTTP ${res.status}`);
+      }
+      if (onSaved) await onSaved();
     } catch (e) {
-      console.error('Failed to update category', e);
+      showToast('Update failed', e.message, 'error');
+      return;
     }
     
     // Automatically proceed to next Others receipt (skip this one, will see it later in GCash section)
@@ -864,11 +1082,13 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       });
       
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || `HTTP ${response.status}`);
       }
+      if (onSaved) await onSaved();
     } catch (e) {
       console.error('Failed to save Stage 3 data to DB', e);
-      alert(`Failed to save progress: ${e.message}. Please check your connection.`);
+      showToast('Save failed', e.message, 'error', 6000);
       return;
     }
     
@@ -877,41 +1097,53 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
       console.log('Re-cropping detected, running OCR extraction for receipt:', current.id);
       
       try {
-        // Show loading state
         setIsProcessingOcr(true);
         
-        // Create worker for single receipt
         const worker = await createWorker('eng', 1, {
           logger: m => console.log(m),
         });
-        
-        // Run OCR on the new crop
-        const bitmap = await new Promise((resolve, reject) => {
+
+        const loadCanvas = (src) => new Promise((resolve, reject) => {
           const img = new Image();
           img.crossOrigin = 'anonymous';
-          const timeout = setTimeout(() => {
-            img.src = '';
-            reject(new Error(`Image load timeout for receipt #${current.id}`));
-          }, 15000);
+          const timeout = setTimeout(() => { img.src = ''; reject(new Error(`Timeout: receipt #${current.id}`)); }, 15000);
           img.onload = () => {
             clearTimeout(timeout);
             const canvas = document.createElement('canvas');
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
+            canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
             canvas.getContext('2d').drawImage(img, 0, 0);
             resolve(canvas);
           };
-          img.onerror = () => {
-            clearTimeout(timeout);
-            reject(new Error(`Failed to load image for receipt #${current.id}`));
-          };
-          img.src = dataUrl;
+          img.onerror = () => { clearTimeout(timeout); reject(new Error(`Load failed: receipt #${current.id}`)); };
+          img.src = src;
         });
 
-        const { data: { text } } = await worker.recognize(bitmap);
-        const extracted = extractFields(text);
+        // OCR the crop for amount/reference
+        const cropCanvas = await loadCanvas(dataUrl);
+        const { data: { text: cropText } } = await worker.recognize(cropCanvas);
+        const extracted = extractFields(cropText);
 
-        // Update the receipt with new OCR data
+        // OCR the full original image for phone/account detection
+        const knownAccount = accountEntries[current.id] || currentAccount;
+        let detectedAccount = extracted.account_holder || knownAccount || null;
+
+        if (!detectedAccount || detectedAccount === 'Unknown' || detectedAccount === 'OTHERS') {
+          try {
+            const fullCanvas = await loadCanvas(getApiUrl(`/api/receipts/${current.id}/image`));
+            const { data: { text: fullText } } = await worker.recognize(fullCanvas);
+            const phoneAccount = detectAccountFromPhone(fullText);
+            if (phoneAccount) detectedAccount = phoneAccount;
+            if (!extracted.amount || !extracted.reference) {
+              const fullExtracted = extractFields(fullText);
+              if (!extracted.amount && fullExtracted.amount) extracted.amount = fullExtracted.amount;
+              if (!extracted.reference && fullExtracted.reference) extracted.reference = fullExtracted.reference;
+              if (!extracted.date && fullExtracted.date) extracted.date = fullExtracted.date;
+            }
+          } catch (e) {
+            console.warn(`Full-image scan failed for re-crop #${current.id}:`, e.message);
+          }
+        }
+
         const patchRes = await fetch(getApiUrl(`/api/receipts/${current.id}`), {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -921,10 +1153,10 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               amount: extracted.amount || 0,
               reference: extracted.reference || null,
               date: extracted.date || null,
-              raw_text: text,
+              raw_text: cropText,
               confidence: 99
             },
-            ...(extracted.account_holder ? { account_holder: extracted.account_holder } : {}),
+            account_holder: detectedAccount || null,
           }),
         });
 
@@ -932,7 +1164,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
         const updatedReceipt = await patchRes.json();
         
-        // Update the ocrResults array with the new data
         setOcrResults(prevResults => {
           const newResults = [...prevResults];
           const resultIndex = newResults.findIndex(r => r.receipt?.id === current.id);
@@ -944,7 +1175,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               date: extracted.date || null,
               confidence: 99,
               manualEntry: false,
-              account_holder: extracted.account_holder || updatedReceipt.account_holder,
+              account_holder: detectedAccount || updatedReceipt.account_holder,
             };
           }
           return newResults;
@@ -952,24 +1183,19 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
         await worker.terminate();
         setIsProcessingOcr(false);
-        
-        // Go back to extraction results
         setPhase('ocr');
         setShowOcrPreview(true);
         
         showToast(
           'Re-extraction complete!',
-          `Amount: ₱${extracted.amount || 0}  ·  Reference: ${extracted.reference || 'N/A'}`,
+          `Amount: ₱${extracted.amount || 0}  ·  Ref: ${extracted.reference || 'N/A'}  ·  Account: ${detectedAccount || 'Unknown'}`,
           'success'
         );
-        
-        return; // Exit early, don't proceed to next receipt
+        return;
       } catch (e) {
         console.error('Re-extraction failed:', e);
-        alert(`Re-extraction failed: ${e.message}. The crop was saved but OCR failed.`);
+        showToast('Re-extraction failed', e.message, 'error', 6000);
         setIsProcessingOcr(false);
-        
-        // Go back to extraction results anyway
         setPhase('ocr');
         setShowOcrPreview(true);
         return;
@@ -1020,6 +1246,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
   const startVerifyPhase = async () => {
     setPhase('verify');
     setShowOcrPreview(false);
+    setShowVerifyPreview(false);
     setIsVerifying(true);
     
     try {
@@ -1059,11 +1286,15 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
         const err = await response.json().catch(() => ({}));
         throw new Error(err.message || `Server error ${response.status}`);
       }
-      setOcrResults(prev => prev.map(r =>
-        r.receipt?.id === receiptId
-          ? { ...r, verification_status: 'verified', reference: tx.reference || tx.label, amount: tx.amount, match_details: { bank: tx.source_type || 'Database' } }
-          : r
-      ));
+      setOcrResults(prev => {
+        const next = prev.map(r =>
+          r.receipt?.id === receiptId
+            ? { ...r, verification_status: 'verified', reference: tx.reference || tx.label, amount: tx.amount, match_details: { bank: tx.source_type || 'Database' } }
+            : r
+        );
+        setVerificationSummary(summarizeVerificationFromResults(next));
+        return next;
+      });
       showToast('Transaction confirmed!', `Ref: ${tx.reference || tx.label}`, 'success');
       return true;
     } catch (e) {
@@ -1155,7 +1386,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
           continue;
         }
 
-        // Use the saved cropped image or the original
+        // Use the saved cropped image or the original for amount/reference extraction
         let imageSrc = crops[i];
         if (!imageSrc) {
           imageSrc = r.cropped_image
@@ -1163,9 +1394,14 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
             : getApiUrl(`/api/receipts/${r.id}/image`);
         }
 
+        // Always also load the FULL original image for account holder detection —
+        // the phone number is at the bottom of a GCash receipt and gets cut off by the crop.
+        const fullImageSrc = getApiUrl(`/api/receipts/${r.id}/image`);
+
         // ─── Per-receipt try/catch so one failure doesn't kill the batch ───
         try {
-          const bitmap = await new Promise((resolve, reject) => {
+          // Load both crop (for amount/ref) and full image (for phone/account) in parallel
+          const loadCanvas = (src) => new Promise((resolve, reject) => {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             const timeout = setTimeout(() => {
@@ -1184,15 +1420,41 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               clearTimeout(timeout);
               reject(new Error(`Failed to load image for receipt #${r.id}`));
             };
-            img.src = imageSrc;
+            img.src = src;
           });
 
-          const { data: { text } } = await worker.recognize(bitmap);
-          const extracted = extractFields(text);
+          // Run OCR on crop first (fast, financial data)
+          const cropCanvas = await loadCanvas(imageSrc);
+          const { data: { text: cropText } } = await worker.recognize(cropCanvas);
+          const extracted = extractFields(cropText);
+
+          // Run OCR on full image to detect phone number / account holder
+          // Only do this if account not already known from crop or manual selection
+          const knownAccount = accountEntries[r.id] || r.account_holder;
+          let detectedAccount = extracted.account_holder || knownAccount || null;
+
+          if (!detectedAccount || detectedAccount === 'Unknown' || detectedAccount === 'OTHERS') {
+            try {
+              const fullCanvas = await loadCanvas(fullImageSrc);
+              const { data: { text: fullText } } = await worker.recognize(fullCanvas);
+              // Try phone detection on full text
+              const phoneAccount = detectAccountFromPhone(fullText);
+              if (phoneAccount) detectedAccount = phoneAccount;
+              // Also try field extraction from full image as fallback for amount/ref
+              if (!extracted.amount || !extracted.reference) {
+                const fullExtracted = extractFields(fullText);
+                if (!extracted.amount && fullExtracted.amount) extracted.amount = fullExtracted.amount;
+                if (!extracted.reference && fullExtracted.reference) extracted.reference = fullExtracted.reference;
+                if (!extracted.date && fullExtracted.date) extracted.date = fullExtracted.date;
+              }
+            } catch (fullErr) {
+              console.warn(`Full-image OCR failed for receipt #${r.id} (non-fatal):`, fullErr.message);
+            }
+          }
 
           // Validate extracted data — warn but don't block
           if (!extracted.amount && !extracted.reference) {
-            console.warn(`Receipt #${r.id}: OCR found no amount or reference. Raw text: ${text.substring(0, 100)}`);
+            console.warn(`Receipt #${r.id}: OCR found no amount or reference. Crop text: ${cropText.substring(0, 100)}`);
           }
 
           const patchRes = await fetch(getApiUrl(`/api/receipts/${r.id}`), {
@@ -1204,11 +1466,11 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                 amount: extracted.amount || 0,
                 reference: extracted.reference || null,
                 date: extracted.date || null,
-                raw_text: text,
+                raw_text: cropText,
                 confidence: 99
               },
-              // Auto-assign account_holder if phone number detected
-              ...(extracted.account_holder ? { account_holder: extracted.account_holder } : {}),
+              // Always write account_holder: use detected, then known, never leave null for gcash
+              account_holder: detectedAccount || null,
             }),
           });
 
@@ -1222,7 +1484,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
             date: extracted.date || null,
             confidence: 99,
             manualEntry: false,
-            account_holder: extracted.account_holder || updatedReceipt.account_holder,
+            account_holder: detectedAccount || updatedReceipt.account_holder,
           });
         } catch (receiptErr) {
           console.error(`OCR failed for receipt #${r.id}:`, receiptErr);
@@ -1662,7 +1924,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               </div>
             )}
           </div>
-          <button className="cw-close" onClick={onClose}>✕</button>
+          <div style={{ position: 'absolute', right: '40px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button className="cw-close" onClick={handleClose} style={{ position: 'static' }}>✕</button>
+          </div>
         </div>
 
         {/* Progress */}
@@ -1692,10 +1956,11 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   setCheckedForOthers={setCheckedForOthers}
                   sortingView={sortingView}
                   setSortingView={setSortingView}
-                  isSavingSorting={isSavingSorting}
+                  isSavingSorting={isSavingSorting || isSavingProgress}
                   onApply={handleApplySorting}
                   onProceed={handleProceedToCrop}
                   onReceiptClick={handleReceiptClick}
+                  onSave={handleSaveProgress}
                 />
               )}
               {/* Phase 3 Preview */}
@@ -2002,6 +2267,13 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                             </span>
                           </div>
                         )}
+                        {(verificationSummary?.duplicate ?? 0) > 0 && (
+                          <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.25)' }}>
+                            <span style={{ color: '#7c3aed', fontSize: '11px', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>
+                              {verificationSummary.duplicate} Already Claimed
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <p style={{ color: 'rgba(67,20,7,0.55)', fontSize: '13px', fontWeight: 500, fontFamily: "'Space Grotesk', sans-serif", margin: 0 }}>
@@ -2223,6 +2495,13 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                           <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
                             <span style={{ color: '#dc2626', fontSize: '11px', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>
                               {verificationSummary.not_found} Not Found
+                            </span>
+                          </div>
+                        )}
+                        {(verificationSummary?.duplicate ?? 0) > 0 && (
+                          <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.25)' }}>
+                            <span style={{ color: '#7c3aed', fontSize: '11px', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>
+                              {verificationSummary.duplicate} Already Claimed
                             </span>
                           </div>
                         )}
@@ -2508,6 +2787,8 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
               ACCOUNTS={ACCOUNTS}
               onPrev={handlePrev}
               onNext={handleNextCrop}
+              onSave={handleSaveProgress}
+              isSaving={isSavingProgress}
               onRecategorize={() => {
                 setPhase('categorize');
                 setIndex(0);
@@ -2787,6 +3068,21 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   setManualDeduction={setManualDeduction}
                   netAmount={netAmount}
                   savedDeductions={savedDeductions}
+                  onDeductionsChange={handleDeductionsChange}
+                  onSave={async (deductions, calculatedNetAmount) => {
+                    summaryDeductionsRef.current = deductions;
+                    summaryNetRef.current = calculatedNetAmount;
+                    setIsSavingProgress(true);
+                    try {
+                      await saveSummaryDraft(deductions, calculatedNetAmount);
+                      showToast('Summary saved', 'Deductions and net amount saved.', 'success');
+                    } catch (e) {
+                      showToast('Save failed', e.message, 'error', 6000);
+                    } finally {
+                      setIsSavingProgress(false);
+                    }
+                  }}
+                  isSaving={isSavingProgress}
                   onProceed={async (deductions, calculatedNetAmount) => {
                     // Store the calculated net amount for use in billing stage
                     setFinalNetAmount(calculatedNetAmount);
@@ -2980,66 +3276,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   )}
                 </div>
 
-                {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button
-                    onClick={() => setPhase('summary')}
-                    style={{
-                      flexShrink: 0, padding: '14px 16px', borderRadius: '14px', border: '1.5px solid rgba(249,115,22,0.3)', cursor: 'pointer',
-                      background: '#fff', color: '#f97316', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em',
-                      fontFamily: "'Space Grotesk', sans-serif",
-                      transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                      whiteSpace: 'nowrap'
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(249,115,22,0.05)'; e.currentTarget.style.borderColor = 'rgba(249,115,22,0.5)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)'; }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-                    </svg>
-                    Back to Summary
-                  </button>
-                  <button
-                    disabled={!isBillingBalanced}
-                    onClick={async () => {
-                      try {
-                        const res = await fetch(getApiUrl(`/api/batches/${batchId}/status`), {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            checker_status: 'billing_ready',
-                            summary_data: { gross_amount: totalClaimsAmount, service_fee: serviceFee, deductions: savedDeductions, net_amount: finalNetAmount || netAmount },
-                            billing_data: { method: billingMethod, cash_denominations: cashDenominations, bank_transfer_amount: bankTransferAmounts, total_prepared: billingTotal }
-                          }),
-                        });
-                        if (!res.ok) throw new Error(`Server error ${res.status}`);
-                        const batchData = await res.json();
-                        setSavedBatchInfo(batchData);
-                        setShowBillingSummaryModal(true);
-                      } catch (e) {
-                        console.error('Billing save failed', e);
-                        alert(`Failed to save billing: ${e.message}. Please try again.`);
-                      }
-                    }}
-                    style={{
-                      flex: 1, padding: '14px 16px', borderRadius: '14px', border: 'none', cursor: isBillingBalanced ? 'pointer' : 'not-allowed',
-                      background: isBillingBalanced ? 'linear-gradient(135deg, #f97316 0%, #ea580c 60%, #c2410c 100%)' : '#fed7aa',
-                      color: '#fff', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em',
-                      fontFamily: "'Space Grotesk', sans-serif",
-                      boxShadow: isBillingBalanced ? '0 6px 20px rgba(249,115,22,0.4)' : 'none',
-                      transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                      whiteSpace: 'nowrap'
-                    }}
-                    onMouseEnter={(e) => { if (isBillingBalanced) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(249,115,22,0.5)'; }}}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = isBillingBalanced ? '0 6px 20px rgba(249,115,22,0.4)' : 'none'; }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>
-                    Finish & Confirm
-                  </button>
-                </div>
-
                 {/* Unallocated warning */}
                 {!isBillingBalanced && (
                   <div style={{ textAlign: 'center', padding: '10px 14px', borderRadius: '10px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
@@ -3052,6 +3288,72 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
                   </div>
                 )}
 
+                {/* Action Buttons — top row: Back to Summary only (auto-save on close/navigate) */}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => setPhase('summary')}
+                    style={{
+                      flex: 1, padding: '13px 16px', borderRadius: '14px', border: '1.5px solid rgba(249,115,22,0.3)',
+                      cursor: 'pointer',
+                      background: '#fff', color: '#f97316', fontSize: '11px', fontWeight: 900,
+                      textTransform: 'uppercase', letterSpacing: '0.1em',
+                      fontFamily: "'Space Grotesk', sans-serif",
+                      transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(249,115,22,0.05)'; e.currentTarget.style.borderColor = 'rgba(249,115,22,0.5)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)'; }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+                    </svg>
+                    Back to Summary
+                  </button>
+                </div>
+
+                {/* Action Buttons — bottom row: Finish & Confirm (full width) */}
+                <button
+                  disabled={!isBillingBalanced}
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(getApiUrl(`/api/batches/${batchId}/status`), {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          checker_status: 'billing_ready',
+                          summary_data: { gross_amount: totalClaimsAmount, service_fee: serviceFee, deductions: savedDeductions, net_amount: finalNetAmount || netAmount },
+                          billing_data: { method: billingMethod, cash_denominations: cashDenominations, bank_transfer_amount: bankTransferAmounts, total_prepared: billingTotal }
+                        }),
+                      });
+                      if (!res.ok) throw new Error(`Server error ${res.status}`);
+                      const batchData = await res.json();
+                      setSavedBatchInfo(batchData);
+                      setShowBillingSummaryModal(true);
+                    } catch (e) {
+                      console.error('Billing save failed', e);
+                      showToast('Save failed', e.message, 'error', 6000);
+                    }
+                  }}
+                  style={{
+                    width: '100%', padding: '15px 20px', borderRadius: '14px', border: 'none',
+                    cursor: isBillingBalanced ? 'pointer' : 'not-allowed',
+                    background: isBillingBalanced
+                      ? 'linear-gradient(135deg, #f97316 0%, #ea580c 60%, #c2410c 100%)'
+                      : 'rgba(251,146,60,0.35)',
+                    color: '#fff', fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.12em',
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    boxShadow: isBillingBalanced ? '0 6px 20px rgba(249,115,22,0.4)' : 'none',
+                    transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  }}
+                  onMouseEnter={(e) => { if (isBillingBalanced) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(249,115,22,0.5)'; } }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = isBillingBalanced ? '0 6px 20px rgba(249,115,22,0.4)' : 'none'; }}
+                  onMouseDown={(e) => { if (isBillingBalanced) e.currentTarget.style.transform = 'translateY(0)'; }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  Finish & Confirm
+                </button>
+
               </div>
             )}
           </div>
@@ -3062,12 +3364,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
 
     {/* Billing Summary Modal */}
     {showBillingSummaryModal && (
-      <>
-        {console.log('=== Opening BillingSummaryModal ===')}
-        {console.log('savedBatchInfo:', savedBatchInfo)}
-        {console.log('savedBatchInfo?.summary_data:', savedBatchInfo?.summary_data)}
-        {console.log('savedBatchInfo?.summary_data?.deductions:', savedBatchInfo?.summary_data?.deductions)}
-        {console.log('savedDeductions state:', savedDeductions)}
         <BillingSummaryModal
           onClose={() => {
             setShowBillingSummaryModal(false);
@@ -3091,7 +3387,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, initialPhase = 'c
             source_label: r.receipt?.source_label || r.source_label,
           }))}
         />
-      </>
     )}
     </>
   );
@@ -3105,13 +3400,37 @@ const PHONE_ACCOUNT_MAP = {
 };
 
 function detectAccountFromPhone(text) {
-  // Normalize: remove spaces, dashes, dots, parens
-  const flat = text.replace(/[\s\-().+]/g, '');
+  // Normalize the full OCR text: strip all non-digit characters
+  // OCR often inserts spaces, reads 0 as O, 6 as G, 1 as I/l, 8 as B, etc.
+  const ocrNorm = (str) =>
+    str
+      .toUpperCase()
+      .replace(/O/g, '0')
+      .replace(/[IL|]/g, '1')
+      .replace(/G/g, '6')
+      .replace(/B/g, '8')
+      .replace(/S/g, '5')
+      .replace(/[^0-9]/g, '');
+
+  const flatRaw   = text.replace(/\D/g, '');               // digits only, raw
+  const flatNorm  = ocrNorm(text);                          // digits only, OCR-corrected
+
   for (const [phone, account] of Object.entries(PHONE_ACCOUNT_MAP)) {
-    // Match the 12-digit number directly or with leading +63 / 0 variants
-    const local = '0' + phone.slice(2); // 09166319253
-    if (flat.includes(phone) || flat.includes(local)) {
-      return account;
+    const local = '0' + phone.slice(2);   // 09166319253
+    const short = phone.slice(2);         // 9166319253 (10 digits, drop country code)
+
+    // Try both the raw text and the OCR-normalised text
+    for (const flat of [flatRaw, flatNorm]) {
+      // Exact full number match (12-digit +63 or 11-digit 0...)
+      if (flat.includes(phone) || flat.includes(local)) return account;
+
+      // 10-digit body (no leading 0 or +63)
+      if (flat.includes(short)) return account;
+
+      // Last 8 digits fuzzy match — tolerates 1-2 OCR errors at the start
+      const tail8 = phone.slice(-8);
+      const tail7 = phone.slice(-7);
+      if (flat.includes(tail8) || flat.includes(tail7)) return account;
     }
   }
   return null;

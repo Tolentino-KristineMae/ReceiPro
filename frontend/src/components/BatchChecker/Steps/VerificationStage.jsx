@@ -13,6 +13,7 @@ export default function VerificationStage({
   const matchedCount = verificationSummary?.matched ?? 0;
   const totalCount = verificationSummary?.total ?? ocrResults?.length ?? 0;
   const notFoundCount = verificationSummary?.not_found ?? 0;
+  const duplicateCount = verificationSummary?.duplicate ?? 0;
 
   return (
     <div className="vs-root">
@@ -66,6 +67,12 @@ export default function VerificationStage({
             <div className="vs-stat-label">Missing</div>
             <div className="vs-stat-value">{notFoundCount}</div>
           </div>
+          {duplicateCount > 0 && (
+            <div className="vs-stat-card" style={{ borderColor: 'rgba(124,58,237,0.25)' }}>
+              <div className="vs-stat-label">Claimed</div>
+              <div className="vs-stat-value">{duplicateCount}</div>
+            </div>
+          )}
         </div>
       )}
 

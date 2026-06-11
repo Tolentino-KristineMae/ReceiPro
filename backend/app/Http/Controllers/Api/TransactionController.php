@@ -198,6 +198,7 @@ class TransactionController extends Controller
             $row = $transaction->toArray();
             $row['running_balance'] = round($running, 2);
             $row['batch_label'] = $transaction->batch?->final_batch_number;
+            $row['batch_name'] = $transaction->batch?->name;
             $row['display_label'] = $transaction->entry_type === 'debit'
                 ? ($transaction->label ?: 'Deduction')
                 : ($transaction->batch?->final_batch_number ?: '—');

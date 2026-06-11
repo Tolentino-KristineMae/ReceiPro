@@ -11,7 +11,8 @@ export default function SortingStage({
   isSavingSorting,
   onApply,
   onProceed,
-  onReceiptClick, // New prop for handling receipt card clicks
+  onReceiptClick,
+  onSave,
 }) {
   const [focusedColumn, setFocusedColumn] = useState(null); // null, 'gcash', or 'others'
   const [draggedReceipt, setDraggedReceipt] = useState(null);
@@ -135,18 +136,30 @@ export default function SortingStage({
           </div>
         </div>
 
-        {/* Apply */}
-        <button
-          className="ss-apply-btn"
-          onClick={onApply}
-          disabled={isSavingSorting}
-        >
-          {isSavingSorting ? (
-            <><span className="ss-spinner" /> Saving…</>
-          ) : (
-            <>Apply Sorting</>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {onSave && (
+            <button
+              className="ss-apply-btn"
+              style={{ flex: 1, background: '#fff', color: '#059669', border: '1.5px solid rgba(16,185,129,0.35)' }}
+              onClick={onSave}
+              disabled={isSavingSorting}
+            >
+              {isSavingSorting ? <><span className="ss-spinner" /> Saving…</> : <>💾 Save Progress</>}
+            </button>
           )}
-        </button>
+          <button
+            className="ss-apply-btn"
+            style={{ flex: 2 }}
+            onClick={onApply}
+            disabled={isSavingSorting}
+          >
+            {isSavingSorting ? (
+              <><span className="ss-spinner" /> Saving…</>
+            ) : (
+              <>Apply Sorting</>
+            )}
+          </button>
+        </div>
       </div>
     );
   }
@@ -299,10 +312,26 @@ export default function SortingStage({
         </div>
       </div>
 
-      {/* Proceed */}
-      <button className="ss-proceed-btn" onClick={onProceed}>
-        Confirm Sorting & Proceed to Cropping
-      </button>
+      <div style={{ display: 'flex', gap: '10px' }}>
+        {onSave && (
+          <button
+            className="ss-proceed-btn"
+            style={{ flex: 1, background: '#fff', color: '#059669', border: '1.5px solid rgba(16,185,129,0.35)' }}
+            onClick={onSave}
+            disabled={isSavingSorting}
+          >
+            {isSavingSorting ? <><span className="ss-spinner" /> Saving…</> : <>💾 Save</>}
+          </button>
+        )}
+        <button
+          className="ss-proceed-btn"
+          style={{ flex: 2 }}
+          onClick={onProceed}
+          disabled={isSavingSorting}
+        >
+          {isSavingSorting ? <><span className="ss-spinner" /> Saving…</> : <>Confirm & Proceed to Cropping</>}
+        </button>
+      </div>
     </div>
   );
 }

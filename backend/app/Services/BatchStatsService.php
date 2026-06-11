@@ -7,6 +7,9 @@ use Illuminate\Support\Collection;
 
 class BatchStatsService
 {
+    public function __construct(private BatchSyncService $syncService)
+    {
+    }
     public function parseOcrData($data): ?array
     {
         if (!$data) {
@@ -126,10 +129,16 @@ class BatchStatsService
             ->filter(fn ($r) => strtolower((string) $r->match_status) === 'verified' && $r->transaction_id)
             ->map(function ($r) {
                 $ocr = $this->parseOcrData($r->ocr_data) ?? [];
+                $txAmount = $r->relationLoaded('transaction') && $r->transaction
+                    ? (float) $r->transaction->amount
+                    : null;
+
                 return [
+                    'receipt_id'     => $r->id,
+                    'transaction_id' => $r->transaction_id,
                     'account_holder' => $r->account_holder,
-                    'amount'         => (float) ($ocr['amount'] ?? 0),
-                    'reference'      => $ocr['reference'] ?? null,
+                    'amount'         => $txAmount ?? (float) ($ocr['amount'] ?? 0),
+                    'reference'      => $ocr['reference'] ?? ($r->transaction->reference ?? null),
                     'source_label'   => $r->source_label,
                 ];
             })
@@ -204,10 +213,19 @@ class BatchStatsService
 
     public function enrichBatch(Batch $batch): Batch
     {
+        $repair = $this->syncService->repairBatch($batch);
+        if ($repair['fixed_receipts'] > 0 || $repair['unlinked_transactions'] > 0) {
+            $batch->load(['receipts' => function ($query) {
+                $query->orderBy('created_at', 'asc')->with('transaction');
+            }]);
+        }
+
         $batch->setAttribute('stats', $this->calculateStats($batch));
         $batch->setAttribute('progress', $this->getOverallProgress($batch));
         $batch->setAttribute('verified_claims', $this->getVerifiedClaims($batch));
+        $batch->setAttribute('linked_transactions', $this->syncService->getLinkedTransactions($batch));
         $batch->setAttribute('verification_summary', $this->summarizeBatchReceipts($batch));
+        $batch->setAttribute('sync_repair', $repair);
         return $batch;
     }
 }

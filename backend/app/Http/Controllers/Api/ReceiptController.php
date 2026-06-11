@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Receipt;
 use App\Models\Batch;
+use App\Models\Transaction;
 use App\Jobs\ProcessReceiptOcr;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -74,11 +75,24 @@ class ReceiptController extends Controller
 
     public function destroy(Receipt $receipt)
     {
-        // Delete the stored file as well
+        if ($receipt->cropped_image) {
+            Storage::disk('public')->delete($receipt->cropped_image);
+        }
+
         $path = storage_path('app/public/' . $receipt->file_path);
         if (file_exists($path)) {
             unlink($path);
         }
+
+        if ($receipt->transaction_id) {
+            Transaction::where('id', $receipt->transaction_id)
+                ->where(function ($query) use ($receipt) {
+                    $query->where('batch_id', $receipt->batch_id)
+                        ->orWhereNull('batch_id');
+                })
+                ->update(['batch_id' => null, 'status' => 'pending']);
+        }
+
         $receipt->delete();
         return response()->json(['message' => 'Deleted']);
     }

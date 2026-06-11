@@ -49,6 +49,7 @@ export default function BatchDetail({
   filteredReceipts, 
   handleDeleteBatch, 
   handleDeleteReceipt,
+  handleResetBatch,
   handleAddUpload,
   handleRunExtraction,
   handleRunFinalCheck, 
@@ -71,6 +72,10 @@ export default function BatchDetail({
   }
 
   const stats = batch.stats || defaultBatchStats();
+
+  const hasStatusWithoutClaims =
+    ['finalized', 'summarized', 'billing_ready'].includes(batch.checker_status) &&
+    (batch.verified_claims?.length || 0) === 0;
 
   // Define stages logic based on user workflow
   const stages = [
@@ -140,6 +145,16 @@ export default function BatchDetail({
 
       {/* Stage Progress */}
       <div className="glass-card" style={{ padding: '1.5rem 2rem' }}>
+        {hasStatusWithoutClaims && (
+          <div style={{
+            marginBottom: '1rem', padding: '0.85rem 1rem', borderRadius: '12px',
+            background: 'rgba(234,88,12,0.08)', border: '1px solid rgba(234,88,12,0.25)',
+            color: '#ea580c', fontSize: '12px', fontWeight: 700, lineHeight: 1.5,
+          }}>
+            This batch is marked as {batch.checker_status.replace('_', ' ')} but has no verified claims linked to receipts.
+            Transaction ledger entries may not match. Use Reset to clear and re-process, or re-run verification to re-link claims.
+          </div>
+        )}
         <div className="stages-wrap">
           <div className="stages-line">
             <div className="stages-line-fill" style={{ width: `${lineFillWidth}%` }} />
@@ -178,6 +193,11 @@ export default function BatchDetail({
           <div>
             <div className="section-label">Batch Details</div>
             <h2 className="h2-modern" style={{ fontSize: '2.5rem' }}>{batch.name}</h2>
+            {batch.final_batch_number && (
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 700, marginTop: '0.25rem' }}>
+                Ledger ID: {batch.final_batch_number}
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
             <input
@@ -196,19 +216,10 @@ export default function BatchDetail({
             </button>
 
             {/* Reset Batch — clear all checker progress */}
-            {batch.checker_status && (
+            {batch.receipts?.length > 0 && (
               <button
                 title="Reset Batch — clears all verification, transactions links, and receipt data"
-                onClick={async () => {
-                  if (!window.confirm('Reset this batch? This will unlink all claimed transactions, clear all receipt OCR data, and reset the batch back to its initial state. This cannot be undone.')) return;
-                  try {
-                    const res = await fetch(getApiUrl(`/api/batches/${batch.id}/reset`), { method: 'POST' });
-                    if (!res.ok) throw new Error(`Server error ${res.status}`);
-                    window.location.reload();
-                  } catch (e) {
-                    alert(`Reset failed: ${e.message}`);
-                  }
-                }}
+                onClick={handleResetBatch}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px',
                   padding: '0 14px', height: '40px', borderRadius: '12px',
@@ -693,8 +704,9 @@ function ReceiptCard({ receipt, parseOCRData, onDelete, isBillingDone }) {
 
   const status = getStatus();
   const ocr = parseOCRData(receipt.ocr_data);
-  const amount = ocr?.amount 
-    ? `₱${Number(ocr.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
+  const rawAmount = receipt.transaction?.amount ?? ocr?.amount;
+  const amount = rawAmount
+    ? `₱${Number(rawAmount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
     : '₱0.00';
 
   return (

@@ -25,6 +25,7 @@ export default function BatchCheckerPage() {
   const [error, setError] = useState(null);
 
   const fileInputRef = useRef(null);
+  const pollInFlightRef = useRef(false);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -38,38 +39,45 @@ export default function BatchCheckerPage() {
 
   useEffect(() => { fetchBatches(); }, []);
 
-  // Polling for real-time updates when a batch is active or processing
+  // Poll only while uploads/OCR/checks are actively running — not on every batch detail view.
   useEffect(() => {
-    let interval;
-    // Check if any batch is in an active state that needs polling
-    const hasActiveBatches = batches.some(b => 
-      b.checker_status === 'processing' || 
+    const hasActiveBatches = batches.some(b =>
+      b.checker_status === 'processing' ||
       b.receipts?.some(r => r.ocr_status === 'processing' || r.ocr_status === 'uploading')
     );
+    const shouldPoll = isRunningCheck || isCreating || hasActiveBatches;
+    if (!shouldPoll) return undefined;
 
-    if ((batchId || isRunningCheck || isCreating || hasActiveBatches) && !isCreating) {
-      interval = setInterval(() => {
-        if (!batchId) {
-          // Dashboard view - fetch all batches
-          fetchBatches(true);
+    const poll = async () => {
+      if (pollInFlightRef.current) return;
+      pollInFlightRef.current = true;
+      try {
+        if (batchId) {
+          const res = await fetch(getApiUrl(`/api/batches/${batchId}?t=${Date.now()}`), { cache: 'no-store' });
+          if (res.status === 429) return;
+          if (!res.ok) return;
+          const batch = await res.json();
+          setBatches(prev => prev.map(b => b.id === batch.id ? batch : b));
+          setSelectedBatch(batch);
         } else {
-          // Batch detail view - fetch only this specific batch to avoid losing receipts
-          fetch(getApiUrl(`/api/batches/${batchId}?t=${Date.now()}`), { cache: 'no-store' })
-            .then(r => r.json())
-            .then(batch => {
-              setBatches(prev => prev.map(b => b.id === batch.id ? batch : b));
-              setSelectedBatch(batch);
-            })
-            .catch(console.error);
+          await fetchBatches(true);
         }
-      }, 3000);
-    }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        pollInFlightRef.current = false;
+      }
+    };
+
+    const interval = setInterval(poll, 8000);
     return () => clearInterval(interval);
-  }, [batchId, isRunningCheck, isCreating, batches.length]); // Use length as a simple trigger
+  }, [batchId, isRunningCheck, isCreating, batches]);
 
   const fetchBatches = async (silent = false) => {
     try {
       const res = await fetch(getApiUrl(`/api/batches?t=${Date.now()}`), { cache: 'no-store' });
+      if (res.status === 429) return;
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setBatches(Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []));
       if (data?.dashboard) setDashboard(data.dashboard);
@@ -83,6 +91,7 @@ export default function BatchCheckerPage() {
   const fetchSelectedBatch = async (id, receiptFilter = filter) => {
     const query = receiptFilter && receiptFilter !== 'all' ? `?filter=${receiptFilter}&t=${Date.now()}` : `?t=${Date.now()}`;
     const res = await fetch(getApiUrl(`/api/batches/${id}${query}`), { cache: 'no-store' });
+    if (res.status === 429) throw new Error('Too many requests — please wait a moment');
     if (!res.ok) throw new Error(`Failed to fetch batch ${id}`);
     return res.json();
   };
@@ -246,13 +255,36 @@ export default function BatchCheckerPage() {
     }
   };
 
+  const handleResetBatch = async () => {
+    if (!selectedBatch) return;
+    if (!window.confirm('Reset this batch? This will unlink all claimed transactions, clear all receipt OCR data, and reset the batch back to its initial state. This cannot be undone.')) return;
+
+    try {
+      const res = await fetch(getApiUrl(`/api/batches/${selectedBatch.id}/reset`), { method: 'POST' });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+
+      setShowProcessor(false);
+      setWizardReceipts([]);
+      await fetchBatches(true);
+      const batch = await fetchSelectedBatch(selectedBatch.id, filter);
+      setSelectedBatch(batch);
+      setBatches(prev => prev.map(b => b.id === batch.id ? batch : b));
+    } catch (e) {
+      alert(`Reset failed: ${e.message}`);
+    }
+  };
+
   const handleAddUpload = async (files) => {
     if (!selectedBatch || !files.length) return;
     
     setIsCreating(true);
+    // Snapshot existing receipt IDs before upload so we can isolate the new ones
+    const existingIds = new Set((selectedBatch.receipts || []).map(r => r.id));
+
     try {
       const fileArray = Array.from(files);
       const chunkSize = 15;
+      let finalBatch = selectedBatch;
       
       for (let i = 0; i < fileArray.length; i += chunkSize) {
         const chunk = fileArray.slice(i, i + chunkSize);
@@ -266,10 +298,23 @@ export default function BatchCheckerPage() {
         });
         
         if (uploadRes.ok) {
-          const updatedBatch = await uploadRes.json();
-          setBatches(prev => prev.map(b => b.id === updatedBatch.id ? updatedBatch : b));
-          setSelectedBatch(updatedBatch);
+          finalBatch = await uploadRes.json();
+          setBatches(prev => prev.map(b => b.id === finalBatch.id ? finalBatch : b));
+          setSelectedBatch(finalBatch);
         }
+      }
+
+      // Open wizard with ONLY the newly added (unsorted) receipts
+      const newReceipts = (finalBatch.receipts || []).filter(r => !existingIds.has(r.id));
+      if (newReceipts.length > 0) {
+        // Sort: unsorted first, then gcash, then others
+        const sorted = [...newReceipts].sort((a, b) => {
+          const order = { unsorted: 1, gcash: 2, others: 3 };
+          return (order[a.category || 'unsorted'] || 99) - (order[b.category || 'unsorted'] || 99);
+        });
+        setWizardReceipts(sorted);
+        setProcessorPhase('categorize');
+        setShowProcessor(true);
       }
     } catch (e) { 
       console.error('Failed to upload receipts:', e); 
@@ -309,17 +354,44 @@ export default function BatchCheckerPage() {
   const openProcessor = (phase = 'categorize') => {
     if (!selectedBatch) return;
 
-    // Capture ALL receipts for the wizard session.
-    // The Wizard will handle its own logic for which steps to show/skip,
-    // but we need the full list for accurate counts and batch-wide processing.
-    const allReceipts = [...(selectedBatch.receipts || [])].sort((a, b) => {
-      const order = { 'gcash': 1, 'others': 2, 'unsorted': 3 };
+    const allReceipts = selectedBatch.receipts || [];
+
+    let receiptsForWizard;
+
+    if (phase === 'categorize') {
+      // Only pass receipts that are still unsorted
+      const unsorted = allReceipts.filter(r => !r.category || r.category === 'unsorted');
+      // If nothing to sort, fall back to all (so the user can still review)
+      receiptsForWizard = unsorted.length > 0 ? unsorted : allReceipts;
+    } else if (phase === 'crop') {
+      // Only pass receipts that still need crop/input work
+      const needsWork = allReceipts.filter(r => {
+        if (!r.category || r.category === 'unsorted') return false; // not sorted yet
+        if (r.category === 'gcash') return !r.cropped_image;
+        if (r.category === 'others') {
+          const ocr = r.ocr_data
+            ? (typeof r.ocr_data === 'string' ? (() => { try { return JSON.parse(r.ocr_data); } catch { return {}; } })() : r.ocr_data)
+            : null;
+          return !ocr?.manual;
+        }
+        return false;
+      });
+      receiptsForWizard = needsWork.length > 0 ? needsWork : allReceipts.filter(r => r.category && r.category !== 'unsorted');
+    } else {
+      // For ocr / verify / finalize / summary / billing — pass ALL receipts
+      // so the wizard has the full picture for counts and processing
+      receiptsForWizard = [...allReceipts];
+    }
+
+    // Sort: gcash first, then others, then unsorted
+    const sorted = [...receiptsForWizard].sort((a, b) => {
+      const order = { gcash: 1, others: 2, unsorted: 3 };
       const catA = a.category || 'unsorted';
       const catB = b.category || 'unsorted';
       return (order[catA] || 99) - (order[catB] || 99);
     });
 
-    setWizardReceipts(allReceipts);
+    setWizardReceipts(sorted);
     setProcessorPhase(phase);
     setShowProcessor(true);
   };
@@ -348,6 +420,7 @@ export default function BatchCheckerPage() {
           filteredReceipts={filteredReceipts}
           handleDeleteBatch={handleDeleteBatch}
           handleDeleteReceipt={handleDeleteReceipt}
+          handleResetBatch={handleResetBatch}
           handleAddUpload={handleAddUpload}
           handleRunExtraction={handleRunExtraction}
           handleRunFinalCheck={handleRunFinalCheck}
@@ -362,9 +435,19 @@ export default function BatchCheckerPage() {
           batchId={selectedBatch.id}
           initialPhase={processorPhase}
           receipts={wizardReceipts}
+          onSaved={async () => {
+            // Refresh the background batch data (for the detail page stats/display)
+            // but do NOT replace wizardReceipts — the wizard was opened with a specific
+            // filtered set (e.g. only new unsorted receipts) and must stay that way.
+            await fetchBatches(true);
+            if (batchId) {
+              const batch = await fetchSelectedBatch(batchId, filter);
+              setSelectedBatch(batch);
+            }
+          }}
           onClose={async () => {
             setShowProcessor(false);
-            // Force immediate batch refresh to sync progress
+            setWizardReceipts([]);
             await fetchBatches(false);
             if (batchId) {
               const batch = await fetchSelectedBatch(batchId, filter);
@@ -373,6 +456,7 @@ export default function BatchCheckerPage() {
           }}
           onDone={async () => {
             setShowProcessor(false);
+            setWizardReceipts([]);
             await fetchBatches(false);
             if (batchId) {
               const batch = await fetchSelectedBatch(batchId, filter);

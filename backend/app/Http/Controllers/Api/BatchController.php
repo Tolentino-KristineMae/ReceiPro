@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Batch;
 use App\Models\Receipt;
+use App\Models\Transaction;
 use App\Services\BatchStatsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class BatchController extends Controller
@@ -18,7 +21,7 @@ class BatchController extends Controller
     private function loadBatchWithReceipts(Batch $batch): Batch
     {
         return $batch->load(['receipts' => function ($query) {
-            $query->orderBy('created_at', 'asc');
+            $query->orderBy('created_at', 'asc')->with('transaction');
         }]);
     }
 
@@ -33,7 +36,7 @@ class BatchController extends Controller
     public function index()
     {
         $batches = Batch::with(['receipts' => function ($query) {
-            $query->orderBy('created_at', 'asc');
+            $query->orderBy('created_at', 'asc')->with('transaction');
         }])->orderBy('created_at', 'desc')->get();
 
         $enriched = $batches->map(fn (Batch $batch) => $this->statsService->enrichBatch($batch));
@@ -150,10 +153,10 @@ class BatchController extends Controller
                     continue;
                 }
 
-                // Double-check the linked transaction still matches the receipt OCR data
+                // Require OCR amount to match transaction amount before linking
                 $ocrData = $receipt->ocr_data ?? [];
                 $ocrAmount = isset($ocrData['amount']) ? (float) $ocrData['amount'] : null;
-                if ($ocrAmount !== null && abs((float) $transaction->amount - $ocrAmount) >= 0.01) {
+                if ($ocrAmount === null || abs((float) $transaction->amount - $ocrAmount) >= 0.01) {
                     continue;
                 }
 
@@ -165,10 +168,22 @@ class BatchController extends Controller
 
         $batch->update($data);
 
-        // When billing is complete, mark all linked transactions as 'completed'
+        // When billing is complete, mark only verified linked transactions as completed
         if ($request->checker_status === 'billing_ready') {
-            \App\Models\Transaction::where('batch_id', $batch->id)
-                ->update(['status' => 'completed']);
+            $verifiedTxIds = $batch->receipts()
+                ->where('match_status', 'verified')
+                ->whereNotNull('transaction_id')
+                ->pluck('transaction_id');
+
+            if ($verifiedTxIds->isNotEmpty()) {
+                Transaction::where('batch_id', $batch->id)
+                    ->whereIn('id', $verifiedTxIds)
+                    ->update(['status' => 'completed']);
+            }
+
+            Transaction::where('batch_id', $batch->id)
+                ->when($verifiedTxIds->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $verifiedTxIds))
+                ->update(['batch_id' => null, 'status' => 'pending']);
         }
 
         return $this->respondWithBatch($batch->fresh());
@@ -281,30 +296,48 @@ class BatchController extends Controller
     /** Reset a batch — clears all checker progress, unlinking transactions and resetting receipt statuses */
     public function reset(Batch $batch)
     {
-        // 1. Unlink all transactions that were claimed by this batch
-        \App\Models\Transaction::where('batch_id', $batch->id)
-            ->update(['batch_id' => null, 'status' => 'pending']);
+        DB::transaction(function () use ($batch) {
+            $receipts = $batch->receipts()->get();
+            $linkedTxIds = $receipts->pluck('transaction_id')->filter()->unique()->values();
 
-        // 2. Reset all receipts in this batch back to unverified state
-        $batch->receipts()->update([
-            'match_status'   => 'unmatched',
-            'transaction_id' => null,
-            'ocr_status'     => 'pending',
-            'ocr_data'       => null,
-            'cropped_image'  => null,
-            'category'       => 'unsorted',
-            'account_holder' => null,
-        ]);
+            foreach ($receipts as $receipt) {
+                if ($receipt->cropped_image) {
+                    Storage::disk('public')->delete($receipt->cropped_image);
+                }
+            }
 
-        // 3. Reset batch checker state and remove final_batch_number
-        $batch->update([
-            'checker_status'     => 'open',
-            'final_batch_number' => null,
-            'summary_data'       => null,
-            'billing_data'       => null,
-        ]);
+            Transaction::where('batch_id', $batch->id)
+                ->update(['batch_id' => null, 'status' => 'pending']);
 
-        // 4. Re-sequence final_batch_numbers for remaining finalized batches
+            if ($linkedTxIds->isNotEmpty()) {
+                Transaction::whereIn('id', $linkedTxIds)
+                    ->where(function ($query) use ($batch) {
+                        $query->whereNull('batch_id')
+                            ->orWhere('batch_id', $batch->id);
+                    })
+                    ->update(['batch_id' => null, 'status' => 'pending']);
+            }
+
+            $batch->receipts()->update([
+                'match_status'   => 'unmatched',
+                'transaction_id' => null,
+                'ocr_status'     => 'pending',
+                'ocr_data'       => null,
+                'cropped_image'  => null,
+                'category'       => 'unsorted',
+                'account_holder' => null,
+                'source_label'   => null,
+            ]);
+
+            $batch->update([
+                'checker_status'     => 'open',
+                'final_batch_number' => null,
+                'summary_data'       => null,
+                'billing_data'       => null,
+            ]);
+        });
+
+        // Re-sequence final_batch_numbers for remaining finalized batches
         $finalizedBatches = Batch::whereNotNull('final_batch_number')
             ->orderBy('created_at', 'asc')
             ->get();
@@ -470,11 +503,19 @@ class BatchController extends Controller
 
             $verificationStatus = $isMatched ? 'matched' : 'flagged';
 
+            $oldTxId = $receipt->transaction_id;
+
             // Save check result — only manualVerify may set match_status to 'verified'
             $receipt->update([
                 'match_status'   => $verificationStatus,
                 'transaction_id' => null,
             ]);
+
+            if ($oldTxId) {
+                Transaction::where('id', $oldTxId)
+                    ->where('batch_id', $batch->id)
+                    ->update(['batch_id' => null, 'status' => 'pending']);
+            }
 
             $results[] = [
                 'receipt'     => $receipt->fresh(),

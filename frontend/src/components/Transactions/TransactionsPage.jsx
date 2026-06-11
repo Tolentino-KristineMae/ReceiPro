@@ -1929,7 +1929,8 @@ export default function TransactionsPage() {
                           
                           const d = fmtDate(t.transaction_date);
                           const batch = t.batch;
-                          const batchLabel = batch?.final_batch_number;
+                          const batchLabel = t.batch_label || batch?.final_batch_number;
+                          const batchTitle = t.batch_name || batch?.name;
                           
                           // For debit transactions, show descriptive word instead of batch number
                           const displayLabel = t.entry_type === 'debit' 
@@ -1975,7 +1976,7 @@ export default function TransactionsPage() {
                                   ) : batchLabel ? (
                                     <span 
                                       className="batch-tag" 
-                                      title={batch?.batch_number}
+                                      title={batchTitle ? `${batchLabel} · ${batchTitle}` : batchLabel}
                                       style={(() => {
                                         const color = getBatchColor(batchLabel);
                                         return color ? {
@@ -2076,7 +2077,7 @@ export default function TransactionsPage() {
                                 ) : batchLabel ? (
                                   <span 
                                     className="batch-tag" 
-                                    title={batch?.batch_number}
+                                    title={batchTitle ? `${batchLabel} · ${batchTitle}` : batchLabel}
                                     style={(() => {
                                       const color = getBatchColor(batchLabel);
                                       return color ? {

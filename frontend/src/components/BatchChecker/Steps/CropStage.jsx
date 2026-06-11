@@ -25,6 +25,8 @@ export default function CropStage({
   ACCOUNTS,
   onPrev,
   onNext,
+  onSave,
+  isSaving = false,
   onRecategorize,
   onChangeToGCash,
   onChangeToOthers,
@@ -350,7 +352,17 @@ export default function CropStage({
           <div className="cs-nav">
             <div className="cs-nav-buttons">
               <button onClick={handlePrev} className="cs-nav-btn prev" disabled={index === 0}>Prev</button>
-              <button onClick={handleNext} className={`cs-nav-btn next ${currentCategory === 'gcash' ? 'gcash' : 'others'}`}>Next</button>
+              {onSave && (
+                <button
+                  onClick={onSave}
+                  className="cs-nav-btn prev"
+                  disabled={isSaving}
+                  style={{ color: '#059669', borderColor: 'rgba(16,185,129,0.35)' }}
+                >
+                  {isSaving ? 'Saving…' : '💾 Save'}
+                </button>
+              )}
+              <button onClick={handleNext} className={`cs-nav-btn next ${currentCategory === 'gcash' ? 'gcash' : 'others'}`} disabled={isSaving}>Next</button>
             </div>
             <div className="cs-nav-progress">
               <div className="cs-nav-divider" />

@@ -25,7 +25,9 @@ class RouteServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            // Local dev: SPA mounts + polling can exceed 60/min quickly (React Strict Mode doubles effects).
+            $perMinute = app()->environment('local', 'testing') ? 1000 : 60;
+            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
         });
 
         $this->routes(function () {

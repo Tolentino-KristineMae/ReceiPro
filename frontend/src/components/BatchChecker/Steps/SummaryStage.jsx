@@ -14,6 +14,9 @@ export default function SummaryStage({
   savedDeductions = [],
   onProceed,
   onBack,
+  onSave,
+  onDeductionsChange,
+  isSaving = false,
 }) {
   const [deductionTypes, setDeductionTypes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +51,10 @@ export default function SummaryStage({
 
   const totalDeductions = deductions.reduce((sum, d) => sum + Number(d.amount || 0), 0);
   const calculatedNetAmount = totalClaimsAmount - serviceFee - totalDeductions;
+
+  useEffect(() => {
+    onDeductionsChange?.(deductions, calculatedNetAmount);
+  }, [deductions, calculatedNetAmount, onDeductionsChange]);
 
   const handleAddDeduction = () => {
     if (deductionTypes.length === 0) {
@@ -485,6 +492,34 @@ export default function SummaryStage({
         paddingTop: '16px',
         borderTop: '1px solid rgba(251, 146, 60, 0.1)'
       }}>
+        {onSave && (
+          <button
+            onClick={() => onSave(deductions, calculatedNetAmount)}
+            disabled={isSaving}
+            style={{
+              flex: 1,
+              padding: '14px 20px',
+              borderRadius: '12px',
+              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              fontSize: '11px',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '0.12em',
+              border: '1.5px solid rgba(16,185,129,0.35)',
+              cursor: isSaving ? 'wait' : 'pointer',
+              transition: 'all 0.2s',
+              background: '#ffffff',
+              color: '#059669',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              opacity: isSaving ? 0.6 : 1,
+            }}
+          >
+            {isSaving ? 'Saving…' : '💾 Save'}
+          </button>
+        )}
         <button 
           onClick={onBack}
           style={{
