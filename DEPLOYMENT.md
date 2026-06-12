@@ -13,11 +13,12 @@ This guide walks you through deploying ReciePro using Supabase (Database), Rende
 ---
 
 ## Step 1: Supabase Database (Already Set Up!)
-You already have your Supabase DB ready with this connection string:
-```
-postgresql://postgres:[Ew@nk0!D1ko 
- ]@db.lwdtqukafwqkxexvmcnp.supabase.co:5432/postgres
-```
+You already have your Supabase DB ready with these details:
+- `DB_HOST`: `aws-1-ap-southeast-2.pooler.supabase.com`
+- `DB_PORT`: `6543`
+- `DB_DATABASE`: `postgres`
+- `DB_USERNAME`: `postgres.lwdtqukafwqkxexvmcnp`
+- `DB_PASSWORD`: `Ew@nk0!D1ko`
 
 Save these details for later!
 
@@ -59,12 +60,11 @@ Then create a new repository on GitHub and push your code.
    - `APP_DEBUG`: `false`
    - `APP_KEY`: Click "Generate" to auto-generate
    - `DB_CONNECTION`: `pgsql`
-   - `DB_HOST`: `db.lwdtqukafwqkxexvmcnp.supabase.co`
-   - `DB_PORT`: `5432`
+   - `DB_HOST`: `aws-1-ap-southeast-2.pooler.supabase.com`
+   - `DB_PORT`: `6543`
    - `DB_DATABASE`: `postgres`
-   - `DB_USERNAME`: `postgres`
-   - `DB_PASSWORD`: `Ew@nk0!D1ko 
-` (remove any leading/trailing spaces!)
+   - `DB_USERNAME`: `postgres.lwdtqukafwqkxexvmcnp`
+   - `DB_PASSWORD`: `Ew@nk0!D1ko`
    - `CACHE_DRIVER`: `file`
    - `SESSION_DRIVER`: `file`
    - `QUEUE_CONNECTION`: `sync`
