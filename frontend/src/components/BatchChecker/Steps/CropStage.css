@@ -10,8 +10,8 @@
   --cw-text-muted:    rgba(67, 20, 7, 0.6);
   --cw-border:        rgba(251, 146, 60, 0.15);
   
-  --font-display: 'Space Grotesk', system-ui, sans-serif;
-  --font-body:    'Space Grotesk', system-ui, sans-serif;
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
 
   --radius-card:   14px;
   --radius-btn:    14px;
@@ -457,7 +457,7 @@
 }
 
 .cs-stat-value {
-  font-family: 'Space Mono', monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 16px;
   font-weight: 900;
   color: var(--cw-text-main);

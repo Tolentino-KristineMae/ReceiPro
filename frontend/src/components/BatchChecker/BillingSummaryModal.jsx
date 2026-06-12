@@ -25,7 +25,7 @@ const Row = ({ label, value, valueColor = '#0a1628', dim = false }) => (
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
     padding: '9px 0',
   }}>
-    <span style={{ fontSize: '12px', fontWeight: 500, color: dim ? '#93c5fd' : '#64748b', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.01em' }}>
+    <span style={{ fontSize: '12px', fontWeight: 500, color: dim ? '#93c5fd' : '#64748b', fontFamily: "'Inter', sans-serif", letterSpacing: '0.01em' }}>
       {label}
     </span>
     <span style={{ fontSize: '13px', fontWeight: 700, color: valueColor, fontFamily: "'DM Mono', monospace", letterSpacing: '-0.01em' }}>
@@ -42,7 +42,7 @@ const Chip = ({ label, count, total, coin }) => (
     border: `1px solid ${coin ? '#7dd3fc' : '#bfdbfe'}`,
     minWidth: '68px', gap: '2px',
   }}>
-    <span style={{ fontSize: '9px', fontWeight: 700, color: '#0e3a6e', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: "'DM Sans', sans-serif" }}>
+    <span style={{ fontSize: '9px', fontWeight: 700, color: '#0e3a6e', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: "'Inter', sans-serif" }}>
       {label}
     </span>
     <span style={{ fontSize: '16px', fontWeight: 800, color: '#0f2448', lineHeight: 1, fontFamily: "'DM Mono', monospace" }}>
@@ -65,7 +65,7 @@ const Tag = ({ children, color = '#1e5fa8', bg = '#eff6ff', border = '#bfdbfe' }
     background: bg, border: `1px solid ${border}`,
     color, fontSize: '9px', fontWeight: 800,
     textTransform: 'uppercase', letterSpacing: '0.12em',
-    fontFamily: "'DM Sans', sans-serif",
+    fontFamily: "'Inter', sans-serif",
   }}>
     {children}
   </div>
@@ -235,7 +235,7 @@ const BillingSummaryModal = ({
                 background: copied ? '#eff6ff' : '#fff',
                 border: `1.5px solid ${copied ? '#7dd3fc' : '#dbeafe'}`,
                 color: copied ? '#1e5fa8' : '#0f2448',
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Inter', sans-serif",
                 fontWeight: 700, fontSize: '10px',
                 textTransform: 'uppercase', letterSpacing: '0.1em',
                 cursor: copying ? 'wait' : 'pointer',
@@ -265,7 +265,7 @@ const BillingSummaryModal = ({
                 flex: 1, padding: '10px 16px', borderRadius: '10px',
                 background: '#fff', border: '1.5px solid #dbeafe',
                 color: '#0f2448',
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Inter', sans-serif",
                 fontWeight: 700, fontSize: '10px',
                 textTransform: 'uppercase', letterSpacing: '0.1em',
                 cursor: copying ? 'wait' : 'pointer',
@@ -301,7 +301,7 @@ const BillingSummaryModal = ({
             borderRadius: '20px',
             border: '1px solid #dbeafe',
             overflow: 'hidden',
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             boxShadow: '0 20px 60px rgba(14,58,110,0.14), 0 4px 16px rgba(14,58,110,0.08)',
           }}>
 
@@ -528,7 +528,7 @@ const BillingSummaryModal = ({
                           fontSize: '9px',
                           fontWeight: 600,
                           color: '#1e5fa8',
-                          fontFamily: "'DM Sans', sans-serif",
+                          fontFamily: "'Inter', sans-serif",
                         }}>
                           {holder.name} ({holder.count})
                         </div>

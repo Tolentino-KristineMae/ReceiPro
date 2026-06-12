@@ -12,7 +12,6 @@ export default function SortingStage({
   onApply,
   onProceed,
   onReceiptClick,
-  onSave,
 }) {
   const [focusedColumn, setFocusedColumn] = useState(null); // null, 'gcash', or 'others'
   const [draggedReceipt, setDraggedReceipt] = useState(null);
@@ -137,19 +136,9 @@ export default function SortingStage({
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          {onSave && (
-            <button
-              className="ss-apply-btn"
-              style={{ flex: 1, background: '#fff', color: '#059669', border: '1.5px solid rgba(16,185,129,0.35)' }}
-              onClick={onSave}
-              disabled={isSavingSorting}
-            >
-              {isSavingSorting ? <><span className="ss-spinner" /> Saving…</> : <>💾 Save Progress</>}
-            </button>
-          )}
           <button
             className="ss-apply-btn"
-            style={{ flex: 2 }}
+            style={{ flex: 1 }}
             onClick={onApply}
             disabled={isSavingSorting}
           >
@@ -193,7 +182,7 @@ export default function SortingStage({
                 letterSpacing: '0.08em',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
-                fontFamily: "'Space Grotesk', sans-serif",
+                fontFamily: "'Inter', sans-serif",
                 borderRight: '1px solid rgba(251, 146, 60, 0.2)'
               }}
             >
@@ -213,7 +202,7 @@ export default function SortingStage({
                 letterSpacing: '0.08em',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
-                fontFamily: "'Space Grotesk', sans-serif"
+                fontFamily: "'Inter', sans-serif"
               }}
             >
               Others ({othersCount})
@@ -313,19 +302,9 @@ export default function SortingStage({
       </div>
 
       <div style={{ display: 'flex', gap: '10px' }}>
-        {onSave && (
-          <button
-            className="ss-proceed-btn"
-            style={{ flex: 1, background: '#fff', color: '#059669', border: '1.5px solid rgba(16,185,129,0.35)' }}
-            onClick={onSave}
-            disabled={isSavingSorting}
-          >
-            {isSavingSorting ? <><span className="ss-spinner" /> Saving…</> : <>💾 Save</>}
-          </button>
-        )}
         <button
           className="ss-proceed-btn"
-          style={{ flex: 2 }}
+          style={{ flex: 1 }}
           onClick={onProceed}
           disabled={isSavingSorting}
         >

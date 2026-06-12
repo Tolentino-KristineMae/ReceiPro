@@ -8,7 +8,7 @@
   flex-direction: column;
   padding: 24px;
   overflow-y: auto;
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   background: #ffffff;
   animation: sum-fade-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }

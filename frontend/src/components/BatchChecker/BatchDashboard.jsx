@@ -82,6 +82,8 @@ export default function BatchDashboard({
   const [customBatchName, setCustomBatchName] = React.useState('');
   const [isEditingName, setIsEditingName] = React.useState(false);
   const [summaryBatch, setSummaryBatch] = React.useState(null);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [sortBy, setSortBy] = React.useState('date-desc');
 
   // Update custom name if it's empty or when batches change (if not manually editing)
   React.useEffect(() => {
@@ -97,6 +99,33 @@ export default function BatchDashboard({
   const completedBatches = dashboard?.completed_batches ?? 0;
   const inProgressBatches = dashboard?.in_progress_batches ?? 0;
   const totalReceipts = dashboard?.total_receipts ?? batches.reduce((sum, b) => sum + (b.receipts?.length || 0), 0);
+
+  // Filter and sort batches
+  const filteredBatches = batches.filter(batch => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      (batch.name || '').toLowerCase().includes(query) ||
+      (batch.final_batch_number || '').toLowerCase().includes(query) ||
+      String(batch.id).toLowerCase().includes(query)
+    );
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'date-asc':
+        return new Date(a.created_at) - new Date(b.created_at);
+      case 'name-asc':
+        return (a.name || '').localeCompare(b.name || '');
+      case 'name-desc':
+        return (b.name || '').localeCompare(a.name || '');
+      case 'items-desc':
+        return (b.receipts?.length || 0) - (a.receipts?.length || 0);
+      case 'items-asc':
+        return (a.receipts?.length || 0) - (b.receipts?.length || 0);
+      case 'date-desc':
+      default:
+        return new Date(b.created_at) - new Date(a.created_at);
+    }
+  });
 
   return (
     <div className="bcp-layout">
@@ -125,7 +154,7 @@ export default function BatchDashboard({
               color: 'var(--text-muted)',
               textTransform: 'uppercase',
               letterSpacing: '0.12em',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: "'Inter', sans-serif"
             }}>New Batch</span>
           </div>
           <h2 style={{
@@ -133,7 +162,7 @@ export default function BatchDashboard({
             fontWeight: 900,
             color: 'var(--text-primary)',
             letterSpacing: '-0.02em',
-            fontFamily: "'Space Grotesk', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             lineHeight: '1.2',
             marginBottom: '4px'
           }}>
@@ -142,7 +171,7 @@ export default function BatchDashboard({
           <p style={{
             fontSize: '11px',
             color: 'var(--text-muted)',
-            fontFamily: "'Space Grotesk', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             lineHeight: '1.4'
           }}>
             Upload and process receipts
@@ -162,7 +191,7 @@ export default function BatchDashboard({
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            fontFamily: "'Space Grotesk', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             animation: 'fadeIn 0.3s ease-out'
           }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -194,7 +223,7 @@ export default function BatchDashboard({
                   textTransform: 'uppercase',
                   letterSpacing: '0.12em',
                   marginBottom: '6px',
-                  fontFamily: "'Space Grotesk', sans-serif"
+                  fontFamily: "'Inter', sans-serif"
                 }}>Next Batch Number</div>
                 
                 {isEditingName ? (
@@ -210,7 +239,7 @@ export default function BatchDashboard({
                       fontWeight: 900,
                       color: 'var(--accent-primary)',
                       letterSpacing: '-0.02em',
-                      fontFamily: "'Space Mono', monospace",
+                      fontFamily: "'JetBrains Mono', monospace",
                       background: 'transparent',
                       border: 'none',
                       borderBottom: '2px solid var(--accent-primary)',
@@ -227,7 +256,7 @@ export default function BatchDashboard({
                       fontWeight: 900,
                       color: 'var(--accent-primary)',
                       letterSpacing: '-0.02em',
-                      fontFamily: "'Space Mono', monospace",
+                      fontFamily: "'JetBrains Mono', monospace",
                       cursor: 'text',
                       display: 'flex',
                       alignItems: 'center',
@@ -263,7 +292,7 @@ export default function BatchDashboard({
               background: 'rgba(251, 146, 60, 0.08)',
               fontSize: '10px',
               color: 'var(--text-muted)',
-              fontFamily: "'Space Grotesk', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               display: 'flex',
               alignItems: 'center',
               gap: '6px'
@@ -289,7 +318,7 @@ export default function BatchDashboard({
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
               marginBottom: '10px',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: "'Inter', sans-serif"
             }}>
               <Icon.Receipt size={14} />
               Receipt Images
@@ -347,7 +376,7 @@ export default function BatchDashboard({
                     fontWeight: 900,
                     color: '#16a34a',
                     marginBottom: '6px',
-                    fontFamily: "'Space Mono', monospace"
+                    fontFamily: "'JetBrains Mono', monospace"
                   }}>
                     {fileCount}
                   </div>
@@ -356,14 +385,14 @@ export default function BatchDashboard({
                     fontWeight: 700,
                     color: '#16a34a',
                     marginBottom: '4px',
-                    fontFamily: "'Space Grotesk', sans-serif"
+                    fontFamily: "'Inter', sans-serif"
                   }}>
                     {fileCount === 1 ? 'File Selected' : 'Files Selected'}
                   </div>
                   <div style={{
                     fontSize: '11px',
                     color: 'var(--text-muted)',
-                    fontFamily: "'Space Grotesk', sans-serif"
+                    fontFamily: "'Inter', sans-serif"
                   }}>
                     Click to change selection
                   </div>
@@ -392,7 +421,7 @@ export default function BatchDashboard({
                     fontWeight: 800,
                     color: 'var(--text-primary)',
                     marginBottom: '6px',
-                    fontFamily: "'Space Grotesk', sans-serif"
+                    fontFamily: "'Inter', sans-serif"
                   }}>
                     Drop files here
                   </div>
@@ -400,7 +429,7 @@ export default function BatchDashboard({
                     fontSize: '12px',
                     color: 'var(--text-muted)',
                     marginBottom: '12px',
-                    fontFamily: "'Space Grotesk', sans-serif"
+                    fontFamily: "'Inter', sans-serif"
                   }}>
                     or click to browse from your computer
                   </div>
@@ -413,7 +442,7 @@ export default function BatchDashboard({
                     fontSize: '10px',
                     fontWeight: 800,
                     color: 'var(--accent-primary)',
-                    fontFamily: "'Space Grotesk', sans-serif"
+                    fontFamily: "'Inter', sans-serif"
                   }}>
                     JPG, PNG, PDF supported
                   </div>
@@ -439,7 +468,7 @@ export default function BatchDashboard({
               letterSpacing: '0.12em',
               cursor: fileCount === 0 ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              fontFamily: "'Space Grotesk', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -479,36 +508,124 @@ export default function BatchDashboard({
       <div>
         <div style={{ 
           display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
+          flexDirection: 'column',
+          gap: '12px',
           marginBottom: '1.5rem'
         }}>
-          <div>
-            <div className="section-label">Recent Batches</div>
-            <div style={{ 
-              fontSize: '10px', 
-              fontWeight: 600,
-              color: 'var(--text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              marginTop: '4px'
-            }}>
-              {batches.length} batch{batches.length !== 1 ? 'es' : ''} • Sorted by most recent
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between'
+          }}>
+            <div>
+              <div className="section-label">Recent Batches</div>
+              <div style={{ 
+                fontSize: '10px', 
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                marginTop: '4px'
+              }}>
+                {filteredBatches.length} batch{filteredBatches.length !== 1 ? 'es' : ''} • Sorted by {sortBy}
+              </div>
             </div>
+          </div>
+          
+          {/* Search & Sort Controls */}
+          <div style={{ 
+            display: 'flex', 
+            gap: '10px',
+            alignItems: 'center'
+          }}>
+            {/* Search Input */}
+            <div style={{ flex: 1, position: 'relative' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ 
+                position: 'absolute', 
+                left: '12px', 
+                top: '50%', 
+                transform: 'translateY(-50%)',
+                color: 'var(--text-muted)',
+                opacity: 0.6
+              }}>
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input 
+                type="text" 
+                placeholder="Search by name, ID or batch number..." 
+                value={searchQuery} 
+                onChange={(e) => setSearchQuery(e.target.value)} 
+                style={{
+                  width: '100%',
+                  padding: '10px 12px 10px 36px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border-subtle)',
+                  background: 'var(--bg-secondary)',
+                  fontSize: '11px',
+                  color: 'var(--text-primary)',
+                  outline: 'none',
+                  fontFamily: "'Inter', sans-serif",
+                  transition: 'all 0.2s'
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(249, 115, 22, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              />
+            </div>
+            
+            {/* Sort Select */}
+            <select 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value)} 
+              style={{
+                padding: '10px 14px',
+                borderRadius: '10px',
+                border: '1px solid var(--border-subtle)',
+                background: 'var(--bg-secondary)',
+                fontSize: '11px',
+                color: 'var(--text-primary)',
+                outline: 'none',
+                fontFamily: "'Inter', sans-serif",
+                cursor: 'pointer',
+                minWidth: '160px',
+                transition: 'all 0.2s'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                e.currentTarget.style.boxShadow = '0 0 0 4px rgba(249, 115, 22, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <option value="date-desc">Date: Newest First</option>
+              <option value="date-asc">Date: Oldest First</option>
+              <option value="name-asc">Name: A-Z</option>
+              <option value="name-desc">Name: Z-A</option>
+              <option value="items-desc">Items: Most First</option>
+              <option value="items-asc">Items: Fewest First</option>
+            </select>
           </div>
         </div>
         
-        {batches.length === 0 ? (
+        {filteredBatches.length === 0 ? (
           <div className="glass-card empty-box">
             <div className="empty-icon-lg">📂</div>
-            <div style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>No batches yet</div>
+            <div style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{searchQuery ? 'No matching batches' : 'No batches yet'}</div>
             <div style={{ opacity: 0.7 }}>
-              Create your first batch above to begin processing
+              {searchQuery ? 'Try a different search term' : 'Create your first batch above to begin processing'}
             </div>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>
-            {batches.map((batch, i) => (
+            {filteredBatches.map((batch, i) => (
               <BatchCard
                 key={batch.id}
                 batch={batch}

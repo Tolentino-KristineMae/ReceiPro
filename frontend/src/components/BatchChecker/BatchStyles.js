@@ -37,7 +37,7 @@ export const BATCH_STYLES = `
     --radius-lg:         16px;
     --radius-xl:         24px;
     
-    --font-family:       'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-family:       'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     --font-mono:         'JetBrains Mono', 'SF Mono', Menlo, monospace;
   }
 

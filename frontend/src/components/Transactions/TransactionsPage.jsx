@@ -1246,6 +1246,13 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
+// Sort transactions newest-first: by date desc, then by id desc as tiebreaker
+const sortDesc = (txns) => [...txns].sort((a, b) => {
+  const dateDiff = new Date(b.transaction_date) - new Date(a.transaction_date);
+  if (dateDiff !== 0) return dateDiff;
+  return (b.id ?? 0) - (a.id ?? 0);
+});
+
 export default function TransactionsPage() {
   const [activeAccount, setActiveAccount] = useState(ACCOUNTS[0]);
   const [transactions, setTransactions] = useState([]);
@@ -1284,7 +1291,7 @@ export default function TransactionsPage() {
 
       const response = await fetch(getApiUrl(`/api/transactions?${params.toString()}`), { cache: 'no-store' });
       const data = await response.json();
-      setTransactions(Array.isArray(data?.data) ? data.data : []);
+      setTransactions(Array.isArray(data?.data) ? sortDesc(data.data) : []);
       setTransactionMeta(data?.meta || {
         opening_balance: 0,
         total_credit: 0,
@@ -1357,8 +1364,8 @@ export default function TransactionsPage() {
         const saved = await res.json();
         // Play sound based on entry type
         playTransactionSound(saved.entry_type || form.entry_type);
-        // Simply add to state; the filteredTransactions memo will handle sorting
-        setTransactions(prev => [...prev, saved]);
+        // Prepend new transaction so it appears at top, then keep desc sort
+        setTransactions(prev => sortDesc([saved, ...prev]));
         setForm(f => ({ ...f, amount: '', reference: '', label: '' }));
       } else {
         const data = await res.json();
@@ -1399,7 +1406,8 @@ export default function TransactionsPage() {
       
       if (res.ok) {
         const updated = await res.json();
-        setTransactions(prev => prev.map(t => t.id === updated.id ? updated : t));
+        // Replace in-place then re-sort so edits reflect immediately
+        setTransactions(prev => sortDesc(prev.map(t => t.id === updated.id ? updated : t)));
         setEditingTransaction(null);
       } else {
         throw new Error('Failed to update transaction');
@@ -1849,26 +1857,59 @@ export default function TransactionsPage() {
                   <p className="form-subtitle">{activeAccount} • All activity</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <input 
-                      type="text" 
-                      placeholder="Search transactions..." 
-                      className="input-field py-2 pl-10 pr-10 text-xs w-64"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    {/* Search icon */}
+                    <div style={{
+                      position: 'absolute', left: '11px', top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: '#9a3412', opacity: 0.45,
+                      pointerEvents: 'none',
+                      display: 'flex', alignItems: 'center',
+                      zIndex: 1,
+                    }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="11" cy="11" r="8" />
                         <line x1="21" y1="21" x2="16.65" y2="16.65" />
                       </svg>
                     </div>
+                    <input
+                      type="text"
+                      placeholder="Search transactions..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      style={{
+                        width: '220px',
+                        paddingLeft: '34px',
+                        paddingRight: searchQuery ? '32px' : '12px',
+                        paddingTop: '8px',
+                        paddingBottom: '8px',
+                        background: '#ffffff',
+                        border: '1px solid rgba(251,146,60,0.25)',
+                        borderRadius: '10px',
+                        fontSize: '13px',
+                        color: '#431407',
+                        fontFamily: 'inherit',
+                        outline: 'none',
+                        transition: 'border-color 0.15s, box-shadow 0.15s',
+                      }}
+                      onFocus={e => { e.target.style.borderColor = '#f97316'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.15)'; }}
+                      onBlur={e => { e.target.style.borderColor = 'rgba(251,146,60,0.25)'; e.target.style.boxShadow = 'none'; }}
+                    />
                     {searchQuery && (
-                      <button 
+                      <button
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                        style={{
+                          position: 'absolute', right: '8px', top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'transparent', border: 'none',
+                          cursor: 'pointer', color: '#9a3412', opacity: 0.5,
+                          display: 'flex', alignItems: 'center', padding: '2px',
+                          borderRadius: '4px', transition: 'opacity 0.15s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                        onMouseLeave={e => e.currentTarget.style.opacity = '0.5'}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <line x1="18" y1="6" x2="6" y2="18" />
                           <line x1="6" y1="6" x2="18" y2="18" />
                         </svg>

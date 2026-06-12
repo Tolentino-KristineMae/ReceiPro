@@ -14,7 +14,6 @@ export default function SummaryStage({
   savedDeductions = [],
   onProceed,
   onBack,
-  onSave,
   onDeductionsChange,
   isSaving = false,
 }) {
@@ -107,7 +106,7 @@ export default function SummaryStage({
               fontWeight: 900, 
               textTransform: 'uppercase', 
               letterSpacing: '0.08em',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: "'Inter', sans-serif"
             }}>
               Claims Summary
             </span>
@@ -122,7 +121,7 @@ export default function SummaryStage({
               color: 'rgba(67, 20, 7, 0.6)', 
               fontSize: '10px', 
               fontWeight: 700,
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: "'Inter', sans-serif"
             }}>
               {verifiedClaims?.length || 0} Claims
             </span>
@@ -153,7 +152,7 @@ export default function SummaryStage({
             color: 'rgba(67, 20, 7, 0.5)',
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
-            fontFamily: "'Space Grotesk', sans-serif"
+            fontFamily: "'Inter', sans-serif"
           }}>
             Gross Claims
           </div>
@@ -162,7 +161,7 @@ export default function SummaryStage({
             fontWeight: 900,
             color: '#10b981',
             letterSpacing: '-0.02em',
-            fontFamily: "'Space Mono', monospace"
+            fontFamily: "'JetBrains Mono', monospace"
           }}>
             ₱{fmt(totalClaimsAmount)}
           </div>
@@ -184,7 +183,7 @@ export default function SummaryStage({
             color: 'rgba(67, 20, 7, 0.5)',
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
-            fontFamily: "'Space Grotesk', sans-serif"
+            fontFamily: "'Inter', sans-serif"
           }}>
             Service Fee
           </div>
@@ -193,7 +192,7 @@ export default function SummaryStage({
             fontWeight: 900,
             color: '#ef4444',
             letterSpacing: '-0.02em',
-            fontFamily: "'Space Mono', monospace"
+            fontFamily: "'JetBrains Mono', monospace"
           }}>
             − ₱{fmt(serviceFee)}
           </div>
@@ -221,7 +220,7 @@ export default function SummaryStage({
             color: '#431407',
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
-            fontFamily: "'Space Grotesk', sans-serif"
+            fontFamily: "'Inter', sans-serif"
           }}>
             Additional Deductions
           </div>
@@ -240,7 +239,7 @@ export default function SummaryStage({
               letterSpacing: '0.08em',
               cursor: loading || deductionTypes.length === 0 ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s',
-              fontFamily: "'Space Grotesk', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
@@ -261,7 +260,7 @@ export default function SummaryStage({
             textAlign: 'center',
             color: 'rgba(67, 20, 7, 0.4)',
             fontSize: '12px',
-            fontFamily: "'Space Grotesk', sans-serif"
+            fontFamily: "'Inter', sans-serif"
           }}>
             {loading ? (
               'Loading deduction types...'
@@ -300,7 +299,7 @@ export default function SummaryStage({
                     letterSpacing: '0.12em',
                     marginBottom: '6px',
                     display: 'block',
-                    fontFamily: "'Space Grotesk', sans-serif"
+                    fontFamily: "'Inter', sans-serif"
                   }}>
                     Type
                   </label>
@@ -318,7 +317,7 @@ export default function SummaryStage({
                       fontWeight: 700,
                       outline: 'none',
                       cursor: 'pointer',
-                      fontFamily: "'Space Grotesk', sans-serif"
+                      fontFamily: "'Inter', sans-serif"
                     }}
                   >
                     {deductionTypes.map((dt) => (
@@ -339,7 +338,7 @@ export default function SummaryStage({
                     letterSpacing: '0.12em',
                     marginBottom: '6px',
                     display: 'block',
-                    fontFamily: "'Space Grotesk', sans-serif"
+                    fontFamily: "'Inter', sans-serif"
                   }}>
                     Amount
                   </label>
@@ -352,7 +351,7 @@ export default function SummaryStage({
                       color: 'rgba(67, 20, 7, 0.4)',
                       fontSize: '12px',
                       fontWeight: 700,
-                      fontFamily: "'Space Mono', monospace"
+                      fontFamily: "'JetBrains Mono', monospace"
                     }}>
                       ₱
                     </span>
@@ -370,7 +369,7 @@ export default function SummaryStage({
                         fontSize: '12px',
                         fontWeight: 700,
                         outline: 'none',
-                        fontFamily: "'Space Mono', monospace"
+                        fontFamily: "'JetBrains Mono', monospace"
                       }}
                       placeholder="0.00"
                     />
@@ -422,7 +421,7 @@ export default function SummaryStage({
               color: '#ef4444',
               textTransform: 'uppercase',
               letterSpacing: '0.1em',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: "'Inter', sans-serif"
             }}>
               Total Deductions
             </span>
@@ -430,7 +429,7 @@ export default function SummaryStage({
               fontSize: '18px',
               fontWeight: 900,
               color: '#ef4444',
-              fontFamily: "'Space Mono', monospace"
+              fontFamily: "'JetBrains Mono', monospace"
             }}>
               − ₱{fmt(totalDeductions)}
             </span>
@@ -460,14 +459,14 @@ export default function SummaryStage({
               textTransform: 'uppercase',
               letterSpacing: '0.12em',
               marginBottom: '4px',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: "'Inter', sans-serif"
             }}>
               Total Net Amount
             </div>
             <div style={{
               fontSize: '11px',
               color: 'rgba(67, 20, 7, 0.6)',
-              fontFamily: "'Space Grotesk', sans-serif"
+              fontFamily: "'Inter', sans-serif"
             }}>
               Final amount for billing
             </div>
@@ -477,7 +476,7 @@ export default function SummaryStage({
             fontWeight: 900,
             color: '#f97316',
             letterSpacing: '-0.02em',
-            fontFamily: "'Space Mono', monospace"
+            fontFamily: "'JetBrains Mono', monospace"
           }}>
             ₱{fmt(calculatedNetAmount)}
           </div>
@@ -492,41 +491,13 @@ export default function SummaryStage({
         paddingTop: '16px',
         borderTop: '1px solid rgba(251, 146, 60, 0.1)'
       }}>
-        {onSave && (
-          <button
-            onClick={() => onSave(deductions, calculatedNetAmount)}
-            disabled={isSaving}
-            style={{
-              flex: 1,
-              padding: '14px 20px',
-              borderRadius: '12px',
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
-              fontSize: '11px',
-              fontWeight: 900,
-              textTransform: 'uppercase',
-              letterSpacing: '0.12em',
-              border: '1.5px solid rgba(16,185,129,0.35)',
-              cursor: isSaving ? 'wait' : 'pointer',
-              transition: 'all 0.2s',
-              background: '#ffffff',
-              color: '#059669',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              opacity: isSaving ? 0.6 : 1,
-            }}
-          >
-            {isSaving ? 'Saving…' : '💾 Save'}
-          </button>
-        )}
         <button 
           onClick={onBack}
           style={{
             flex: 1,
             padding: '14px 20px',
             borderRadius: '12px',
-            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+            fontFamily: "'Inter', system-ui, sans-serif",
             fontSize: '11px',
             fontWeight: 900,
             textTransform: 'uppercase',
@@ -553,7 +524,7 @@ export default function SummaryStage({
             flex: 2,
             padding: '14px 20px',
             borderRadius: '12px',
-            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+            fontFamily: "'Inter', system-ui, sans-serif",
             fontSize: '11px',
             fontWeight: 900,
             textTransform: 'uppercase',

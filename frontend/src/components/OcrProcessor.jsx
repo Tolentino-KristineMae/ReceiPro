@@ -67,7 +67,7 @@ const CSS = `
     margin-bottom: 4px;
   }
   .ocr-subtitle {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 12px;
     color: #53535a;
     letter-spacing: 0.02em;
@@ -183,7 +183,7 @@ const CSS = `
   /* Text */
   .ocr-item-body { flex: 1; min-width: 0; }
   .ocr-item-name {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 13px;
     font-weight: 500;
     color: #f0eadf;
@@ -244,7 +244,7 @@ const CSS = `
     50%       { opacity: 0.4; transform: scale(0.7); }
   }
   .ocr-footer-text {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 11px;
     color: #53535a;
     letter-spacing: 0.04em;

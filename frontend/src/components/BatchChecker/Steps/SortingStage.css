@@ -1,5 +1,5 @@
 /* ─── Fonts ─────────────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
 /* ─── System-Matched Orange Light Theme Tokens ───────────────────────────────── */
 :root {
@@ -18,8 +18,8 @@
   --ss-gcash-color:   #3b82f6;
   --ss-others-color:  #eab308;
 
-  --font-display: 'Space Grotesk', system-ui, sans-serif;
-  --font-body:    'Space Grotesk', system-ui, sans-serif;
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
 
   --radius-card:   12px;
   --radius-btn:    12px;

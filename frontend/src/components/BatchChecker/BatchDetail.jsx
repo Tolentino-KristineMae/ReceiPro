@@ -60,6 +60,8 @@ export default function BatchDetail({
   const [receiptToDelete, setReceiptToDelete] = React.useState(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [showSummaryModal, setShowSummaryModal] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [sortBy, setSortBy] = React.useState('status');
   const fileInputRef = React.useRef(null);
 
   if (!batch) {
@@ -527,37 +529,144 @@ export default function BatchDetail({
 
       {/* Receipts List */}
       <div className="glass-card">
-        <div className="filter-bar">
-          {[
-            { key: 'all', label: `All (${stats.total})` },
-            { key: 'pending', label: 'Pending' },
-            { key: 'completed', label: 'Verified' },
-            { key: 'gcash', label: 'GCash' },
-            { key: 'others', label: 'Others' },
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              className={`filter-tab ${filter === key ? 'active' : ''}`}
-              onClick={() => setFilter(key)}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-subtle)' }}>
+          <div className="filter-bar">
+            {[
+              { key: 'all', label: `All (${stats.total})` },
+              { key: 'pending', label: 'Pending' },
+              { key: 'completed', label: 'Verified' },
+              { key: 'gcash', label: 'GCash' },
+              { key: 'others', label: 'Others' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                className={`filter-tab ${filter === key ? 'active' : ''}`}
+                onClick={() => setFilter(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {/* Search & Sort Controls */}
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ 
+                position: 'absolute', 
+                left: '12px', 
+                top: '50%', 
+                transform: 'translateY(-50%)',
+                color: 'var(--text-muted)',
+                opacity: 0.6
+              }}>
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input 
+                type="text" 
+                placeholder="Search receipts by reference, amount, account..." 
+                value={searchQuery} 
+                onChange={(e) => setSearchQuery(e.target.value)} 
+                style={{
+                  width: '100%',
+                  padding: '10px 12px 10px 36px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border-subtle)',
+                  background: 'var(--bg-secondary)',
+                  fontSize: '11px',
+                  color: 'var(--text-primary)',
+                  outline: 'none',
+                  fontFamily: "'Inter', sans-serif",
+                  transition: 'all 0.2s'
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(249, 115, 22, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              />
+            </div>
+            <select 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value)} 
+              style={{
+                padding: '10px 14px',
+                borderRadius: '10px',
+                border: '1px solid var(--border-subtle)',
+                background: 'var(--bg-secondary)',
+                fontSize: '11px',
+                color: 'var(--text-primary)',
+                outline: 'none',
+                fontFamily: "'Inter', sans-serif",
+                cursor: 'pointer',
+                minWidth: '160px',
+                transition: 'all 0.2s'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                e.currentTarget.style.boxShadow = '0 0 0 4px rgba(249, 115, 22, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             >
-              {label}
-            </button>
-          ))}
-          <div style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>
-            {filteredReceipts.length} items found
+              <option value="status">Sort: Status First</option>
+              <option value="amount-desc">Sort: Amount (High → Low)</option>
+              <option value="amount-asc">Sort: Amount (Low → High)</option>
+              <option value="date-desc">Sort: Newest First</option>
+              <option value="date-asc">Sort: Oldest First</option>
+            </select>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+              {(() => {
+                // Filter and sort logic
+                const filtered = filteredReceipts.filter(receipt => {
+                  if (!searchQuery) return true;
+                  const q = searchQuery.toLowerCase();
+                  const ocr = parseOCRData(receipt.ocr_data);
+                  return (
+                    (receipt.account_holder || '').toLowerCase().includes(q) ||
+                    (String(receipt.id) || '').toLowerCase().includes(q) ||
+                    (ocr?.reference || '').toLowerCase().includes(q) ||
+                    (String(receipt.transaction?.amount || ocr?.amount || '')).includes(q)
+                  );
+                });
+                return `${filtered.length} item${filtered.length !== 1 ? 's' : ''} found`;
+              })()}
+            </div>
           </div>
         </div>
+        {(() => {
+          // Filter and sort logic
+          let processedReceipts = [...filteredReceipts].filter(receipt => {
+            if (!searchQuery) return true;
+            const q = searchQuery.toLowerCase();
+            const ocr = parseOCRData(receipt.ocr_data);
+            return (
+              (receipt.account_holder || '').toLowerCase().includes(q) ||
+              (String(receipt.id) || '').toLowerCase().includes(q) ||
+              (ocr?.reference || '').toLowerCase().includes(q) ||
+              (String(receipt.transaction?.amount || ocr?.amount || '')).includes(q)
+            );
+          }).sort((a, b) => {
+            const ocrA = parseOCRData(a.ocr_data);
+            const ocrB = parseOCRData(b.ocr_data);
+            const amountA = a.transaction?.amount ?? ocrA?.amount ?? 0;
+            const amountB = b.transaction?.amount ?? ocrB?.amount ?? 0;
 
-        {filteredReceipts.length === 0 ? (
-          <div className="empty-box">
-            <div className="empty-icon-lg">🔍</div>
-            <div style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>No matches found</div>
-            <div style={{ opacity: 0.7 }}>Try adjusting your filters</div>
-          </div>
-        ) : (
-          <div className="receipt-grid">
-            {filteredReceipts
-              .sort((a, b) => {
+            switch (sortBy) {
+              case 'amount-desc':
+                return Number(amountB) - Number(amountA);
+              case 'amount-asc':
+                return Number(amountA) - Number(amountB);
+              case 'date-desc':
+                return new Date(b.created_at) - new Date(a.created_at);
+              case 'date-asc':
+                return new Date(a.created_at) - new Date(b.created_at);
+              case 'status':
+              default:
                 const statusA = a.match_status?.toLowerCase();
                 const statusB = b.match_status?.toLowerCase();
                 const isErrorA = statusA === 'flagged' || statusA === 'not_found';
@@ -566,8 +675,24 @@ export default function BatchDetail({
                 if (isErrorA && !isErrorB) return -1;
                 if (!isErrorA && isErrorB) return 1;
                 return 0;
-              })
-              .map(receipt => (
+            }
+          });
+
+          if (processedReceipts.length === 0) {
+            return (
+              <div className="empty-box">
+                <div className="empty-icon-lg">🔍</div>
+                <div style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  {searchQuery ? 'No matching receipts' : 'No receipts found'}
+                </div>
+                <div style={{ opacity: 0.7 }}>Try adjusting your filters or search</div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="receipt-grid">
+              {processedReceipts.map(receipt => (
                 <ReceiptCard 
                   key={receipt.id} 
                   receipt={receipt} 
@@ -576,8 +701,9 @@ export default function BatchDetail({
                   isBillingDone={batch.checker_status === 'billing_ready'}
                 />
               ))}
-          </div>
-        )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Deletion Confirmation Modal */}

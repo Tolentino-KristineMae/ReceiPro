@@ -6,8 +6,8 @@
 
 /* ─── Variables ──────────────────────────────────────────────────────────── */
 :root {
-  --font-display: 'Space Grotesk', system-ui, sans-serif;
-  --font-mono: 'Space Mono', monospace;
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
   --cw-bg-primary:    #ffffff;
   --cw-bg-secondary:  #fffbf5;
   --cw-accent:        #f97316;
