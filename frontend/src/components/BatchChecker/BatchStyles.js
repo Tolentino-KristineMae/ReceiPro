@@ -190,23 +190,26 @@ export const BATCH_STYLES = `
   }
 
   .btn-primary-modern {
-    width: 100%;
+    width: auto;
     background: var(--gradient-accent);
     border: none;
     border-radius: var(--radius-md);
-    padding: 14px 20px;
-    font-size: 13px;
+    padding: 10px 18px;
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: white;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
+    gap: 8px;
     box-shadow: var(--shadow-lg);
+    white-space: nowrap;
+    flex-shrink: 0;
+    line-height: 1.2;
   }
 
   .btn-primary-modern:hover {

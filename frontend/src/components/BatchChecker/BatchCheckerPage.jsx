@@ -15,6 +15,7 @@ export default function BatchCheckerPage() {
   const [dashboard, setDashboard] = useState(null);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingBatch, setLoadingBatch] = useState(false);
   const [showProcessor, setShowProcessor] = useState(false);
   const [processorPhase, setProcessorPhase] = useState('categorize');
   const [isCreating, setIsCreating] = useState(false);
@@ -48,14 +49,20 @@ export default function BatchCheckerPage() {
     const shouldPoll = isRunningCheck || isCreating || hasActiveBatches;
     if (!shouldPoll) return undefined;
 
+    const controller = new AbortController();
+
     const poll = async () => {
       if (pollInFlightRef.current) return;
+      // Skip silently when offline — browser will resume when back online
+      if (!navigator.onLine) return;
       pollInFlightRef.current = true;
       try {
         if (batchId) {
-          const res = await fetch(getApiUrl(`/api/batches/${batchId}?t=${Date.now()}`), { cache: 'no-store' });
-          if (res.status === 429) return;
-          if (!res.ok) return;
+          const res = await fetch(getApiUrl(`/api/batches/${batchId}?t=${Date.now()}`), {
+            cache: 'no-store',
+            signal: controller.signal,
+          });
+          if (!res.ok || res.status === 429) return;
           const batch = await res.json();
           setBatches(prev => prev.map(b => b.id === batch.id ? batch : b));
           setSelectedBatch(batch);
@@ -63,14 +70,20 @@ export default function BatchCheckerPage() {
           await fetchBatches(true);
         }
       } catch (e) {
-        console.error(e);
+        // Ignore abort errors and network errors (offline) — they are expected
+        if (e.name !== 'AbortError' && navigator.onLine) {
+          console.warn('[BatchChecker] Poll skipped:', e.message);
+        }
       } finally {
         pollInFlightRef.current = false;
       }
     };
 
     const interval = setInterval(poll, 8000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      controller.abort();
+    };
   }, [batchId, isRunningCheck, isCreating, batches]);
 
   const fetchBatches = async (silent = false) => {
@@ -81,10 +94,10 @@ export default function BatchCheckerPage() {
       const data = await res.json();
       setBatches(Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []));
       if (data?.dashboard) setDashboard(data.dashboard);
-    } catch (e) { 
-      console.error(e); 
-    } finally { 
-      if (!silent) setLoading(false); 
+    } catch (e) {
+      if (navigator.onLine) console.warn('[BatchChecker] fetchBatches:', e.message);
+    } finally {
+      if (!silent) setLoading(false);
     }
   };
 
@@ -96,22 +109,20 @@ export default function BatchCheckerPage() {
     return res.json();
   };
 
+  // Only fetch the selected batch when batchId or filter changes — NOT on every
+  // batches update (that would overwrite optimistic upload state mid-flight).
   useEffect(() => {
-    if (batches.length > 0 && batchId) {
-      const batch = batches.find(b => String(b.id) === String(batchId));
-      if (batch) {
-        fetchSelectedBatch(batchId, filter)
-          .then(setSelectedBatch)
-          .catch(console.error);
-      } else {
-        fetchSelectedBatch(batchId, filter)
-          .then(setSelectedBatch)
-          .catch(console.error);
-      }
-    } else if (!batchId) {
+    if (!batchId) {
       setSelectedBatch(null);
+      setLoadingBatch(false);
+      return;
     }
-  }, [batches, batchId, filter]);
+    setLoadingBatch(true);
+    fetchSelectedBatch(batchId, filter)
+      .then(setSelectedBatch)
+      .catch(console.error)
+      .finally(() => setLoadingBatch(false));
+  }, [batchId, filter]);
 
   const handleCreateAndUpload = async (e, batchName) => {
     e.preventDefault();
@@ -243,11 +254,15 @@ export default function BatchCheckerPage() {
 
   const handleDeleteReceipt = async (receiptId) => {
     try {
-      const res = await fetch(getApiUrl(`/api/receipts/${receiptId}`), {
-        method: 'DELETE',
-      });
+      const res = await fetch(getApiUrl(`/api/receipts/${receiptId}`), { method: 'DELETE' });
       if (res.ok) {
-        await fetchBatches(true);
+        // Update both selectedBatch and batches list directly — no full refetch needed
+        setSelectedBatch(prev => {
+          if (!prev) return prev;
+          const updated = { ...prev, receipts: (prev.receipts || []).filter(r => r.id !== receiptId) };
+          setBatches(bs => bs.map(b => b.id === updated.id ? updated : b));
+          return updated;
+        });
       }
     } catch (e) {
       console.error('Failed to delete receipt:', e);
@@ -299,15 +314,16 @@ export default function BatchCheckerPage() {
         
         if (uploadRes.ok) {
           finalBatch = await uploadRes.json();
-          setBatches(prev => prev.map(b => b.id === finalBatch.id ? finalBatch : b));
+          // Update both selectedBatch and the batches list immediately so the
+          // receipt grid re-renders in real time after each chunk
           setSelectedBatch(finalBatch);
+          setBatches(prev => prev.map(b => b.id === finalBatch.id ? finalBatch : b));
         }
       }
 
       // Open wizard with ONLY the newly added (unsorted) receipts
       const newReceipts = (finalBatch.receipts || []).filter(r => !existingIds.has(r.id));
       if (newReceipts.length > 0) {
-        // Sort: unsorted first, then gcash, then others
         const sorted = [...newReceipts].sort((a, b) => {
           const order = { unsorted: 1, gcash: 2, others: 3 };
           return (order[a.category || 'unsorted'] || 99) - (order[b.category || 'unsorted'] || 99);
@@ -333,8 +349,17 @@ export default function BatchCheckerPage() {
     );
   }
 
-  // Handle batch not found case
-  if (batchId && !selectedBatch && batches.length > 0) {
+  // Still fetching the specific batch — show spinner, not "not found"
+  if (batchId && loadingBatch && !selectedBatch) {
+    return (
+      <div className="bcp-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="spinner-modern" style={{ width: '40px', height: '40px' }} />
+      </div>
+    );
+  }
+
+  // Handle batch not found case — only after fetch is complete
+  if (batchId && !loadingBatch && !selectedBatch && batches.length > 0) {
     return (
       <div className="bcp-root">
         <div className="glass-card empty-box">

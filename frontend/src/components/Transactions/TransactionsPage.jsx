@@ -1253,6 +1253,36 @@ const sortDesc = (txns) => [...txns].sort((a, b) => {
   return (b.id ?? 0) - (a.id ?? 0);
 });
 
+// Recompute running_balance on every row and meta totals from local state.
+// Rows are sorted oldest→newest for the running balance walk, then we restore
+// the original (desc) display order.
+const recomputeBalances = (txns, openingBal) => {
+  const ob = parseFloat(openingBal ?? 0);
+  // Walk oldest → newest to accumulate running balance
+  const asc = [...txns].sort((a, b) => {
+    const d = new Date(a.transaction_date) - new Date(b.transaction_date);
+    return d !== 0 ? d : (a.id ?? 0) - (b.id ?? 0);
+  });
+  let running = ob;
+  let totalCredit = 0;
+  let totalDebit  = 0;
+  const withBalances = asc.map(t => {
+    const amt = parseFloat(t.amount ?? 0);
+    if (t.entry_type === 'credit') { running += amt; totalCredit += amt; }
+    else                           { running -= amt; totalDebit  += amt; }
+    return { ...t, running_balance: running };
+  });
+  // Restore desc display order
+  const result = sortDesc(withBalances);
+  const meta = {
+    opening_balance: ob,
+    total_credit:    totalCredit,
+    total_debit:     totalDebit,
+    current_balance: running,
+  };
+  return { transactions: result, meta };
+};
+
 export default function TransactionsPage() {
   const [activeAccount, setActiveAccount] = useState(ACCOUNTS[0]);
   const [transactions, setTransactions] = useState([]);
@@ -1291,13 +1321,11 @@ export default function TransactionsPage() {
 
       const response = await fetch(getApiUrl(`/api/transactions?${params.toString()}`), { cache: 'no-store' });
       const data = await response.json();
-      setTransactions(Array.isArray(data?.data) ? sortDesc(data.data) : []);
-      setTransactionMeta(data?.meta || {
-        opening_balance: 0,
-        total_credit: 0,
-        total_debit: 0,
-        current_balance: 0,
-      });
+      const rawTxns = Array.isArray(data?.data) ? data.data : [];
+      const ob = data?.meta?.opening_balance ?? 0;
+      const { transactions: computed, meta } = recomputeBalances(rawTxns, ob);
+      setTransactions(computed);
+      setTransactionMeta(meta);
     } catch {
       setTransactions([]);
     } finally {
@@ -1364,8 +1392,15 @@ export default function TransactionsPage() {
         const saved = await res.json();
         // Play sound based on entry type
         playTransactionSound(saved.entry_type || form.entry_type);
-        // Prepend new transaction so it appears at top, then keep desc sort
-        setTransactions(prev => sortDesc([saved, ...prev]));
+        // Prepend new transaction, recompute running balances + meta in real time
+        setTransactions(prev => {
+          const { transactions: computed, meta } = recomputeBalances(
+            [saved, ...prev],
+            transactionMeta.opening_balance
+          );
+          setTransactionMeta(meta);
+          return computed;
+        });
         setForm(f => ({ ...f, amount: '', reference: '', label: '' }));
       } else {
         const data = await res.json();
@@ -1382,7 +1417,15 @@ export default function TransactionsPage() {
     if (!window.confirm('Delete this transaction? This action cannot be undone.')) return;
     try {
       await fetch(getApiUrl(`/api/transactions/${id}`), { method: 'DELETE' });
-      setTransactions(prev => prev.filter(t => t.id !== id));
+      setTransactions(prev => {
+        const filtered = prev.filter(t => t.id !== id);
+        const { transactions: computed, meta } = recomputeBalances(
+          filtered,
+          transactionMeta.opening_balance
+        );
+        setTransactionMeta(meta);
+        return computed;
+      });
     } catch {
       // Silent fail
     }
@@ -1406,8 +1449,16 @@ export default function TransactionsPage() {
       
       if (res.ok) {
         const updated = await res.json();
-        // Replace in-place then re-sort so edits reflect immediately
-        setTransactions(prev => sortDesc(prev.map(t => t.id === updated.id ? updated : t)));
+        // Replace in-place, recompute running balances + meta in real time
+        setTransactions(prev => {
+          const mapped = prev.map(t => t.id === updated.id ? updated : t);
+          const { transactions: computed, meta } = recomputeBalances(
+            mapped,
+            transactionMeta.opening_balance
+          );
+          setTransactionMeta(meta);
+          return computed;
+        });
         setEditingTransaction(null);
       } else {
         throw new Error('Failed to update transaction');
