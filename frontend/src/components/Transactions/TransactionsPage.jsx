@@ -565,7 +565,7 @@ const CSS = `
     backdrop-filter: blur(10px);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
-    padding: 8px 12px;
+    padding: 8px 16px;
     font-size: 11px;
     font-weight: 600;
     color: var(--text-muted);
@@ -573,6 +573,7 @@ const CSS = `
     display: inline-flex;
     align-items: center;
     box-sizing: border-box;
+    cursor: pointer;
   }
 
   /* ── Modern Table ── */
@@ -1942,7 +1943,7 @@ export default function TransactionsPage() {
                   <h2 className="table-title">Transaction History</h2>
                   <p className="form-subtitle">{activeAccount} • All activity</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3" style={{ gap: '10px' }}>
                   <div style={{ position: 'relative', flexShrink: 0 }}>
                     {/* Search icon */}
                     <div style={{
@@ -2004,7 +2005,7 @@ export default function TransactionsPage() {
                       </button>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" style={{ gap: '8px' }}>
                     <button 
                       onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
                       className="table-stats hover:bg-white/5 transition-all flex items-center gap-2"
