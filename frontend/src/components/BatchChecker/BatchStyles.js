@@ -289,8 +289,8 @@ export const BATCH_STYLES = `
   .filter-bar {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    gap: 1rem;
+    margin-bottom: 2rem;
     flex-wrap: wrap;
     padding-bottom: 0.5rem;
     scrollbar-width: none;
@@ -460,7 +460,8 @@ export const BATCH_STYLES = `
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
+    gap: 2rem;
   }
 
   .batch-title {
@@ -821,7 +822,7 @@ export const BATCH_STYLES = `
   @media (max-width: 768px) {
     .batch-header-top {
       flex-direction: column !important;
-      gap: 1.5rem !important;
+      gap: 2rem !important;
     }
 
     .batch-title {
@@ -831,16 +832,26 @@ export const BATCH_STYLES = `
     .batch-actions {
       width: 100% !important;
       justify-content: flex-start !important;
+      gap: 1rem !important;
     }
 
     .search-sort-container {
       flex-direction: column !important;
       align-items: stretch !important;
+      gap: 1rem !important;
     }
 
     .sort-select {
       min-width: unset !important;
       width: 100% !important;
+    }
+
+    .glass-card {
+      padding: 1.5rem !important;
+    }
+
+    .metric-grid {
+      gap: 1.5rem !important;
     }
   }
 
