@@ -59,7 +59,7 @@ export default function VerificationStage({
             <div className="vs-stat-label">Confirmed</div>
             <div className="vs-stat-value">{verifiedCount}</div>
           </div>
-          <div className="vs-stat-card" style={{ borderColor: 'rgba(249,115,22,0.25)' }}>
+          <div className="vs-stat-card warning">
             <div className="vs-stat-label">Needs Confirm</div>
             <div className="vs-stat-value">{matchedCount}</div>
           </div>
@@ -68,7 +68,7 @@ export default function VerificationStage({
             <div className="vs-stat-value">{notFoundCount}</div>
           </div>
           {duplicateCount > 0 && (
-            <div className="vs-stat-card" style={{ borderColor: 'rgba(124,58,237,0.25)' }}>
+            <div className="vs-stat-card claimed">
               <div className="vs-stat-label">Claimed</div>
               <div className="vs-stat-value">{duplicateCount}</div>
             </div>
@@ -101,7 +101,7 @@ export default function VerificationStage({
       )}
 
       {/* Spacer to push navigation to bottom */}
-      <div style={{ flex: 1, background: 'transparent' }} />
+      <div className="vs-spacer" />
 
       {/* Navigation and Action Buttons */}
       {!isVerifying && ocrResults && (

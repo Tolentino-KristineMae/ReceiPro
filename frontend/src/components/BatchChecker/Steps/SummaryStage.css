@@ -6,11 +6,18 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 14px;
   overflow-y: auto;
+  overflow-x: hidden;
+  gap: 12px;
   font-family: 'Inter', system-ui, sans-serif;
   background: #ffffff;
   animation: sum-fade-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  box-sizing: border-box;
+}
+
+.sum-root * {
+  box-sizing: border-box;
 }
 
 @keyframes sum-fade-in {
@@ -30,6 +37,10 @@
 /* ─── Select Styling ─────────────────────────────────────────────────────────── */
 select {
   color-scheme: light;
+  min-height: 44px;
+  font-size: 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
 }
 
 select option {
@@ -38,6 +49,10 @@ select option {
 }
 
 /* ─── Input Focus States ─────────────────────────────────────────────────────── */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
 input:focus {
   border-color: #f97316 !important;
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1) !important;
@@ -48,15 +63,17 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1) !important;
 }
 
-/* ─── Responsive Styles ───────────────────────────────────────────────────── */
-@media (max-width: 768px) {
+/* ─── Desktop Enhancements ─────────────────────────────────────────────────── */
+@media (min-width: 769px) {
   .sum-root {
-    padding: 16px;
+    padding: 24px;
   }
 }
 
-@media (max-width: 480px) {
+/* ─── Extra Small Screens (iPhone SE) ─────────────────────────────────────── */
+@media (max-width: 420px) {
   .sum-root {
-    padding: 12px;
+    padding: 10px;
+    gap: 10px;
   }
 }
