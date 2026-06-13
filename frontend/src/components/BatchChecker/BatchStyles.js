@@ -773,7 +773,7 @@ export const BATCH_STYLES = `
     .bcp-root { padding: 1rem; }
     .receipt-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
     .glass-card { padding: 1.25rem 1rem; border-radius: var(--radius-lg); }
-    .batch-header { padding: 1.5rem; }
+    .batch-header { padding: 1.25rem; }
     .stages-wrap { padding: 0; gap: 0.5rem; }
     .stage-item { width: auto; }
     .stage-label { font-size: 8px; }
@@ -822,7 +822,7 @@ export const BATCH_STYLES = `
   @media (max-width: 768px) {
     .batch-header-top {
       flex-direction: column !important;
-      gap: 2rem !important;
+      gap: 1rem !important;
     }
 
     .batch-title {
@@ -831,8 +831,33 @@ export const BATCH_STYLES = `
 
     .batch-actions {
       width: 100% !important;
-      justify-content: flex-start !important;
-      gap: 1rem !important;
+      flex-wrap: wrap !important;
+      gap: 8px !important;
+    }
+
+    /* Icon-only buttons stay small squares */
+    .btn-icon-modern {
+      flex-shrink: 0;
+    }
+
+    /* Reset button stays compact */
+    .reset-batch-btn {
+      flex-shrink: 0;
+    }
+
+    /* Primary action button fills remaining space */
+    .btn-primary-modern {
+      flex: 1 1 auto !important;
+      width: 100% !important;
+      justify-content: center !important;
+      margin-top: 4px !important;
+    }
+
+    /* View summary button also full width */
+    .view-summary-btn {
+      flex: 1 1 auto !important;
+      width: 100% !important;
+      justify-content: center !important;
     }
 
     .search-sort-container {
@@ -851,7 +876,7 @@ export const BATCH_STYLES = `
     }
 
     .metric-grid {
-      gap: 1.5rem !important;
+      gap: 1rem !important;
     }
   }
 
