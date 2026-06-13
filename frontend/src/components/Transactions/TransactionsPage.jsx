@@ -310,12 +310,12 @@ const CSS = `
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-md);
     padding: 10px 12px;
-    font-size: 14px;
+    font-size: 16px;
     color: var(--text-primary);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     font-family: inherit;
     box-sizing: border-box;
-    height: 42px;
+    height: 46px;
     line-height: 1.4;
     -webkit-appearance: none;
     appearance: none;
@@ -325,7 +325,7 @@ const CSS = `
     -webkit-appearance: none;
     appearance: none;
     padding: 10px 12px;
-    height: 42px;
+    height: 46px;
     line-height: 1.4;
   }
 
@@ -350,7 +350,7 @@ const CSS = `
     top: 50%;
     transform: translateY(-50%);
     font-weight: 600;
-    font-size: 14px;
+    font-size: 16px;
     color: var(--text-muted);
     pointer-events: none;
     z-index: 1;
@@ -359,7 +359,7 @@ const CSS = `
   .amount-input {
     padding-left: 34px;
     font-family: var(--font-mono);
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
     letter-spacing: -0.02em;
   }
@@ -551,6 +551,33 @@ const CSS = `
     gap: 0.75rem;
   }
 
+  @media (max-width: 768px) {
+    .table-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .table-header > div:nth-child(2) {
+      width: 100%;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .table-header > div:nth-child(2) > div:first-child {
+      width: 100%;
+    }
+
+    .table-header > div:nth-child(2) > div:first-child input {
+      width: 100% !important;
+    }
+
+    .table-header > div:nth-child(2) > div:nth-child(2) {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+
   .table-title {
     font-size: 1.25rem;
     font-weight: 800;
@@ -585,7 +612,7 @@ const CSS = `
     box-shadow: var(--shadow-lg);
     max-height: 550px;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--border-strong) transparent;
   }
@@ -593,26 +620,68 @@ const CSS = `
   .table {
     width: 100%;
     border-collapse: collapse;
-    table-layout: fixed;
+    table-layout: auto;
   }
 
   @media (max-width: 768px) {
-    .table {
-      table-layout: auto;
+    .table-container {
+      overflow-x: auto;
     }
+
+    .table thead {
+      display: none;
+    }
+
+    .table,
+    .table tbody,
+    .table tr,
     .table td {
-      white-space: normal !important;
-      word-break: break-word;
+      display: block;
+      width: 100% !important;
     }
-  }
 
-  .table-container::-webkit-scrollbar {
-    width: 6px;
-  }
+    .table tr {
+      margin-bottom: 1rem;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      background: white;
+    }
 
-  .table-container::-webkit-scrollbar-thumb {
-    background-color: var(--border-strong);
-    border-radius: 10px;
+    .table td {
+      text-align: right;
+      padding-left: 50%;
+      position: relative;
+      white-space: normal;
+      word-break: break-word;
+      border-bottom: none;
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+    }
+
+    .table td::before {
+      content: attr(data-label);
+      position: absolute;
+      left: 0;
+      width: 45%;
+      padding-right: 0.75rem;
+      font-weight: 700;
+      text-align: left;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.05em;
+    }
+
+    .table td:last-child {
+      text-align: center;
+      padding-left: 0;
+      padding-top: 1rem;
+    }
+
+    .table td:last-child::before {
+      display: none;
+    }
   }
 
   .table-container::-webkit-scrollbar {
@@ -628,6 +697,8 @@ const CSS = `
   .table-container::-webkit-scrollbar-track {
     background: transparent;
   }
+
+  .table thead {
     position: sticky;
     top: 0;
     z-index: 10;
@@ -791,13 +862,15 @@ const CSS = `
     background: #ffffff;
     border: 1px solid var(--border-strong);
     color: var(--text-primary);
-    padding: 6px 10px;
+    padding: 8px 12px;
     border-radius: var(--radius-sm);
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 600;
     font-family: var(--font-family);
     outline: none;
     transition: all 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
   }
 
   .inline-edit-input:focus,
@@ -1282,17 +1355,10 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-// Sort transactions newest-first: by date desc, then by id desc as tiebreaker
-const sortDesc = (txns) => [...txns].sort((a, b) => {
-  const dateDiff = new Date(b.transaction_date) - new Date(a.transaction_date);
-  if (dateDiff !== 0) return dateDiff;
-  return (b.id ?? 0) - (a.id ?? 0);
-});
-
 // Recompute running_balance on every row and meta totals from local state.
 // Rows are sorted oldest→newest for the running balance walk, then we restore
-// the original (desc) display order.
-const recomputeBalances = (txns, openingBal) => {
+// the requested display order (asc or desc).
+const recomputeBalances = (txns, openingBal, sortOrder = 'desc') => {
   const ob = parseFloat(openingBal ?? 0);
   // Walk oldest → newest to accumulate running balance
   const asc = [...txns].sort((a, b) => {
@@ -1308,8 +1374,18 @@ const recomputeBalances = (txns, openingBal) => {
     else                           { running -= amt; totalDebit  += amt; }
     return { ...t, running_balance: running };
   });
-  // Restore desc display order
-  const result = sortDesc(withBalances);
+  // Restore requested display order
+  let result;
+  if (sortOrder === 'asc') {
+    result = withBalances;
+  } else {
+    // Sort newest-first: by date desc, then by id desc as tiebreaker
+    result = [...withBalances].sort((a, b) => {
+      const dateDiff = new Date(b.transaction_date) - new Date(a.transaction_date);
+      if (dateDiff !== 0) return dateDiff;
+      return (b.id ?? 0) - (a.id ?? 0);
+    });
+  }
   const meta = {
     opening_balance: ob,
     total_credit:    totalCredit,
@@ -1359,7 +1435,7 @@ export default function TransactionsPage() {
       const data = await response.json();
       const rawTxns = Array.isArray(data?.data) ? data.data : [];
       const ob = data?.meta?.opening_balance ?? 0;
-      const { transactions: computed, meta } = recomputeBalances(rawTxns, ob);
+      const { transactions: computed, meta } = recomputeBalances(rawTxns, ob, sortOrder);
       setTransactions(computed);
       setTransactionMeta(meta);
     } catch {
@@ -1432,7 +1508,8 @@ export default function TransactionsPage() {
         setTransactions(prev => {
           const { transactions: computed, meta } = recomputeBalances(
             [saved, ...prev],
-            transactionMeta.opening_balance
+            transactionMeta.opening_balance,
+            sortOrder
           );
           setTransactionMeta(meta);
           return computed;
@@ -1457,7 +1534,8 @@ export default function TransactionsPage() {
         const filtered = prev.filter(t => t.id !== id);
         const { transactions: computed, meta } = recomputeBalances(
           filtered,
-          transactionMeta.opening_balance
+          transactionMeta.opening_balance,
+          sortOrder
         );
         setTransactionMeta(meta);
         return computed;
@@ -1490,7 +1568,8 @@ export default function TransactionsPage() {
           const mapped = prev.map(t => t.id === updated.id ? updated : t);
           const { transactions: computed, meta } = recomputeBalances(
             mapped,
-            transactionMeta.opening_balance
+            transactionMeta.opening_balance,
+            sortOrder
           );
           setTransactionMeta(meta);
           return computed;
