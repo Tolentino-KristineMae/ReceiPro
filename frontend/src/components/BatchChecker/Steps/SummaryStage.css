@@ -63,6 +63,69 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1) !important;
 }
 
+/* ─── Financial Cards Grid ───────────────────────────────────────────────────── */
+.sum-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sum-card-amount {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  font-family: 'JetBrains Mono', monospace;
+  word-break: break-all;
+  line-height: 1.2;
+}
+
+/* ─── Net Amount Block ───────────────────────────────────────────────────────── */
+.sum-net-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.sum-net-amount {
+  font-size: 32px;
+  font-weight: 900;
+  color: #f97316;
+  letter-spacing: -0.02em;
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap;
+}
+
+/* ─── Deduction Row ──────────────────────────────────────────────────────────── */
+.sum-deduction-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(251, 146, 60, 0.15);
+  box-shadow: 0 2px 6px rgba(67, 20, 7, 0.02);
+}
+
+/* ─── Action Buttons ─────────────────────────────────────────────────────────── */
+.sum-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid rgba(251, 146, 60, 0.1);
+}
+
+/* ─── Deductions Header ──────────────────────────────────────────────────────── */
+.sum-deductions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
 /* ─── Desktop Enhancements ─────────────────────────────────────────────────── */
 @media (min-width: 769px) {
   .sum-root {
@@ -76,12 +139,101 @@ select:focus {
     padding: 10px;
     gap: 8px;
   }
+
+  /* Financial cards: stack vertically so amounts have full width */
+  .sum-cards-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .sum-card-amount {
+    font-size: 16px;
+  }
+
+  /* Deduction rows: stack type + amount on top, delete button below-right */
+  .sum-deduction-row {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  /* Move delete button to span both rows on the right */
+  .sum-deduction-delete {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .sum-deduction-type {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .sum-deduction-amount {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  /* Net amount: stack label on top, amount below */
+  .sum-net-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .sum-net-amount {
+    font-size: 28px;
+  }
+
+  /* Deductions header: keep on one line but tighten */
+  .sum-deductions-header {
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  .sum-deductions-header button {
+    padding: 8px 10px !important;
+    font-size: 9px !important;
+  }
+
+  /* Action buttons: stack on very narrow but keep side-by-side otherwise */
+  .sum-actions {
+    padding-top: 12px;
+    gap: 8px;
+  }
 }
 
-/* ─── Extra Small Screens (iPhone SE) ─────────────────────────────────────── */
-@media (max-width: 420px) {
+/* ─── Extra Small Screens (iPhone SE, ≤ 390px) ─────────────────────────────── */
+@media (max-width: 390px) {
   .sum-root {
     padding: 8px;
     gap: 6px;
+  }
+
+  .sum-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .sum-card-amount {
+    font-size: 18px;
+  }
+
+  .sum-net-amount {
+    font-size: 24px;
+  }
+
+  /* Stack action buttons vertically */
+  .sum-actions {
+    flex-direction: column;
+  }
+
+  .sum-actions button {
+    flex: unset !important;
+    width: 100%;
   }
 }
