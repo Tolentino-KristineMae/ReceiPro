@@ -9,130 +9,127 @@ export default function VerificationStage({
   onFinalize,
   onBack,
 }) {
-  const verifiedCount = verificationSummary?.confirmed ?? 0;
-  const matchedCount = verificationSummary?.matched ?? 0;
-  const totalCount = verificationSummary?.total ?? ocrResults?.length ?? 0;
-  const notFoundCount = verificationSummary?.not_found ?? 0;
-  const duplicateCount = verificationSummary?.duplicate ?? 0;
+  const total      = verificationSummary?.total      ?? ocrResults?.length ?? 0;
+  const confirmed  = verificationSummary?.confirmed  ?? 0;
+  const matched    = verificationSummary?.matched     ?? 0;
+  const notFound   = verificationSummary?.not_found  ?? 0;
+  const duplicate  = verificationSummary?.duplicate  ?? 0;
+
+  const isDone     = !isVerifying && ocrResults;
+  const isReady    = !isVerifying && !ocrResults;
+
+  const pct = total > 0 ? Math.round((confirmed / total) * 100) : 0;
 
   return (
     <div className="vs-root">
-      {/* Header Card */}
-      <div className={`vs-header-card ${ocrResults ? 'complete' : isVerifying ? 'processing' : 'ready'}`}>
-        <div className="vs-header-icon">
+
+      {/* ── Status Banner ─────────────────────────────────────── */}
+      <div className={`vs-banner ${isVerifying ? 'verifying' : isDone ? 'done' : 'idle'}`}>
+        <div className="vs-banner-icon">
           {isVerifying ? (
-            <div className="vs-header-spinner" />
-          ) : ocrResults ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
+            <div className="vs-spin" />
+          ) : isDone ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
           ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
             </svg>
           )}
         </div>
-        <div className="vs-header-content">
-          <h3 className="vs-header-title">
-            {isVerifying ? 'Verifying...' : ocrResults ? 'Complete' : 'Ready'}
-          </h3>
-          <p className="vs-header-subtitle">
-            {isVerifying 
-              ? 'Checking receipts against database...' 
-              : ocrResults 
-                ? 'Review matches and confirm each receipt before finalizing.' 
-                : 'Click below to start verification.'}
-          </p>
+        <div className="vs-banner-text">
+          <span className="vs-banner-title">
+            {isVerifying ? 'Running Check…' : isDone ? 'Check Complete' : 'Ready to Check'}
+          </span>
+          <span className="vs-banner-sub">
+            {isVerifying
+              ? 'Matching receipts against the database'
+              : isDone
+                ? `${confirmed} of ${total} receipts confirmed`
+                : 'Start to match receipts against the transaction database'}
+          </span>
         </div>
       </div>
 
-      {/* Progress Stats */}
-      {totalCount > 0 && ocrResults && (
-        <div className="vs-stats-grid">
-          <div className="vs-stat-card">
-            <div className="vs-stat-label">Total</div>
-            <div className="vs-stat-value">{totalCount}</div>
-          </div>
-          <div className="vs-stat-card success">
-            <div className="vs-stat-label">Confirmed</div>
-            <div className="vs-stat-value">{verifiedCount}</div>
-          </div>
-          <div className="vs-stat-card warning">
-            <div className="vs-stat-label">Needs Confirm</div>
-            <div className="vs-stat-value">{matchedCount}</div>
-          </div>
-          <div className="vs-stat-card error">
-            <div className="vs-stat-label">Missing</div>
-            <div className="vs-stat-value">{notFoundCount}</div>
-          </div>
-          {duplicateCount > 0 && (
-            <div className="vs-stat-card claimed">
-              <div className="vs-stat-label">Claimed</div>
-              <div className="vs-stat-value">{duplicateCount}</div>
+      {/* ── Stats Row ──────────────────────────────────────────── */}
+      {isDone && total > 0 && (
+        <>
+          <div className="vs-stats-row">
+            <div className="vs-stat neutral">
+              <span className="vs-stat-val">{total}</span>
+              <span className="vs-stat-lbl">Total</span>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Processing Indicator */}
-      {isVerifying && (
-        <div className="vs-processing-card">
-          <div className="vs-spinner-wrapper">
-            <div className="vs-spinner" />
+            <div className="vs-stat success">
+              <span className="vs-stat-val">{confirmed}</span>
+              <span className="vs-stat-lbl">Confirmed</span>
+            </div>
+            <div className="vs-stat warning">
+              <span className="vs-stat-val">{matched}</span>
+              <span className="vs-stat-lbl">Matched</span>
+            </div>
+            <div className={`vs-stat ${notFound > 0 ? 'danger' : 'neutral'}`}>
+              <span className="vs-stat-val">{notFound}</span>
+              <span className="vs-stat-lbl">Missing</span>
+            </div>
           </div>
-          <span className="vs-processing-text">Verifying receipts...</span>
+
+          {/* ── Progress bar ─────────────────────────────────── */}
+          <div className="vs-progress-wrap">
+            <div className="vs-progress-track">
+              <div className="vs-progress-fill" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="vs-progress-pct">{pct}%</span>
+          </div>
+        </>
+      )}
+
+      {/* ── Duplicate notice (only when relevant) ─────────────── */}
+      {isDone && duplicate > 0 && (
+        <div className="vs-notice">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>{duplicate} receipt{duplicate !== 1 ? 's' : ''} already claimed by another batch</span>
         </div>
       )}
 
-      {/* Action Button - Start Verification */}
-      {!isVerifying && !ocrResults && onStartVerification && (
-        <button className="vs-action-btn" onClick={onStartVerification}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-            <polyline points="10 9 9 9 8 9" />
+      {/* ── Spacer ──────────────────────────────────────────────── */}
+      <div className="vs-spacer" />
+
+      {/* ── Start Check ─────────────────────────────────────────── */}
+      {isReady && onStartVerification && (
+        <button className="vs-btn primary" onClick={onStartVerification}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"/>
           </svg>
           Start Check
         </button>
       )}
 
-      {/* Spacer to push navigation to bottom */}
-      <div className="vs-spacer" />
-
-      {/* Navigation and Action Buttons */}
-      {!isVerifying && ocrResults && (
+      {/* ── Bottom Nav ──────────────────────────────────────────── */}
+      {isDone && (
         <div className="vs-nav">
-          <div className="vs-nav-buttons">
-            {onBack && (
-              <button 
-                className="vs-nav-btn back"
-                onClick={onBack}
-              >
-                Back
-              </button>
-            )}
-            {onFinalize && (
-              <button className="vs-nav-btn finalize" onClick={onFinalize}>
-                Finalize
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
-              </button>
-            )}
-          </div>
-          <div className="vs-nav-progress">
-            <div className="vs-nav-divider" />
-            <span className="vs-nav-text">
-              Stage 5 of 8
-            </span>
-            <div className="vs-nav-divider" />
-          </div>
+          {onBack && (
+            <button className="vs-btn ghost" onClick={onBack}>Back</button>
+          )}
+          {onFinalize && (
+            <button className="vs-btn finalize" onClick={onFinalize}>
+              Finalize
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+          )}
         </div>
       )}
+
+      <div className="vs-stage-label">Stage 5 of 8 · Run Check</div>
+
     </div>
   );
 }
