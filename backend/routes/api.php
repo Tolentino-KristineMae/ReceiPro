@@ -6,6 +6,29 @@ use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\BatchController;
 use App\Http\Controllers\Api\SettingsController;
+use Illuminate\Support\Facades\DB;
+
+// Test DB connection
+Route::get('/test-db', function () {
+    try {
+        DB::connection()->getPdo();
+        return response()->json(['status' => 'ok', 'database' => DB::connection()->getDatabaseName()]);
+    } catch (\Exception $e) {
+        return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+    }
+});
+
+// Test env vars
+Route::get('/test-env', function () {
+    return response()->json([
+        'DB_HOST' => env('DB_HOST'),
+        'DB_PORT' => env('DB_PORT'),
+        'DB_DATABASE' => env('DB_DATABASE'),
+        'DB_USERNAME' => env('DB_USERNAME'),
+        'APP_KEY' => substr(env('APP_KEY'), 0, 20) . '...',
+        'SUPABASE_URL' => env('SUPABASE_URL'),
+    ]);
+});
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
