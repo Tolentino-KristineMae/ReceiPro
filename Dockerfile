@@ -1,6 +1,10 @@
+# Use an official PHP runtime as a parent image
 FROM php:8.3-apache
 
-# Install dependencies
+# Set working directory
+WORKDIR /var/www/html
+
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -19,20 +23,16 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 # Install PHP extensions
 RUN docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd
 
-# Enable mod_rewrite and mod_headers for Apache
-RUN a2enmod rewrite
-RUN a2enmod headers
+# Enable Apache modules
+RUN a2enmod rewrite headers
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
-WORKDIR /var/www/html
-
 # Copy existing application directory contents
 COPY backend/ /var/www/html/
 
-# Install dependencies
+# Install PHP dependencies
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
 # Set permissions
@@ -46,6 +46,7 @@ RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
 
 # Add startup script
 RUN echo '#!/bin/bash' > /start.sh && \
+    echo 'cd /var/www/html' >> /start.sh && \
     echo 'php artisan config:clear' >> /start.sh && \
     echo 'php artisan cache:clear' >> /start.sh && \
     echo 'php artisan migrate --force' >> /start.sh && \
