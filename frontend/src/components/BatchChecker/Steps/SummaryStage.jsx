@@ -416,11 +416,7 @@ export default function SummaryStage({
         marginBottom: '16px',
         boxShadow: '0 4px 16px rgba(249, 115, 22, 0.1)'
       }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
+        <div className="sum-net-row">
           <div>
             <div style={{
               fontSize: '10px',
@@ -441,26 +437,14 @@ export default function SummaryStage({
               Final amount for billing
             </div>
           </div>
-          <div style={{
-            fontSize: '32px',
-            fontWeight: 900,
-            color: '#f97316',
-            letterSpacing: '-0.02em',
-            fontFamily: "'JetBrains Mono', monospace"
-          }}>
+          <div className="sum-net-amount">
             ₱{fmt(calculatedNetAmount)}
           </div>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div style={{ 
-        display: 'flex',
-        gap: '12px',
-        marginTop: 'auto',
-        paddingTop: '16px',
-        borderTop: '1px solid rgba(251, 146, 60, 0.1)'
-      }}>
+      <div className="sum-actions">
         <button 
           onClick={onBack}
           style={{
