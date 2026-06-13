@@ -13,8 +13,21 @@ function App() {
    const [receipts, setReceipts] = useState([]);
    const [selectedReceipt, setSelectedReceipt] = useState(null);
    const [showTransactionModal, setShowTransactionModal] = useState(false);
+   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+   const [isMobile, setIsMobile] = useState(false);
    const location = useLocation();
    const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkIsMobile = () => setIsMobile(window.innerWidth < 768);
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   // Load receipts on mount
   useEffect(() => {
@@ -54,28 +67,40 @@ function App() {
    return (
     <ThemeProvider>
       <div className="flex h-screen overflow-hidden" style={{ background: '#fffbf5' }}>
+          <Sidebar 
+            onMobileToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+            isMobileMenuOpen={isMobileMenuOpen} 
+          />
 
-          <Sidebar />
-
-          <main className="flex-1 overflow-y-auto min-w-0" style={{ background: '#fffbf5' }}>
-            <div className="px-8 py-10">
-              <div className="max-w-[1600px] mx-auto">
-                <Routes>
-                  <Route path="/" element={
-                    <Dashboard
-                      receipts={receipts}
-                      onSelectReceipt={setSelectedReceipt}
-                      onNavigate={(path) => navigate(path)}
-                    />
-                  } />
-                  <Route path="/transactions" element={<TransactionsPage />} />
-                  <Route path="/batch" element={<BatchCheckerPage />} />
-                  <Route path="/batch/:batchId" element={<BatchCheckerPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/messages" element={<div className="text-orange-950 p-10">Messages coming soon...</div>} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </div>
+          <main 
+            className="flex-1 overflow-y-auto min-w-0" 
+            style={{ 
+              background: '#fffbf5',
+              paddingTop: isMobile ? '70px' : '0' 
+            }}
+          >
+            <div 
+              className="mx-auto" 
+              style={{ 
+                padding: isMobile ? '16px' : '32px 40px',
+                maxWidth: '1600px'
+              }}
+            >
+              <Routes>
+                <Route path="/" element={
+                  <Dashboard
+                    receipts={receipts}
+                    onSelectReceipt={setSelectedReceipt}
+                    onNavigate={(path) => navigate(path)}
+                  />
+                } />
+                <Route path="/transactions" element={<TransactionsPage />} />
+                <Route path="/batch" element={<BatchCheckerPage />} />
+                <Route path="/batch/:batchId" element={<BatchCheckerPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/messages" element={<div className="text-orange-950 p-10">Messages coming soon...</div>} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
             </div>
           </main>
         </div>

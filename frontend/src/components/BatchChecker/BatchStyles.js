@@ -624,4 +624,27 @@ export const BATCH_STYLES = `
     from { opacity: 0; }
     to { opacity: 1; }
   }
+
+  /* ─── RESPONSIVE STYLES ─── */
+  @media (max-width: 1024px) {
+    .receipt-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  @media (max-width: 768px) {
+    .bcp-root { padding: 1rem; }
+    .receipt-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .glass-card { padding: 1.25rem 1rem; border-radius: var(--radius-lg); }
+    .batch-header { padding: 1.5rem; }
+    .stages-wrap { padding: 0; gap: 0.5rem; }
+    .stage-item { width: auto; }
+    .stage-label { font-size: 8px; }
+    .h1-modern { font-size: 1.5rem; }
+  }
+
+  @media (max-width: 480px) {
+    .receipt-grid { grid-template-columns: 1fr; }
+    .stages-wrap { flex-wrap: wrap; gap: 1rem; justify-content: center; }
+    .drop-zone { padding: 2rem 1rem; }
+    .empty-box { padding: 3rem 1.5rem; }
+  }
 `;

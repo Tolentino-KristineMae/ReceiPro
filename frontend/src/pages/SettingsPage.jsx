@@ -538,18 +538,34 @@ export default function SettingsPage() {
 
       <style>{`@keyframes sp { to { transform:rotate(360deg); } @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }`}</style>
 
+      <style>{`
+        .settings-wrapper {
+          max-width: 920px;
+          margin: 0 auto;
+          padding: 32px 16px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          animation: fadeUp 0.2s ease both;
+        }
+        .settings-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 20px;
+          align-items: start;
+        }
+        @media (max-width: 768px) {
+          .settings-wrapper {
+            padding: 20px 12px 12px;
+          }
+          .settings-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+      
       {/* ── Page wrapper — paddingTop gives breathing room from top ── */}
-      <div style={{
-        maxWidth:'920px',
-        margin:'0 auto',
-        paddingTop:'32px',
-        display:'flex',
-        flexDirection:'column',
-        gap:'24px',
-        animation:'fadeUp 0.2s ease both',
-      }}>
-
-
+      <div className="settings-wrapper">
 
         {/* ── Info banner ── */}
         <div style={{
@@ -563,12 +579,7 @@ export default function SettingsPage() {
         </div>
 
         {/* ── Two-column grid ── */}
-        <div style={{
-          display:'grid',
-          gridTemplateColumns:'repeat(auto-fit, minmax(360px, 1fr))',
-          gap:'20px',
-          alignItems:'start',
-        }}>
+        <div className="settings-grid">
 
           {/* ── Account Holders ── */}
           <Section icon={Icon.Users} title="Account Holders" subtitle="People who receive payments"

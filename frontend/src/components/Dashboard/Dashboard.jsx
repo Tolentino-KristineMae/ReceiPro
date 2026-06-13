@@ -119,12 +119,30 @@ function DashboardStats({ receipts }) {
     },
   ];
 
+  const [isMobile, setIsMobile] = React.useState(false);
+  const [isTablet, setIsTablet] = React.useState(false);
+  React.useEffect(() => {
+    const checkSize = () => {
+      setIsMobile(window.innerWidth < 640);
+      setIsTablet(window.innerWidth < 1024);
+    };
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
+  const getGridColumns = () => {
+    if (isMobile) return '1fr';
+    if (isTablet) return 'repeat(2, 1fr)';
+    return 'repeat(5, 1fr)';
+  };
+
   return (
     <div style={{ 
       display: 'grid',
-      gridTemplateColumns: 'repeat(5, 1fr)',
-      gap: '1.25rem',
-      marginBottom: '0.5rem'
+      gridTemplateColumns: getGridColumns(),
+      gap: '1rem',
+      marginBottom: '1.5rem'
     }}>
       {stats.map(stat => (
         <div
@@ -133,8 +151,8 @@ function DashboardStats({ receipts }) {
             background: stat.bg,
             backdropFilter: 'blur(12px)',
             border: '1px solid rgba(255, 255, 255, 0.7)',
-            borderRadius: '20px',
-            padding: '1.5rem 1.25rem',
+            borderRadius: '16px',
+            padding: '1.25rem 1rem',
             position: 'relative',
             overflow: 'hidden',
             transition: 'all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
@@ -171,9 +189,9 @@ function DashboardStats({ receipts }) {
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', position: 'relative', zIndex: 1 }}>
             <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '16px',
+              width: '44px',
+              height: '44px',
+              borderRadius: '14px',
               background: stat.gradient,
               display: 'flex',
               alignItems: 'center',
@@ -181,12 +199,12 @@ function DashboardStats({ receipts }) {
               color: 'white',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
             }}>
-              <stat.icon size={22} />
+              <stat.icon size={20} />
             </div>
             <div style={{
               fontSize: '10px',
               fontWeight: '700',
-              padding: '0.3rem 0.7rem',
+              padding: '0.25rem 0.6rem',
               borderRadius: '9999px',
               background: 'white',
               color: '#64748b',
@@ -214,7 +232,7 @@ function DashboardStats({ receipts }) {
           
           <div style={{
             fontFamily: 'JetBrains Mono, monospace',
-            fontSize: '2rem',
+            fontSize: isMobile ? '1.75rem' : '2rem',
             fontWeight: '800',
             letterSpacing: '-0.03em',
             lineHeight: '1.1',
@@ -254,11 +272,19 @@ function RecentActivity({ receipts, onSelectReceipt, onNavigate }) {
     failed: { bg: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', label: 'Failed' },
   };
 
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const checkSize = () => setIsMobile(window.innerWidth < 640);
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
   return (
     <div style={{
       background: 'white',
-      borderRadius: '20px',
-      padding: '1.5rem',
+      borderRadius: '16px',
+      padding: isMobile ? '1.25rem 1rem' : '1.5rem',
       boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05)',
       border: '1px solid rgba(248, 250, 252, 1)'
     }}>
@@ -301,7 +327,7 @@ function RecentActivity({ receipts, onSelectReceipt, onNavigate }) {
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         {recentReceipts.length > 0 ? recentReceipts.map(receipt => {
           const amount = receipt.ocr_data?.amount
             ? `₱${Number(receipt.ocr_data.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
@@ -322,9 +348,9 @@ function RecentActivity({ receipts, onSelectReceipt, onNavigate }) {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.875rem',
-                padding: '0.875rem 1rem',
-                borderRadius: '14px',
+                gap: '0.75rem',
+                padding: '0.875rem 0.875rem',
+                borderRadius: '12px',
                 background: 'transparent',
                 border: '1px solid transparent',
                 transition: 'all 0.2s ease',
@@ -373,7 +399,7 @@ function RecentActivity({ receipts, onSelectReceipt, onNavigate }) {
               <div style={{
                 fontSize: '0.6875rem',
                 fontWeight: '700',
-                padding: '0.3rem 0.625rem',
+                padding: '0.25rem 0.5rem',
                 borderRadius: '9999px',
                 background: status.bg,
                 color: status.color,
@@ -429,11 +455,19 @@ function QuickActions({ onNavigate }) {
     },
   ];
 
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const checkSize = () => setIsMobile(window.innerWidth < 640);
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
   return (
     <div style={{
       background: 'white',
-      borderRadius: '20px',
-      padding: '1.5rem',
+      borderRadius: '16px',
+      padding: isMobile ? '1.25rem 1rem' : '1.5rem',
       boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05)',
       border: '1px solid rgba(248, 250, 252, 1)'
     }}>
@@ -449,8 +483,8 @@ function QuickActions({ onNavigate }) {
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '0.875rem'
+        gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+        gap: '0.75rem'
       }}>
         {actions.map((action, index) => (
           <button 
@@ -460,8 +494,8 @@ function QuickActions({ onNavigate }) {
               display: 'flex',
               alignItems: 'center',
               gap: '0.875rem',
-              padding: '1rem 1.125rem',
-              borderRadius: '16px',
+              padding: '0.875rem 1rem',
+              borderRadius: '14px',
               background: 'transparent',
               border: '1px solid rgba(226, 232, 240, 1)',
               cursor: 'pointer',
@@ -479,9 +513,9 @@ function QuickActions({ onNavigate }) {
             }}
           >
             <div style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '14px',
+              width: '40px',
+              height: '40px',
+              borderRadius: '12px',
               background: action.gradient,
               display: 'flex',
               alignItems: 'center',
@@ -489,7 +523,7 @@ function QuickActions({ onNavigate }) {
               color: 'white',
               flexShrink: 0
             }}>
-              <action.icon size={20} />
+              <action.icon size={18} />
             </div>
             <span style={{
               fontSize: '0.875rem',
@@ -510,16 +544,32 @@ export default function Dashboard({
   onSelectReceipt,
   onNavigate,
 }) {
+  const [isMobile, setIsMobile] = React.useState(false);
+  const [isTablet, setIsTablet] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkSize = () => {
+      setIsMobile(window.innerWidth < 640);
+      setIsTablet(window.innerWidth < 1024);
+    };
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
   return (
     <div style={{
       minHeight: '100vh',
-      padding: '2rem',
-      maxWidth: '1600px',
-      margin: '0 auto',
+      padding: isMobile ? '0.5rem 0 2rem' : '0 0 2rem',
       background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)'
     }}>
       <DashboardStats receipts={receipts} />
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr', gap: '1.5rem', marginTop: '1.5rem' }}>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: isMobile ? '1fr' : (isTablet ? '1fr' : '2fr 1.5fr'), 
+        gap: '1rem', 
+        marginTop: '1rem' 
+      }}>
         <QuickActions onNavigate={onNavigate} />
         <RecentActivity receipts={receipts} onSelectReceipt={onSelectReceipt} onNavigate={onNavigate} />
       </div>
