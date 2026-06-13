@@ -16,14 +16,19 @@ class ReceiptController extends Controller
     public function serveImage(Receipt $receipt, Request $request)
     {
         $type = $request->query('type', 'original');
-        $filePath = ($type === 'crop' && $receipt->cropped_image) 
-            ? $receipt->cropped_image 
+        $filePath = ($type === 'crop' && $receipt->cropped_image)
+            ? $receipt->cropped_image
             : $receipt->file_path;
 
-        // Use correct Supabase Storage public URL format
-        $publicUrl = env('SUPABASE_URL') . '/storage/v1/object/public/' . env('SUPABASE_BUCKET') . '/' . $filePath;
+        $supabaseUrl = config('filesystems.disks.supabase.url') ?: env('SUPABASE_URL');
+        $bucket      = config('filesystems.disks.supabase.bucket') ?: env('SUPABASE_BUCKET', 'receipts');
 
-        // Redirect to Supabase public URL
+        if (empty($supabaseUrl) || empty($filePath)) {
+            return response()->json(['error' => 'Image not available'], 404);
+        }
+
+        $publicUrl = rtrim($supabaseUrl, '/') . '/storage/v1/object/public/' . $bucket . '/' . $filePath;
+
         return redirect()->to($publicUrl);
     }
 
