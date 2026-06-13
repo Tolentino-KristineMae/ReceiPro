@@ -11,7 +11,7 @@ services:
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
-        value: true  # Temporarily true for debugging
+        value: false
       - key: APP_URL
         value: https://receipro.onrender.com
       - key: DB_CONNECTION
