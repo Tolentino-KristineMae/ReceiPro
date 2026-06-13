@@ -2432,55 +2432,41 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
               )}
               {/* Finalized Claims View (Left Side) */}
               {phase === 'finalize' && finalizedBatch && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fffbf5', padding: '40px' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fffbf5', padding: '12px' }}>
                   {/* Header */}
-                  <div style={{ marginBottom: '28px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ padding: '10px 18px', borderRadius: '12px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ padding: '6px 12px', borderRadius: '8px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
                           </svg>
-                          <span style={{ color: '#f97316', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>Batch Summary</span>
+                          <span style={{ color: '#f97316', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>Batch Summary</span>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
-                          <span style={{ color: '#059669', fontSize: '11px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                        <div style={{ padding: '4px 8px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', whiteSpace: 'nowrap' }}>
+                          <span style={{ color: '#059669', fontSize: '10px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
                             {verificationSummary?.confirmed ?? 0} Confirmed
                           </span>
                         </div>
-                        {(verificationSummary?.matched ?? 0) > 0 && (
-                          <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)' }}>
-                            <span style={{ color: '#ea580c', fontSize: '11px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
-                              {verificationSummary.matched} Needs Confirm
-                            </span>
-                          </div>
-                        )}
                         {(verificationSummary?.not_found ?? 0) > 0 && (
-                          <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
-                            <span style={{ color: '#dc2626', fontSize: '11px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
+                          <div style={{ padding: '4px 8px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', whiteSpace: 'nowrap' }}>
+                            <span style={{ color: '#dc2626', fontSize: '10px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
                               {verificationSummary.not_found} Not Found
-                            </span>
-                          </div>
-                        )}
-                        {(verificationSummary?.duplicate ?? 0) > 0 && (
-                          <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.25)' }}>
-                            <span style={{ color: '#7c3aed', fontSize: '11px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
-                              {verificationSummary.duplicate} Already Claimed
                             </span>
                           </div>
                         )}
                       </div>
                     </div>
-                    <p style={{ color: 'rgba(67,20,7,0.55)', fontSize: '13px', fontWeight: 500, fontFamily: "'Inter', sans-serif", margin: 0 }}>
+                    <p style={{ color: 'rgba(67,20,7,0.55)', fontSize: '11px', fontWeight: 500, fontFamily: "'Inter', sans-serif", margin: 0 }}>
                       Final receipt list — verified and ready for summary
                     </p>
                   </div>
 
                   {/* Receipt list */}
-                  <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                  <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {[...(ocrResults || [])].sort((a, b) => {
                         if (a.verification_status !== 'verified' && b.verification_status === 'verified') return -1;
                         if (a.verification_status === 'verified' && b.verification_status !== 'verified') return 1;
@@ -2498,34 +2484,32 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                           <div key={i} style={{
                             background: isVerified ? '#ffffff' : 'rgba(239,68,68,0.03)',
                             border: `1px solid ${isVerified ? 'rgba(251,146,60,0.15)' : 'rgba(239,68,68,0.2)'}`,
-                            borderRadius: '12px', padding: '12px 16px',
-                            display: 'flex', alignItems: 'center', gap: '14px',
+                            borderRadius: '8px', padding: '8px 10px',
+                            display: 'flex', alignItems: 'center', gap: '8px',
                             transition: 'all 0.15s',
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(249,115,22,0.08)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                          }}>
                             {/* Status */}
                             <div style={{
-                              width: '32px', height: '32px', borderRadius: '9px', flexShrink: 0,
+                              width: '24px', height: '24px', borderRadius: '6px', flexShrink: 0,
                               background: isVerified ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
                               border: `1px solid ${isVerified ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              color: isVerified ? '#10b981' : '#ef4444', fontSize: '13px', fontWeight: 900
+                              color: isVerified ? '#10b981' : '#ef4444', fontSize: '10px', fontWeight: 900
                             }}>
                               {isVerified ? '✓' : '!'}
                             </div>
                             {/* Reference + account */}
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: '12px', fontWeight: 700, color: '#431407', fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              <div style={{ fontSize: '11px', fontWeight: 700, color: '#431407', fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {res.reference || `REF-${res.receipt?.id}`}
                               </div>
                               <div style={{
-                                display: 'inline-block', marginTop: '3px',
-                                padding: '2px 8px', borderRadius: '6px',
+                                display: 'inline-block', marginTop: '2px',
+                                padding: '1px 6px', borderRadius: '4px',
                                 background: ac ? ac.bg : 'rgba(249,115,22,0.06)',
                                 border: `1px solid ${ac ? ac.border : 'rgba(249,115,22,0.15)'}`,
                                 color: ac ? ac.text : 'rgba(67,20,7,0.5)',
-                                fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em',
+                                fontSize: '8px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',
                                 fontFamily: "'Inter', sans-serif"
                               }}>
                                 {holder || 'Unknown'}
@@ -2533,11 +2517,11 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                             </div>
                             {/* Amount */}
                             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                              <div style={{ fontSize: '14px', fontWeight: 900, color: isVerified ? '#f97316' : '#ef4444', fontFamily: "'JetBrains Mono', monospace" }}>
+                              <div style={{ fontSize: '12px', fontWeight: 900, color: isVerified ? '#f97316' : '#ef4444', fontFamily: "'JetBrains Mono', monospace" }}>
                                 ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                               </div>
                               {!isVerified && (
-                                <div style={{ fontSize: '8px', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>Not Found</div>
+                                <div style={{ fontSize: '7px', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: "'Inter', sans-serif" }}>Not Found</div>
                               )}
                             </div>
                           </div>
@@ -2550,7 +2534,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
 
               {/* Stage 7: Summary View (Main Content) */}
               {phase === 'summary' && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fffbf5', padding: '40px' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fffbf5', padding: '12px' }}>
                   {/* Header */}
                   <div style={{ marginBottom: '28px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
