@@ -7,8 +7,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+  padding: 10px;
   overflow-y: auto;
   overflow-x: hidden;
   background: #ffffff;
@@ -20,7 +20,7 @@
 .vs-root * { box-sizing: border-box; }
 
 @keyframes vs-in {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -36,8 +36,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
-  border-radius: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
   border: 1px solid rgba(251, 146, 60, 0.2);
   background: #fffbf5;
   flex-shrink: 0;
@@ -48,15 +48,9 @@
   background: rgba(249, 115, 22, 0.05);
   animation: vs-pulse 2s ease-in-out infinite;
 }
-
 .vs-banner.done {
   border-color: rgba(16, 185, 129, 0.3);
   background: rgba(16, 185, 129, 0.05);
-}
-
-.vs-banner.idle {
-  border-color: rgba(251, 146, 60, 0.2);
-  background: #fffbf5;
 }
 
 @keyframes vs-pulse {
@@ -65,39 +59,34 @@
 }
 
 .vs-banner-icon {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 8px;
   background: #ffffff;
   border: 1px solid rgba(251, 146, 60, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #f97316;
-  box-shadow: 0 2px 6px rgba(67, 20, 7, 0.05);
   flex-shrink: 0;
 }
+.vs-banner.done .vs-banner-icon { color: #10b981; border-color: rgba(16, 185, 129, 0.2); }
 
-.vs-banner.done  .vs-banner-icon { color: #10b981; border-color: rgba(16, 185, 129, 0.2); }
-.vs-banner.verifying .vs-banner-icon { color: #f97316; }
-
-/* Spinner */
 .vs-spin {
-  width: 18px;
-  height: 18px;
-  border: 2.5px solid rgba(249, 115, 22, 0.25);
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(249, 115, 22, 0.25);
   border-top-color: #f97316;
   border-radius: 50%;
   animation: vs-rotate 0.7s linear infinite;
 }
-
 @keyframes vs-rotate { to { transform: rotate(360deg); } }
 
 .vs-banner-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 }
 
@@ -107,20 +96,24 @@
   color: #431407;
   letter-spacing: -0.01em;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .vs-banner-sub {
   font-size: 11px;
   font-weight: 500;
   color: rgba(67, 20, 7, 0.6);
-  line-height: 1.3;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ─── Stats Row ──────────────────────────────────────────────────────────── */
 .vs-stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
@@ -128,9 +121,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 10px 6px;
-  border-radius: 10px;
+  gap: 2px;
+  padding: 8px 4px;
+  border-radius: 8px;
   background: #ffffff;
   border: 1px solid rgba(251, 146, 60, 0.15);
   text-align: center;
@@ -139,39 +132,38 @@
 .vs-stat.success { border-color: rgba(16, 185, 129, 0.25); background: rgba(16, 185, 129, 0.05); }
 .vs-stat.warning { border-color: rgba(249, 115, 22, 0.25); background: rgba(249, 115, 22, 0.04); }
 .vs-stat.danger  { border-color: rgba(239, 68, 68, 0.25);  background: rgba(239, 68, 68, 0.04); }
-.vs-stat.neutral { border-color: rgba(251, 146, 60, 0.15); background: #ffffff; }
 
 .vs-stat-val {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 900;
   color: #431407;
   letter-spacing: -0.02em;
   line-height: 1;
 }
-
 .vs-stat.success .vs-stat-val { color: #059669; }
 .vs-stat.warning .vs-stat-val { color: #ea580c; }
 .vs-stat.danger  .vs-stat-val { color: #dc2626; }
 
 .vs-stat-lbl {
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 700;
   color: rgba(67, 20, 7, 0.5);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 /* ─── Progress Bar ───────────────────────────────────────────────────────── */
 .vs-progress-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
 .vs-progress-track {
   flex: 1;
-  height: 8px;
+  height: 6px;
   background: rgba(251, 146, 60, 0.1);
   border-radius: 99px;
   overflow: hidden;
@@ -182,46 +174,42 @@
   background: linear-gradient(90deg, #10b981, #34d399);
   border-radius: 99px;
   transition: width 0.4s ease;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
 }
 
 .vs-progress-pct {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
   color: #059669;
-  min-width: 36px;
+  min-width: 30px;
   text-align: right;
-  font-family: 'JetBrains Mono', monospace;
 }
 
 /* ─── Duplicate Notice ───────────────────────────────────────────────────── */
 .vs-notice {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 12px;
-  border-radius: 10px;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 8px;
   background: rgba(124, 58, 237, 0.05);
   border: 1px solid rgba(124, 58, 237, 0.2);
   font-size: 11px;
   font-weight: 600;
   color: #7c3aed;
   flex-shrink: 0;
-  line-height: 1.3;
+  line-height: 1.2;
 }
-
 .vs-notice svg { flex-shrink: 0; }
 
 /* ─── Spacer ─────────────────────────────────────────────────────────────── */
-.vs-spacer { flex: 1; }
+.vs-spacer { flex: 1; min-height: 4px; }
 
 /* ─── Buttons ────────────────────────────────────────────────────────────── */
 .vs-btn {
-  width: 100%;
-  padding: 14px;
-  border-radius: 12px;
+  padding: 13px 12px;
+  border-radius: 11px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -230,18 +218,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 7px;
   transition: all 0.2s;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .vs-btn:active:not(:disabled) { transform: scale(0.98); }
 .vs-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .vs-btn.primary {
+  width: 100%;
   background: #f97316;
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+  box-shadow: 0 3px 10px rgba(249, 115, 22, 0.25);
 }
 .vs-btn.primary:active { background: #ea580c; }
 
@@ -256,15 +246,15 @@
 .vs-btn.finalize {
   background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.3);
+  box-shadow: 0 3px 10px rgba(249, 115, 22, 0.3);
   flex: 2;
 }
-.vs-btn.finalize:active { box-shadow: 0 2px 6px rgba(249, 115, 22, 0.2); }
+.vs-btn.finalize:active { box-shadow: 0 1px 4px rgba(249, 115, 22, 0.2); }
 
 /* ─── Bottom Nav ─────────────────────────────────────────────────────────── */
 .vs-nav {
   display: flex;
-  gap: 8px;
+  gap: 7px;
   flex-shrink: 0;
 }
 
@@ -272,62 +262,25 @@
 .vs-stage-label {
   text-align: center;
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 700;
   color: rgba(67, 20, 7, 0.3);
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   flex-shrink: 0;
-  padding-bottom: 2px;
 }
 
 /* ─── Desktop ────────────────────────────────────────────────────────────── */
 @media (min-width: 769px) {
-  .vs-root {
-    padding: 20px;
-    gap: 14px;
-  }
+  .vs-root    { padding: 18px; gap: 12px; }
+  .vs-banner  { padding: 14px 16px; }
 
-  .vs-banner {
-    padding: 16px 18px;
-  }
+  .vs-banner-icon { width: 38px; height: 38px; min-width: 38px; }
+  .vs-banner-title { font-size: 14px; }
+  .vs-banner-sub   { font-size: 12px; white-space: normal; }
 
-  .vs-banner-icon {
-    width: 42px;
-    height: 42px;
-    min-width: 42px;
-  }
-
-  .vs-banner-title { font-size: 15px; }
-  .vs-banner-sub   { font-size: 12px; }
-
-  .vs-stat-val { font-size: 26px; }
+  .vs-stat-val { font-size: 22px; }
   .vs-stat-lbl { font-size: 10px; }
+  .vs-stat     { padding: 10px 6px; }
 
-  .vs-btn { font-size: 14px; }
-}
-
-/* ─── Extra Small (iPhone SE ≤ 390px) ───────────────────────────────────── */
-@media (max-width: 390px) {
-  .vs-root { padding: 10px; gap: 8px; }
-
-  .vs-banner { padding: 10px 11px; gap: 8px; }
-
-  .vs-banner-icon {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-  }
-
-  .vs-banner-title { font-size: 12px; }
-  .vs-banner-sub   { font-size: 10px; }
-
-  .vs-stats-row { gap: 6px; }
-
-  .vs-stat { padding: 8px 4px; }
-  .vs-stat-val { font-size: 19px; }
-  .vs-stat-lbl { font-size: 8px; }
-
-  .vs-progress-pct { font-size: 11px; }
-
-  .vs-btn { padding: 13px; font-size: 12px; }
+  .vs-btn      { font-size: 13px; padding: 14px; }
 }
