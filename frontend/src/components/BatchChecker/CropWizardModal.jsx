@@ -2435,29 +2435,27 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fffbf5', padding: '12px' }}>
                   {/* Header */}
                   <div style={{ marginBottom: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ padding: '6px 12px', borderRadius: '8px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                          </svg>
-                          <span style={{ color: '#f97316', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>Batch Summary</span>
-                        </div>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                      {/* Batch Summary badge */}
+                      <div style={{ padding: '6px 12px', borderRadius: '8px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                        <span style={{ color: '#f97316', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>Batch Summary</span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
-                        <div style={{ padding: '4px 8px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', whiteSpace: 'nowrap' }}>
-                          <span style={{ color: '#059669', fontSize: '10px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
-                            {verificationSummary?.confirmed ?? 0} Confirmed
+                      {/* Stat badges */}
+                      <div style={{ padding: '4px 8px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        <span style={{ color: '#059669', fontSize: '10px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
+                          {verificationSummary?.confirmed ?? 0} Confirmed
+                        </span>
+                      </div>
+                      {(verificationSummary?.not_found ?? 0) > 0 && (
+                        <div style={{ padding: '4px 8px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          <span style={{ color: '#dc2626', fontSize: '10px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
+                            {verificationSummary.not_found} Not Found
                           </span>
                         </div>
-                        {(verificationSummary?.not_found ?? 0) > 0 && (
-                          <div style={{ padding: '4px 8px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', whiteSpace: 'nowrap' }}>
-                            <span style={{ color: '#dc2626', fontSize: '10px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
-                              {verificationSummary.not_found} Not Found
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
                     <p style={{ color: 'rgba(67,20,7,0.55)', fontSize: '11px', fontWeight: 500, fontFamily: "'Inter', sans-serif", margin: 0 }}>
                       Final receipt list — verified and ready for summary
@@ -2536,41 +2534,41 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
               {phase === 'summary' && (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fffbf5', padding: '12px' }}>
                   {/* Header */}
-                  <div style={{ marginBottom: '28px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ padding: '10px 18px', borderRadius: '12px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                          </svg>
-                          <span style={{ color: '#f97316', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>Financial Summary</span>
-                        </div>
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                      {/* Financial Summary badge */}
+                      <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        <span style={{ color: '#f97316', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>Financial Summary</span>
                       </div>
-                      <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)' }}>
+                      {/* Verified Claims badge */}
+                      <div style={{ padding: '6px 12px', borderRadius: '8px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                         <span style={{ color: '#f97316', fontSize: '11px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>{verifiedClaims.length} Verified Claims</span>
                       </div>
                     </div>
-                    <p style={{ color: 'rgba(67,20,7,0.55)', fontSize: '13px', fontWeight: 500, fontFamily: "'Inter', sans-serif", margin: 0 }}>
+                    <p style={{ color: 'rgba(67,20,7,0.55)', fontSize: '12px', fontWeight: 500, fontFamily: "'Inter', sans-serif", margin: 0 }}>
                       Review breakdown and add deductions before proceeding to billing
                     </p>
                   </div>
 
-                  <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {/* Gross + Service Fee cards */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                      <div style={{ padding: '20px', borderRadius: '16px', background: '#ffffff', border: '1px solid rgba(16,185,129,0.2)', textAlign: 'center', boxShadow: '0 2px 8px rgba(16,185,129,0.06)' }}>
-                        <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px', fontFamily: "'Inter', sans-serif" }}>Gross Claims</div>
-                        <div style={{ fontSize: '24px', fontWeight: 900, color: '#059669', letterSpacing: '-0.02em', fontFamily: "'JetBrains Mono', monospace" }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div style={{ padding: '14px 12px', borderRadius: '14px', background: '#ffffff', border: '1px solid rgba(16,185,129,0.2)', boxShadow: '0 2px 8px rgba(16,185,129,0.06)', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+                        <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>Gross Claims</div>
+                        <div style={{ fontSize: '17px', fontWeight: 900, color: '#059669', letterSpacing: '-0.02em', fontFamily: "'JetBrains Mono', monospace", wordBreak: 'break-all', lineHeight: 1.2 }}>
                           ₱{totalClaimsAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                         </div>
-                        <div style={{ fontSize: '9px', color: 'rgba(67,20,7,0.4)', fontWeight: 600, textTransform: 'uppercase', marginTop: '6px', fontFamily: "'Inter', sans-serif" }}>Sum of verified receipts</div>
+                        <div style={{ fontSize: '9px', color: 'rgba(67,20,7,0.4)', fontWeight: 600, textTransform: 'uppercase', fontFamily: "'Inter', sans-serif" }}>Sum of verified receipts</div>
                       </div>
-                      <div style={{ padding: '20px', borderRadius: '16px', background: '#ffffff', border: '1px solid rgba(239,68,68,0.2)', textAlign: 'center', boxShadow: '0 2px 8px rgba(239,68,68,0.06)' }}>
-                        <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px', fontFamily: "'Inter', sans-serif" }}>Service Fee</div>
-                        <div style={{ fontSize: '24px', fontWeight: 900, color: '#dc2626', letterSpacing: '-0.02em', fontFamily: "'JetBrains Mono', monospace" }}>
+                      <div style={{ padding: '14px 12px', borderRadius: '14px', background: '#ffffff', border: '1px solid rgba(239,68,68,0.2)', boxShadow: '0 2px 8px rgba(239,68,68,0.06)', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+                        <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>Service Fee</div>
+                        <div style={{ fontSize: '17px', fontWeight: 900, color: '#dc2626', letterSpacing: '-0.02em', fontFamily: "'JetBrains Mono', monospace", wordBreak: 'break-all', lineHeight: 1.2 }}>
                           − ₱{serviceFee.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                         </div>
-                        <div style={{ fontSize: '9px', color: 'rgba(67,20,7,0.4)', fontWeight: 600, textTransform: 'uppercase', marginTop: '6px', fontFamily: "'Inter', sans-serif" }}>₱10 per ₱1,000</div>
+                        <div style={{ fontSize: '9px', color: 'rgba(67,20,7,0.4)', fontWeight: 600, textTransform: 'uppercase', fontFamily: "'Inter', sans-serif" }}>₱10 per ₱1,000</div>
                       </div>
                     </div>
 
