@@ -244,6 +244,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
     || [];
   const totalClaimsAmount = verifiedClaims.reduce((sum, r) => sum + Number(r.amount || 0), 0);
   const serviceFee = Math.floor(totalClaimsAmount / 1000) * 10;
+  const cashoutFee = Math.floor(totalClaimsAmount * 0.015 * 100) / 100; // 1.5% of total, rounded to 2 decimals
   
   // Calculate total deductions from savedDeductions array
   const totalDeductionsAmount = savedDeductions.reduce((sum, d) => sum + Number(d.amount || 0), 0);
@@ -640,6 +641,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
         summary_data: {
           gross_amount: totalClaimsAmount,
           service_fee: serviceFee,
+          cashout_fee: cashoutFee,
           deductions: deductions || [],
           net_amount: calculatedNetAmount,
         },

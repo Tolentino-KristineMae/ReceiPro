@@ -49,7 +49,7 @@ const Icon = {
   ),
 };
 
-function DashboardStats({ receipts }) {
+function DashboardStats({ receipts, batches = [] }) {
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   
@@ -62,9 +62,24 @@ function DashboardStats({ receipts }) {
   const claimed = currentMonthReceipts.filter(r => r.match_status === 'verified' || r.match_status === 'matched').length;
   const unclaimed = total - claimed;
   
-  const totalAmount = currentMonthReceipts.reduce((s, r) => s + (parseFloat(r.ocr_data?.amount) || 0), 0);
-  const serviceFee = totalAmount * 0.02;
-  const cashOutFee = totalAmount * 0.015;
+  // Filter to only finished batches (billing_ready) in current month
+  const currentMonthFinishedBatches = batches.filter(batch => {
+    if (batch.checker_status !== 'billing_ready') return false;
+    const batchDate = new Date(batch.created_at || batch.updated_at);
+    return batchDate.getMonth() === currentMonth && batchDate.getFullYear() === currentYear;
+  });
+  
+  // Sum service fees and cashout fees only from finished batches with summary_data
+  let totalServiceFee = 0;
+  let totalCashOutFee = 0;
+  
+  currentMonthFinishedBatches.forEach(batch => {
+    const summary = batch.summary_data;
+    if (summary) {
+      totalServiceFee += parseFloat(summary.service_fee) || 0;
+      totalCashOutFee += parseFloat(summary.cashout_fee) || 0;
+    }
+  });
 
   const stats = [
     {
@@ -100,8 +115,8 @@ function DashboardStats({ receipts }) {
     {
       key: 'total_service_fee',
       label: 'Service Fees',
-      value: `₱${serviceFee.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      sub: '2% of total',
+      value: `₱${totalServiceFee.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      sub: 'From finished batches',
       tag: 'Service',
       icon: Icon.Wallet,
       gradient: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
@@ -110,8 +125,8 @@ function DashboardStats({ receipts }) {
     {
       key: 'total_cashout_fee',
       label: 'Cashout Fees',
-      value: `₱${cashOutFee.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      sub: '1.5% of total',
+      value: `₱${totalCashOutFee.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      sub: 'From finished batches',
       tag: 'Cash Out',
       icon: Icon.Download,
       gradient: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
@@ -541,6 +556,7 @@ function QuickActions({ onNavigate }) {
 
 export default function Dashboard({
   receipts = [],
+  batches = [],
   onSelectReceipt,
   onNavigate,
 }) {
@@ -563,7 +579,7 @@ export default function Dashboard({
       padding: isMobile ? '0.5rem 0 2rem' : '0 0 2rem',
       background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)'
     }}>
-      <DashboardStats receipts={receipts} />
+      <DashboardStats receipts={receipts} batches={batches} />
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: isMobile ? '1fr' : (isTablet ? '1fr' : '2fr 1.5fr'), 

@@ -27,12 +27,13 @@ function App() {
   }, []);
 
    const [receipts, setReceipts] = useState([]);
-   const [selectedReceipt, setSelectedReceipt] = useState(null);
-   const [showTransactionModal, setShowTransactionModal] = useState(false);
-   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-   const [isMobile, setIsMobile] = useState(false);
-   const location = useLocation();
-   const navigate = useNavigate();
+  const [batches, setBatches] = useState([]);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkIsMobile = () => setIsMobile(window.innerWidth < 768);
@@ -50,6 +51,17 @@ function App() {
     fetch(getApiUrl(`/api/receipts?t=${Date.now()}`), { cache: 'no-store' })
       .then(res => res.ok ? res.json() : [])
       .then(data => setReceipts(Array.isArray(data) ? data : data.data ?? []))
+      .catch(() => {});
+  }, []);
+
+  // Load batches on mount
+  useEffect(() => {
+    fetch(getApiUrl(`/api/batches?t=${Date.now()}`), { cache: 'no-store' })
+      .then(res => res.ok ? res.json() : [])
+      .then(data => {
+        const batchesData = Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []);
+        setBatches(batchesData);
+      })
       .catch(() => {});
   }, []);
 
@@ -108,6 +120,7 @@ function App() {
                 <Route path="/" element={
                   <Dashboard
                     receipts={receipts}
+                    batches={batches}
                     onSelectReceipt={setSelectedReceipt}
                     onNavigate={(path) => navigate(path)}
                   />
