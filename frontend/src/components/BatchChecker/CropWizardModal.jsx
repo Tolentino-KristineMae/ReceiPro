@@ -31,18 +31,18 @@ const CSS = `
   .cw-header { 
     display: flex; 
     align-items: center; 
-    gap: 12px; 
-    padding: 16px 20px; 
+    gap: 10px; 
+    padding: 10px 14px; 
     border-bottom: 2px solid #f97316; 
     justify-content: center;
     position: relative;
     background: #ffffff;
-    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.08);
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.08);
   }
   .cw-header-icon {
-    width: 40px; height: 40px; border-radius: 14px; background: #ffffff;
+    width: 32px; height: 32px; border-radius: 10px; background: #ffffff;
     border: 2px solid #f97316; display: flex; align-items: center; justify-content: center; 
-    color: #f97316; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.15);
+    color: #f97316; box-shadow: 0 2px 8px rgba(249, 115, 22, 0.12);
   }
   .cw-title-group {
     display: flex;
@@ -50,10 +50,9 @@ const CSS = `
     align-items: center;
     text-align: center;
   }
-  .cw-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; color: #431407; text-transform: uppercase; letter-spacing: 0.05em; }
-  .cw-subtitle { font-family: 'Inter', sans-serif; font-size: 9px; color: #9a3412; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
-  .cw-close { position: absolute; right: 20px; color: #9a3412; font-size: 24px; cursor: pointer; transition: all 0.2s; border: none; background: none; opacity: 0.5; }
-  .cw-close:hover { color: #f97316; opacity: 1; transform: scale(1.1); }
+  .cw-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; color: #431407; text-transform: uppercase; letter-spacing: 0.05em; }
+  .cw-subtitle { font-family: 'Inter', sans-serif; font-size: 8px; color: #9a3412; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 1px; }
+  .cw-close { position: absolute; right: 14px; color: #9a3412; font-size: 20px; cursor: pointer; transition: all 0.2s; border: none; background: none; opacity: 0.5; }
 
   .cw-content { 
     flex: 1; 
@@ -2337,235 +2336,87 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                 </div>
               )}
 
-              {/* Phase 4 Preview */}
+              {/* Phase 5 — Compact verify results (mobile-first) */}
               {phase === 'verify' && showVerifyPreview && (
-                <div className="flex-1 flex flex-col overflow-hidden" style={{ 
-                  background: '#fffbf5',
-                  padding: '40px'
-                }}>
-                  {/* Header */}
-                  <div style={{ marginBottom: '28px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{
-                          padding: '10px 18px', borderRadius: '12px',
-                          background: 'rgba(249,115,22,0.08)',
-                          border: '1px solid rgba(249,115,22,0.25)',
-                          display: 'flex', alignItems: 'center', gap: '10px'
-                        }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M9 11l3 3L22 4" />
-                            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-                          </svg>
-                          <span style={{ color: '#f97316', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>
-                            Verification Check
-                          </span>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
-                          <span style={{ color: '#059669', fontSize: '11px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
-                            {verificationSummary?.confirmed ?? 0} Confirmed
-                          </span>
-                        </div>
-                        {(verificationSummary?.matched ?? 0) > 0 && (
-                          <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)' }}>
-                            <span style={{ color: '#ea580c', fontSize: '11px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
-                              {verificationSummary.matched} Needs Confirm
-                            </span>
-                          </div>
-                        )}
-                        {(verificationSummary?.not_found ?? 0) > 0 && (
-                          <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
-                            <span style={{ color: '#dc2626', fontSize: '11px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
-                              {verificationSummary.not_found} Not Found
-                            </span>
-                          </div>
-                        )}
-                        {(verificationSummary?.duplicate ?? 0) > 0 && (
-                          <div style={{ padding: '8px 14px', borderRadius: '10px', background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.25)' }}>
-                            <span style={{ color: '#7c3aed', fontSize: '11px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
-                              {verificationSummary.duplicate} Already Claimed
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fffbf5', padding: '8px' }}>
+                  {/* Summary pills */}
+                  <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '7px', flexShrink: 0 }}>
+                    <div style={{ padding: '3px 9px', borderRadius: '20px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', fontSize: '11px', fontWeight: 800, color: '#059669', whiteSpace: 'nowrap' }}>
+                      ✓ {verificationSummary?.confirmed ?? 0}
                     </div>
-                    <p style={{ color: 'rgba(67,20,7,0.55)', fontSize: '13px', fontWeight: 500, fontFamily: "'Inter', sans-serif", margin: 0 }}>
-                      Review matches and confirm each receipt before finalizing
-                    </p>
+                    {(verificationSummary?.matched ?? 0) > 0 && (
+                      <div style={{ padding: '3px 9px', borderRadius: '20px', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.25)', fontSize: '11px', fontWeight: 800, color: '#ea580c', whiteSpace: 'nowrap' }}>
+                        ? {verificationSummary.matched}
+                      </div>
+                    )}
+                    {(verificationSummary?.not_found ?? 0) > 0 && (
+                      <div style={{ padding: '3px 9px', borderRadius: '20px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', fontSize: '11px', fontWeight: 800, color: '#dc2626', whiteSpace: 'nowrap' }}>
+                        ✕ {verificationSummary.not_found}
+                      </div>
+                    )}
+                    {(verificationSummary?.duplicate ?? 0) > 0 && (
+                      <div style={{ padding: '3px 9px', borderRadius: '20px', background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.25)', fontSize: '11px', fontWeight: 800, color: '#7c3aed', whiteSpace: 'nowrap' }}>
+                        ⚠ {verificationSummary.duplicate}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Results list */}
-                  <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
+                  {/* Compact results list */}
+                  <div style={{ flex: 1, overflowY: 'auto' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       {[...(ocrResults || [])].sort((a, b) => {
-                        const rank = r => {
-                          if (r.verification_status === 'verified') return 3;
-                          if (r.verification_status === 'matched') return 2;
-                          if (r.verification_status === 'duplicate') return 1;
-                          return 0;
-                        };
+                        const rank = r => r.verification_status === 'verified' ? 3 : r.verification_status === 'matched' ? 2 : r.verification_status === 'duplicate' ? 1 : 0;
                         return rank(a) - rank(b);
                       }).map((res, i) => {
-                        const isVerified = res.verification_status === 'verified';
-                        const isMatched = res.verification_status === 'matched';
+                        const isVerified  = res.verification_status === 'verified';
+                        const isMatched   = res.verification_status === 'matched';
                         const isDuplicate = res.verification_status === 'duplicate';
-                        const suggestedTx = res.match_details?.transaction;
                         const holder = res.receipt?.account_holder || res.account_holder;
-                        const acctColors = {
-                          Babilyn:  { bg: 'rgba(236,72,153,0.08)',  border: 'rgba(236,72,153,0.2)',  text: '#ec4899' },
-                          Nixie:    { bg: 'rgba(139,92,246,0.08)',  border: 'rgba(139,92,246,0.2)',  text: '#8b5cf6' },
-                          Kristine: { bg: 'rgba(6,182,212,0.08)',   border: 'rgba(6,182,212,0.2)',   text: '#06b6d4' },
-                        };
-                        const ac = acctColors[holder];
-                        const potentialMatches = isMatched && suggestedTx
-                          ? [suggestedTx]
+                        const acctColor = { Babilyn: '#ec4899', Nixie: '#8b5cf6', Kristine: '#06b6d4' }[holder];
+                        const statusColor = isVerified ? '#10b981' : isMatched ? '#f97316' : isDuplicate ? '#7c3aed' : '#ef4444';
+                        const statusIcon  = isVerified ? '✓' : isMatched ? '?' : isDuplicate ? '⚠' : '✕';
+                        const statusText  = isVerified ? 'Confirmed' : isMatched ? 'Needs confirm' : isDuplicate ? `Claimed${res.match_details?.claimed_batch ? ' · ' + res.match_details.claimed_batch : ''}` : 'Not found';
+                        const potentialMatches = isMatched && res.match_details?.transaction
+                          ? [res.match_details.transaction]
                           : (res.match_details?.potential_matches || []);
-                        const claimedBatch = res.match_details?.claimed_batch;
-                        const rowPositive = isVerified || isMatched;
                         return (
-                          <div key={i} style={{
-                            background: isVerified ? '#ffffff' : isMatched ? 'rgba(249,115,22,0.03)' : isDuplicate ? 'rgba(124,58,237,0.03)' : 'rgba(239,68,68,0.03)',
-                            border: `1.5px solid ${isVerified ? 'rgba(251,146,60,0.15)' : isMatched ? 'rgba(249,115,22,0.25)' : isDuplicate ? 'rgba(124,58,237,0.3)' : 'rgba(239,68,68,0.25)'}`,
-                            borderRadius: '14px', padding: '16px 20px',
-                            display: 'flex', flexDirection: 'column', gap: '12px',
-                            transition: 'all 0.2s',
-                            boxShadow: rowPositive ? '0 2px 8px rgba(67,20,7,0.04)' : '0 2px 8px rgba(239,68,68,0.06)'
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = rowPositive ? '0 6px 20px rgba(249,115,22,0.1)' : '0 6px 20px rgba(239,68,68,0.12)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = rowPositive ? '0 2px 8px rgba(67,20,7,0.04)' : '0 2px 8px rgba(239,68,68,0.06)'; }}>
-
+                          <div key={i} style={{ background: '#fff', border: `1px solid ${statusColor}30`, borderRadius: '9px', overflow: 'hidden' }}>
                             {/* Main row */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                              {/* Status icon */}
-                              <div style={{
-                                width: '40px', height: '40px', borderRadius: '11px', flexShrink: 0,
-                                background: isVerified ? 'rgba(16,185,129,0.1)' : isMatched ? 'rgba(249,115,22,0.1)' : isDuplicate ? 'rgba(124,58,237,0.1)' : 'rgba(239,68,68,0.1)',
-                                border: `1px solid ${isVerified ? 'rgba(16,185,129,0.25)' : isMatched ? 'rgba(249,115,22,0.25)' : isDuplicate ? 'rgba(124,58,237,0.3)' : 'rgba(239,68,68,0.25)'}`,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: isVerified ? '#10b981' : isMatched ? '#f97316' : isDuplicate ? '#7c3aed' : '#ef4444', fontSize: '16px', fontWeight: 900
-                              }}>
-                                {isVerified ? '✓' : isMatched ? '?' : isDuplicate ? '⚠' : '✕'}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 9px' }}>
+                              <div style={{ width: '24px', height: '24px', borderRadius: '6px', flexShrink: 0, background: `${statusColor}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: statusColor, fontSize: '12px', fontWeight: 900 }}>
+                                {statusIcon}
                               </div>
-
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
-                                {/* Reference */}
-                                <div style={{ minWidth: '130px' }}>
-                                  <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px', fontFamily: "'Inter', sans-serif" }}>Reference</div>
-                                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#431407', letterSpacing: '0.02em', fontFamily: "'JetBrains Mono', monospace" }}>{res.reference || '—'}</div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#431407', fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {res.reference || '—'}
                                 </div>
-                                {/* Status */}
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px', fontFamily: "'Inter', sans-serif" }}>Status</div>
-                                  {isDuplicate ? (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#7c3aed', fontFamily: "'Inter', sans-serif" }}>
-                                        Already Claimed
-                                      </div>
-                                      {claimedBatch && (
-                                        <div style={{ padding: '2px 8px', borderRadius: '6px', background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.25)', fontSize: '9px', fontWeight: 900, color: '#7c3aed', fontFamily: "'JetBrains Mono', monospace" }}>
-                                          {claimedBatch}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <div style={{ fontSize: '11px', fontWeight: 700, color: isVerified ? '#059669' : isMatched ? '#ea580c' : '#dc2626', fontFamily: "'Inter', sans-serif" }}>
-                                      {isVerified
-                                        ? `Confirmed in ${res.match_details?.bank || 'Database'}`
-                                        : isMatched
-                                          ? `Match found in ${res.match_details?.bank || 'Database'} — confirm required`
-                                          : 'Not found in database'}
-                                    </div>
-                                  )}
-                                </div>
-                                {/* Account badge */}
-                                <div style={{
-                                  minWidth: '90px', padding: '8px 14px', borderRadius: '10px', textAlign: 'center',
-                                  background: ac ? ac.bg : 'rgba(249,115,22,0.06)',
-                                  border: `1px solid ${ac ? ac.border : 'rgba(249,115,22,0.15)'}`,
-                                  color: ac ? ac.text : 'rgba(67,20,7,0.5)',
-                                  fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em',
-                                  fontFamily: "'Inter', sans-serif"
-                                }}>
-                                  {holder || 'Unknown'}
+                                <div style={{ fontSize: '10px', fontWeight: 600, color: statusColor, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {statusText}
                                 </div>
                               </div>
-
-                              {/* Amount */}
-                              <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px', fontFamily: "'Inter', sans-serif" }}>Amount</div>
-                                <div style={{ fontSize: '18px', fontWeight: 900, color: isVerified ? '#f97316' : isMatched ? '#ea580c' : isDuplicate ? '#7c3aed' : '#ef4444', letterSpacing: '-0.01em', fontFamily: "'JetBrains Mono', monospace" }}>
-                                  ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                              {holder && (
+                                <div style={{ padding: '2px 6px', borderRadius: '5px', background: `${acctColor ?? '#f97316'}18`, color: acctColor ?? '#f97316', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', flexShrink: 0 }}>
+                                  {holder.slice(0, 3)}
                                 </div>
+                              )}
+                              <div style={{ fontSize: '13px', fontWeight: 900, color: statusColor, fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
+                                ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                               </div>
                             </div>
-
-                            {/* Recommendations — for matched or unverified rows with suggestions */}
+                            {/* Confirm row — only when match suggestions exist */}
                             {!isVerified && potentialMatches.length > 0 && (
-                              <div style={{
-                                borderTop: `1px dashed ${isMatched ? 'rgba(249,115,22,0.2)' : 'rgba(239,68,68,0.2)'}`,
-                                paddingTop: '10px',
-                                display: 'flex', flexDirection: 'column', gap: '6px'
-                              }}>
-                                <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '2px', fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                                  </svg>
-                                  {isMatched ? 'Suggested match — click Confirm to link' : 'Unclaimed transactions with matching amount'}
-                                </div>
+                              <div style={{ borderTop: '1px dashed rgba(249,115,22,0.15)', padding: '5px 9px', display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(249,115,22,0.02)' }}>
                                 {potentialMatches.map((tx, j) => (
-                                  <div key={j} style={{
-                                    display: 'flex', alignItems: 'center', gap: '12px',
-                                    padding: '8px 12px', borderRadius: '9px',
-                                    background: 'rgba(249,115,22,0.04)',
-                                    border: '1px solid rgba(249,115,22,0.15)',
-                                  }}>
-                                    <div style={{ flex: 1, display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                      {/* Available badge */}
-                                      <div style={{ padding: '2px 8px', borderRadius: '6px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', fontSize: '8px', fontWeight: 900, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif", flexShrink: 0 }}>
-                                        Unclaimed
-                                      </div>
-                                      <div>
-                                        <div style={{ fontSize: '8px', fontWeight: 800, color: 'rgba(67,20,7,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>Ref</div>
-                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#431407', fontFamily: "'JetBrains Mono', monospace" }}>{tx.reference || '—'}</div>
-                                      </div>
-                                      {tx.label && (
-                                        <div>
-                                          <div style={{ fontSize: '8px', fontWeight: 800, color: 'rgba(67,20,7,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>Bank Description</div>
-                                          <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(67,20,7,0.5)', fontFamily: "'Inter', sans-serif", fontStyle: 'italic' }}>{tx.label}</div>
-                                        </div>
-                                      )}
-                                      {tx.account_holder && (
-                                        <div>
-                                          <div style={{ fontSize: '8px', fontWeight: 800, color: 'rgba(67,20,7,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>Account</div>
-                                          <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(67,20,7,0.6)', fontFamily: "'Inter', sans-serif" }}>{tx.account_holder}</div>
-                                        </div>
-                                      )}
+                                  <div key={j} style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#431407', fontFamily: "'JetBrains Mono', monospace" }}>{tx.reference || tx.label || '—'}</span>
+                                      {tx.account_holder && <span style={{ fontSize: '9px', color: 'rgba(67,20,7,0.5)', marginLeft: '5px' }}>{tx.account_holder}</span>}
                                     </div>
-                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                      <div style={{ fontSize: '13px', fontWeight: 900, color: '#f97316', fontFamily: "'JetBrains Mono', monospace" }}>
-                                        ₱{Number(tx.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                      </div>
-                                    </div>
-                                    {/* Confirm button */}
-                                    <button
-                                      onClick={() => confirmTransactionMatch(res.receipt?.id, tx)}
-                                      style={{
-                                        flexShrink: 0, padding: '6px 12px', borderRadius: '8px',
-                                        background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
-                                        color: '#059669', fontSize: '9px', fontWeight: 900,
-                                        textTransform: 'uppercase', letterSpacing: '0.1em',
-                                        cursor: 'pointer', transition: 'all 0.2s',
-                                        fontFamily: "'Inter', sans-serif",
-                                        display: 'flex', alignItems: 'center', gap: '5px'
-                                      }}
-                                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(16,185,129,0.2)'; e.currentTarget.style.borderColor = 'rgba(16,185,129,0.5)'; }}
-                                      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(16,185,129,0.1)'; e.currentTarget.style.borderColor = 'rgba(16,185,129,0.3)'; }}
-                                    >
-                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M20 6L9 17l-5-5"/>
-                                      </svg>
+                                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#f97316', fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
+                                      ₱{Number(tx.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                    </span>
+                                    <button onClick={() => confirmTransactionMatch(res.receipt?.id, tx)}
+                                      style={{ flexShrink: 0, padding: '5px 10px', borderRadius: '7px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#059669', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }}>
                                       Confirm
                                     </button>
                                   </div>
