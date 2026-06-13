@@ -129,10 +129,11 @@ const CSS = `
     border-radius: var(--radius-lg);
     padding: 4px;
     gap: 4px;
+    flex-wrap: wrap;
   }
 
   .account-tab {
-    padding: 10px 24px;
+    padding: 10px 20px;
     border: 1px solid transparent;
     background: transparent;
     color: var(--text-muted);
@@ -143,12 +144,13 @@ const CSS = `
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     letter-spacing: 0.03em;
     text-transform: uppercase;
-    min-width: 120px;
+    flex: 1 1 auto;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     position: relative;
+    white-space: nowrap;
   }
 
   .account-tab.active {
@@ -312,6 +314,19 @@ const CSS = `
     color: var(--text-primary);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     font-family: inherit;
+    box-sizing: border-box;
+    height: 42px;
+    line-height: 1.4;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input[type="date"].input-field {
+    -webkit-appearance: none;
+    appearance: none;
+    padding: 10px 12px;
+    height: 42px;
+    line-height: 1.4;
   }
 
   .input-field:focus {
@@ -335,7 +350,7 @@ const CSS = `
     top: 50%;
     transform: translateY(-50%);
     font-weight: 600;
-    font-size: 16px;
+    font-size: 14px;
     color: var(--text-muted);
     pointer-events: none;
     z-index: 1;
@@ -344,7 +359,7 @@ const CSS = `
   .amount-input {
     padding-left: 34px;
     font-family: var(--font-mono);
-    font-size: 19px;
+    font-size: 14px;
     font-weight: 600;
     letter-spacing: -0.02em;
   }
