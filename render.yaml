@@ -1,12 +1,16 @@
-# Render Config for ReciePro Backend (using Docker + external Supabase DB and Storage)
+# Render Config for ReciePro Backend (Native PHP)
 services:
   - type: web
     name: reciepro-backend
-    env: docker
+    env: php
     plan: starter
-    rootDir: .
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    rootDir: backend
+    buildCommand: |
+      composer install --no-interaction --prefer-dist --optimize-autoloader
+      npm install
+      npm run build
+      php artisan storage:link
+    startCommand: php artisan serve --host 0.0.0.0 --port 10000
     envVars:
       - key: APP_ENV
         value: production
@@ -46,4 +50,3 @@ services:
         sync: false
       - key: SUPABASE_URL
         sync: false
-
