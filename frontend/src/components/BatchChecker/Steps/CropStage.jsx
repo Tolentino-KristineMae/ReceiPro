@@ -213,11 +213,6 @@ export default function CropStage({
                 onDoubleClick={handleDoubleClick}
                 style={{
                   opacity: currentCategory !== 'gcash' ? 0.8 : 1,
-                  maxWidth: '420px',
-                  maxHeight: '600px',
-                  width: 'auto',
-                  height: 'auto',
-                  objectFit: 'contain',
                   cursor: magnifierOn ? (pinnedLens ? 'zoom-out' : 'crosshair') : 'default',
                 }}
               />
