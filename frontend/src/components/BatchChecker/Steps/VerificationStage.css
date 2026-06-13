@@ -269,6 +269,24 @@
   flex-shrink: 0;
 }
 
+/* ─── Mobile (≤ 600px) ────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .vs-root    { padding: 10px; gap: 8px; }
+  .vs-banner  { padding: 10px 12px; }
+  .vs-banner-icon { width: 32px; height: 32px; min-width: 32px; }
+  .vs-banner-title { font-size: 12px; }
+  .vs-banner-sub   { font-size: 10px; }
+  .vs-stats-row    { gap: 5px; }
+  .vs-stat         { padding: 6px 4px; }
+  .vs-stat-val     { font-size: 16px; }
+  .vs-stat-lbl     { font-size: 8px; }
+  .vs-progress-wrap { gap: 6px; }
+  .vs-progress-pct { font-size: 10px; min-width: 28px; }
+  .vs-notice       { padding: 6px 8px; font-size: 10px; gap: 5px; }
+  .vs-btn          { padding: 11px 10px; font-size: 11px; }
+  .vs-nav          { gap: 6px; }
+}
+
 /* ─── Desktop ────────────────────────────────────────────────────────────── */
 @media (min-width: 769px) {
   .vs-root    { padding: 18px; gap: 12px; }

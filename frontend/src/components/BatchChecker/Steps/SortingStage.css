@@ -522,23 +522,96 @@
   }
 }
 
-/* ─── Extra Small Screens (iPhone SE) ─────────────────────────────────────── */
-@media (max-width: 420px) {
+/* ─── Mobile (≤ 600px) ──────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
   .ss-root {
     padding: 10px;
-    gap: 10px;
+    gap: 8px;
+  }
+
+  .ss-header, .ss-review-header {
+    margin-bottom: 10px;
+    gap: 8px;
   }
 
   .ss-title {
     font-size: 16px;
   }
 
+  .ss-subtitle {
+    font-size: 11px;
+  }
+
+  .ss-badges {
+    gap: 6px;
+  }
+
+  .ss-badge {
+    padding: 5px 10px;
+    font-size: 9px;
+  }
+
+  .ss-grid {
+    gap: 8px;
+  }
+
+  .ss-card {
+    border-radius: 10px;
+  }
+
+  .ss-apply-btn, .ss-edit-btn, .ss-proceed-btn {
+    padding: 11px;
+    font-size: 11px;
+    margin-top: 10px;
+  }
+
+  .ss-columns {
+    gap: 8px;
+  }
+
+  .ss-col {
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  .ss-col-header {
+    padding-bottom: 8px;
+  }
+
+  .ss-col-grid {
+    gap: 8px;
+  }
+
+  .ss-receipt-id {
+    font-size: 7px;
+    top: 5px;
+    left: 5px;
+    padding: 2px 6px;
+  }
+}
+
+/* ─── Extra Small Screens (iPhone SE) ─────────────────────────────────────── */
+@media (max-width: 420px) {
+  .ss-root {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .ss-title {
+    font-size: 14px;
+  }
+
   .ss-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 8px;
   }
 
   .ss-col-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ss-badge {
+    padding: 4px 8px;
+    font-size: 8px;
   }
 }

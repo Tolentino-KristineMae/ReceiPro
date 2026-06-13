@@ -406,11 +406,22 @@
   }
 }
 
-/* ─── Extra Small Screens (≤ 420px — iPhone SE etc.) ─────────────────────── */
-@media (max-width: 420px) {
+/* ─── Mobile (≤ 600px) ──────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
   .es-root {
     padding: 10px;
+    gap: 8px;
+  }
+
+  .es-header-card {
+    padding: 10px 12px;
     gap: 10px;
+  }
+
+  .es-icon-wrapper {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
   }
 
   .es-title {
@@ -419,6 +430,15 @@
 
   .es-subtitle {
     font-size: 10px;
+  }
+
+  .es-status-section {
+    gap: 8px;
+  }
+
+  .es-status-card {
+    padding: 10px 12px;
+    gap: 10px;
   }
 
   .es-status-icon {
@@ -439,6 +459,11 @@
     gap: 6px;
   }
 
+  .es-info-card {
+    padding: 8px 6px;
+    border-radius: 8px;
+  }
+
   .es-info-label {
     font-size: 8px;
   }
@@ -452,12 +477,89 @@
     padding: 13px;
   }
 
+  .es-reextract-section {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .es-reextract-info {
+    font-size: 10px;
+  }
+
   .es-reextract-btn {
     font-size: 11px;
     padding: 11px;
   }
 
+  .es-processing-container {
+    gap: 6px;
+  }
+
+  .es-processing-bar {
+    height: 8px;
+  }
+
+  .es-processing-text {
+    font-size: 10px;
+  }
+
   .es-processing-percentage {
     font-size: 12px;
+  }
+}
+
+/* ─── Extra Small Screens (≤ 420px — iPhone SE etc.) ─────────────────────── */
+@media (max-width: 420px) {
+  .es-root {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .es-title {
+    font-size: 12px;
+  }
+
+  .es-subtitle {
+    font-size: 9px;
+  }
+
+  .es-status-icon {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+  }
+
+  .es-status-title {
+    font-size: 11px;
+  }
+
+  .es-status-description {
+    font-size: 9px;
+  }
+
+  .es-info-grid {
+    gap: 5px;
+  }
+
+  .es-info-label {
+    font-size: 7px;
+  }
+
+  .es-info-value {
+    font-size: 15px;
+  }
+
+  .es-action-btn {
+    font-size: 11px;
+    padding: 11px;
+  }
+
+  .es-reextract-btn {
+    font-size: 10px;
+    padding: 10px;
+  }
+
+  .es-processing-percentage {
+    font-size: 11px;
   }
 }

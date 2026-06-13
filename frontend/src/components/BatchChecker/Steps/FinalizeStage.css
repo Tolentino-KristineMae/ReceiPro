@@ -263,18 +263,80 @@
   }
 }
 
-/* ─── Extra Small Screens (iPhone SE) ─────────────────────────────────────── */
-@media (max-width: 420px) {
+/* ─── Mobile (≤ 600px) ──────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
   .fs-root {
     padding: 10px;
+    gap: 8px;
+  }
+
+  .fs-header-card {
+    padding: 12px 14px;
     gap: 10px;
+  }
+
+  .fs-header-icon {
+    width: 40px;
+    height: 40px;
   }
 
   .fs-header-title {
     font-size: 15px;
   }
 
+  .fs-header-subtitle {
+    font-size: 11px;
+  }
+
+  .fs-summary-card {
+    padding: 12px 14px;
+  }
+
+  .fs-stats-row {
+    gap: 8px;
+  }
+
+  .fs-stat-item {
+    padding: 10px 12px;
+    border-radius: 10px;
+    gap: 10px;
+  }
+
+  .fs-stat-icon {
+    width: 32px;
+    height: 32px;
+  }
+
   .fs-stat-value {
     font-size: 17px;
+  }
+
+  .fs-stat-label {
+    font-size: 9px;
+  }
+
+  .fs-action-btn {
+    padding: 12px;
+    font-size: 12px;
+  }
+}
+
+/* ─── Extra Small Screens (iPhone SE) ─────────────────────────────────────── */
+@media (max-width: 420px) {
+  .fs-root {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .fs-header-title {
+    font-size: 14px;
+  }
+
+  .fs-stat-value {
+    font-size: 15px;
+  }
+
+  .fs-summary-card {
+    padding: 10px 12px;
   }
 }

@@ -128,7 +128,7 @@ export default function VerificationStage({
         </div>
       )}
 
-      <div className="vs-stage-label">Stage 5 of 8 · Run Check</div>
+      
 
     </div>
   );

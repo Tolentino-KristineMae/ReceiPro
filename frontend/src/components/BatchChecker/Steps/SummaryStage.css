@@ -70,10 +70,18 @@ select:focus {
   }
 }
 
+/* ─── Mobile (≤ 600px) ──────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .sum-root {
+    padding: 10px;
+    gap: 8px;
+  }
+}
+
 /* ─── Extra Small Screens (iPhone SE) ─────────────────────────────────────── */
 @media (max-width: 420px) {
   .sum-root {
-    padding: 10px;
-    gap: 10px;
+    padding: 8px;
+    gap: 6px;
   }
 }
