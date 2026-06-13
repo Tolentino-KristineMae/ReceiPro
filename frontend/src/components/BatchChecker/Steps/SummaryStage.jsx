@@ -130,12 +130,7 @@ export default function SummaryStage({
       </div>
 
       {/* Financial Summary Cards */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(2, 1fr)', 
-        gap: '12px',
-        marginBottom: '16px'
-      }}>
+      <div className="sum-cards-grid">
         {/* Gross Amount */}
         <div style={{
           padding: '16px',
@@ -156,13 +151,7 @@ export default function SummaryStage({
           }}>
             Gross Claims
           </div>
-          <div style={{
-            fontSize: '20px',
-            fontWeight: 900,
-            color: '#10b981',
-            letterSpacing: '-0.02em',
-            fontFamily: "'JetBrains Mono', monospace"
-          }}>
+          <div className="sum-card-amount" style={{ color: '#10b981' }}>
             ₱{fmt(totalClaimsAmount)}
           </div>
         </div>
@@ -187,13 +176,7 @@ export default function SummaryStage({
           }}>
             Service Fee
           </div>
-          <div style={{
-            fontSize: '20px',
-            fontWeight: 900,
-            color: '#ef4444',
-            letterSpacing: '-0.02em',
-            fontFamily: "'JetBrains Mono', monospace"
-          }}>
+          <div className="sum-card-amount" style={{ color: '#ef4444' }}>
             − ₱{fmt(serviceFee)}
           </div>
         </div>
@@ -208,12 +191,7 @@ export default function SummaryStage({
         marginBottom: '16px',
         boxShadow: '0 4px 12px rgba(67, 20, 7, 0.03)'
       }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '16px'
-        }}>
+        <div className="sum-deductions-header">
           <div style={{
             fontSize: '11px',
             fontWeight: 900,
@@ -243,7 +221,8 @@ export default function SummaryStage({
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              opacity: loading || deductionTypes.length === 0 ? 0.5 : 1
+              opacity: loading || deductionTypes.length === 0 ? 0.5 : 1,
+              flexShrink: 0
             }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -279,18 +258,9 @@ export default function SummaryStage({
         ) : (
           <div style={{ display: 'grid', gap: '10px' }}>
             {deductions.map((deduction, index) => (
-              <div key={index} style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr auto',
-                gap: '12px',
-                padding: '12px',
-                borderRadius: '12px',
-                background: '#ffffff',
-                border: '1px solid rgba(251, 146, 60, 0.15)',
-                boxShadow: '0 2px 6px rgba(67, 20, 7, 0.02)'
-              }}>
+              <div key={index} className="sum-deduction-row">
                 {/* Deduction Type */}
-                <div>
+                <div className="sum-deduction-type">
                   <label style={{
                     fontSize: '9px',
                     fontWeight: 900,
@@ -329,7 +299,7 @@ export default function SummaryStage({
                 </div>
 
                 {/* Amount */}
-                <div>
+                <div className="sum-deduction-amount">
                   <label style={{
                     fontSize: '9px',
                     fontWeight: 900,
@@ -377,7 +347,7 @@ export default function SummaryStage({
                 </div>
 
                 {/* Remove Button */}
-                <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                <div className="sum-deduction-delete">
                   <button
                     onClick={() => handleRemoveDeduction(index)}
                     style={{
