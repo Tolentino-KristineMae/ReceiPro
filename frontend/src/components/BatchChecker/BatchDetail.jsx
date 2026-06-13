@@ -227,17 +227,17 @@ export default function BatchDetail({
 
       {/* Header */}
       <div className="batch-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-          <div>
+        <div className="batch-header-top">
+          <div className="batch-title-section">
             <div className="section-label">Batch Details</div>
-            <h2 className="h2-modern" style={{ fontSize: '2.5rem' }}>{batch.name}</h2>
+            <h2 className="h2-modern batch-title">{batch.name}</h2>
             {batch.final_batch_number && (
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 700, marginTop: '0.25rem' }}>
+              <div className="batch-ledger-id">
                 Ledger ID: {batch.final_batch_number}
               </div>
             )}
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div className="batch-actions">
             <input
               type="file"
               multiple
@@ -256,18 +256,9 @@ export default function BatchDetail({
             {/* Reset Batch — clear all checker progress */}
             {batch.receipts?.length > 0 && (
               <button
+                className="reset-batch-btn"
                 title="Reset Batch — clears all verification, transactions links, and receipt data"
                 onClick={handleResetBatch}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '0 14px', height: '40px', borderRadius: '12px',
-                  background: 'rgba(234,88,12,0.08)', border: '1px solid rgba(234,88,12,0.25)',
-                  color: '#ea580c', fontWeight: 900, fontSize: '10px',
-                  textTransform: 'uppercase', letterSpacing: '0.1em',
-                  cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(234,88,12,0.15)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(234,88,12,0.08)'; }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="23 4 23 10 17 10"/>
@@ -288,17 +279,9 @@ export default function BatchDetail({
             {/* View Generated Summary — only when billing is complete */}
             {batch.checker_status === 'billing_ready' && (
               <button
+                className="view-summary-btn"
                 onClick={() => setShowSummaryModal(true)}
                 title="View Generated Billing Summary"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  padding: '0 18px', height: '40px', borderRadius: '12px',
-                  background: 'rgba(34, 197, 94, 0.08)',
-                  border: '1px solid rgba(34, 197, 94, 0.2)',
-                  color: 'var(--success-primary)', fontWeight: 900, fontSize: '11px',
-                  textTransform: 'uppercase', letterSpacing: '0.12em',
-                  cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap',
-                }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -584,16 +567,9 @@ export default function BatchDetail({
             ))}
           </div>
           {/* Search & Sort Controls */}
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <div style={{ flex: 1, position: 'relative' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ 
-                position: 'absolute', 
-                left: '12px', 
-                top: '50%', 
-                transform: 'translateY(-50%)',
-                color: 'var(--text-muted)',
-                opacity: 0.6
-              }}>
+          <div className="search-sort-container">
+            <div className="search-input-wrapper">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="search-icon">
                 <circle cx="11" cy="11" r="8"/>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
@@ -602,52 +578,13 @@ export default function BatchDetail({
                 placeholder="Search receipts by reference, amount, account..." 
                 value={searchQuery} 
                 onChange={(e) => setSearchQuery(e.target.value)} 
-                style={{
-                  width: '100%',
-                  padding: '10px 12px 10px 36px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--border-subtle)',
-                  background: 'var(--bg-secondary)',
-                  fontSize: '11px',
-                  color: 'var(--text-primary)',
-                  outline: 'none',
-                  fontFamily: "'Inter', sans-serif",
-                  transition: 'all 0.2s'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(249, 115, 22, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
+                className="search-input"
               />
             </div>
             <select 
               value={sortBy} 
               onChange={(e) => setSortBy(e.target.value)} 
-              style={{
-                padding: '10px 14px',
-                borderRadius: '10px',
-                border: '1px solid var(--border-subtle)',
-                background: 'var(--bg-secondary)',
-                fontSize: '11px',
-                color: 'var(--text-primary)',
-                outline: 'none',
-                fontFamily: "'Inter', sans-serif",
-                cursor: 'pointer',
-                minWidth: '160px',
-                transition: 'all 0.2s'
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                e.currentTarget.style.boxShadow = '0 0 0 4px rgba(249, 115, 22, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
+              className="sort-select"
             >
               <option value="status">Sort: Status First</option>
               <option value="amount-desc">Sort: Amount (High → Low)</option>
@@ -655,7 +592,7 @@ export default function BatchDetail({
               <option value="date-desc">Sort: Newest First</option>
               <option value="date-asc">Sort: Oldest First</option>
             </select>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+            <div className="results-count">
               {(() => {
                 // Filter and sort logic
                 const filtered = filteredReceipts.filter(receipt => {
