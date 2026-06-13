@@ -141,7 +141,7 @@
 }
 
 .table-container {
-  overflow-x: auto;
+  overflow-x: hidden;
   max-height: calc(100vh - 400px);
 }
 

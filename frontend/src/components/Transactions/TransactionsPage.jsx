@@ -97,6 +97,7 @@ const CSS = `
     padding: 1.5rem 1.5rem;
     max-width: 1600px;
     margin: 0 auto;
+    overflow-x: hidden;
   }
 
   @media (max-width: 768px) {
@@ -203,6 +204,11 @@ const CSS = `
     grid-template-columns: 300px 1fr;
     gap: 1.25rem;
     align-items: start;
+    min-width: 0;
+  }
+
+  .main-layout > * {
+    min-width: 0;
   }
 
   @media (max-width: 1280px) {
@@ -559,7 +565,7 @@ const CSS = `
     box-shadow: var(--shadow-lg);
     max-height: 550px;
     overflow-y: auto;
-    overflow-x: auto;
+    overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: var(--border-strong) transparent;
   }
@@ -567,7 +573,17 @@ const CSS = `
   .table {
     width: 100%;
     border-collapse: collapse;
-    table-layout: auto;
+    table-layout: fixed;
+  }
+
+  @media (max-width: 768px) {
+    .table {
+      table-layout: auto;
+    }
+    .table td {
+      white-space: normal !important;
+      word-break: break-word;
+    }
   }
 
   .table-container::-webkit-scrollbar {

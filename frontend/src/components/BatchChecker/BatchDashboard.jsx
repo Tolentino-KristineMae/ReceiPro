@@ -572,7 +572,7 @@ export default function BatchDashboard({
           </div>
           
           {/* Search & Sort Controls */}
-          <div style={{ 
+          <div className="search-sort-container" style={{ 
             display: 'flex', 
             gap: '10px',
             alignItems: 'center'
@@ -620,6 +620,7 @@ export default function BatchDashboard({
             
             {/* Sort Select */}
             <select 
+              className="sort-select"
               value={sortBy} 
               onChange={(e) => setSortBy(e.target.value)} 
               style={{

@@ -10,6 +10,22 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { getApiUrl } from './apiConfig';
 
 function App() {
+  // Add global CSS to prevent horizontal scrolling
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      html, body {
+        overflow-x: hidden;
+        max-width: 100vw;
+      }
+      * {
+        box-sizing: border-box;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
    const [receipts, setReceipts] = useState([]);
    const [selectedReceipt, setSelectedReceipt] = useState(null);
    const [showTransactionModal, setShowTransactionModal] = useState(false);
@@ -73,7 +89,7 @@ function App() {
           />
 
           <main 
-            className="flex-1 overflow-y-auto min-w-0" 
+            className="flex-1 overflow-y-auto overflow-x-hidden min-w-0" 
             style={{ 
               background: '#fffbf5',
               paddingTop: isMobile ? '70px' : '0' 
@@ -83,7 +99,9 @@ function App() {
               className="mx-auto" 
               style={{ 
                 padding: isMobile ? '16px' : '32px 40px',
-                maxWidth: '1600px'
+                maxWidth: '1600px',
+                minWidth: 0,
+                width: '100%',
               }}
             >
               <Routes>
