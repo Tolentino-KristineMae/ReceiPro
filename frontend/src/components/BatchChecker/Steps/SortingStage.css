@@ -440,3 +440,61 @@
   background: #059669;
   box-shadow: 0 15px 25px rgba(16, 185, 129, 0.25);
 }
+
+/* ─── Responsive Styles ───────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .ss-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .ss-col-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .ss-root {
+    padding: 16px;
+  }
+
+  .ss-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .ss-title {
+    font-size: 18px;
+  }
+
+  .ss-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ss-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .ss-col-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .ss-root {
+    padding: 12px;
+  }
+
+  .ss-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .ss-col-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ss-badges {
+    flex-wrap: wrap;
+  }
+}

@@ -241,3 +241,52 @@
   cursor: not-allowed;
   box-shadow: none;
 }
+
+/* ─── Responsive Styles ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .fs-root {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .fs-header-card {
+    padding: 16px;
+  }
+
+  .fs-header-title {
+    font-size: 17px;
+  }
+
+  .fs-summary-card {
+    padding: 14px 16px;
+  }
+
+  .fs-stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .fs-action-btn {
+    padding: 14px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fs-root {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .fs-header-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .fs-header-content {
+    text-align: center;
+  }
+
+  .fs-stat-item {
+    padding: 12px;
+  }
+}

@@ -900,15 +900,15 @@
 @media (max-width: 1200px) {
   .cs-sidebar {
     width: 400px;
-    padding: 30px;
+    padding: 14px;
   }
 
   .cs-canvas-wrapper {
-    padding: 30px;
+    padding: 20px;
   }
 
   .cs-image {
-    max-width: 400px;
+    max-width: 350px;
   }
 }
 
@@ -919,10 +919,136 @@
 
   .cs-sidebar {
     width: 100%;
-    max-height: 40vh;
+    max-height: 50vh;
+    overflow-y: auto;
   }
 
   .cs-canvas-wrapper {
     flex: 1;
+    padding: 16px;
+  }
+
+  .cs-image {
+    max-width: 100%;
+    max-height: 400px;
+  }
+}
+
+/* iPhone 13 / Medium Mobile */
+@media (max-width: 768px) {
+  .cs-content {
+    flex-direction: column;
+  }
+
+  .cs-sidebar {
+    width: 100%;
+    max-height: 55vh;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .cs-canvas-wrapper {
+    padding: 12px;
+  }
+
+  .cs-image {
+    max-width: 100%;
+    max-height: 350px;
+  }
+
+  .cs-header-card {
+    padding: 12px 14px;
+  }
+
+  .cs-header-title {
+    font-size: 18px;
+  }
+
+  .cs-form {
+    padding: 12px;
+  }
+
+  .cs-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .cs-form-row.three-cols {
+    grid-template-columns: 1fr;
+  }
+
+  .cs-actions-row {
+    flex-wrap: wrap;
+    padding: 8px 10px;
+  }
+
+  .cs-action-item {
+    flex: 1 1 100%;
+  }
+
+  .cs-action-item.rotate {
+    flex: 1 1 100%;
+  }
+
+  .cs-action-item.account-toggle {
+    flex: 1 1 100%;
+  }
+
+  .cs-nav {
+    padding-top: 10px;
+  }
+
+  .cs-nav-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cs-nav-btn {
+    padding: 12px 16px;
+  }
+
+  .cs-error-toast {
+    min-width: 280px;
+    max-width: 90%;
+    top: 10px;
+    right: 10px;
+  }
+}
+
+/* Extra Small (iPhone SE) */
+@media (max-width: 480px) {
+  .cs-sidebar {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .cs-canvas-wrapper {
+    padding: 10px;
+  }
+
+  .cs-image {
+    max-height: 300px;
+  }
+
+  .cs-header-title {
+    font-size: 16px;
+  }
+
+  .cs-header-subtitle {
+    font-size: 10px;
+  }
+
+  .cs-stat-value {
+    font-size: 14px;
+  }
+
+  .cs-form {
+    padding: 10px;
+  }
+
+  .cs-error-toast {
+    min-width: 260px;
+    max-width: 92%;
+    left: 10px;
+    right: 10px;
   }
 }

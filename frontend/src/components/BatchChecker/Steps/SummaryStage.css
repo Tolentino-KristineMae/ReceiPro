@@ -47,3 +47,16 @@ select:focus {
   border-color: #f97316 !important;
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1) !important;
 }
+
+/* ─── Responsive Styles ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .sum-root {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sum-root {
+    padding: 12px;
+  }
+}

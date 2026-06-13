@@ -332,3 +332,72 @@
   white-space: nowrap;
   font-family: var(--font-display);
 }
+
+/* ─── Responsive Styles ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .vs-root {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .vs-header-card {
+    padding: 16px;
+  }
+
+  .vs-header-title {
+    font-size: 17px;
+  }
+
+  .vs-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .vs-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .vs-nav-buttons {
+    flex-direction: column;
+  }
+
+  .vs-nav-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .vs-root {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .vs-header-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .vs-header-content {
+    text-align: center;
+  }
+
+  .vs-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vs-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vs-info-value {
+    font-size: 18px;
+  }
+
+  .vs-stat-value {
+    font-size: 20px;
+  }
+
+  .vs-action-btn {
+    padding: 14px;
+    font-size: 12px;
+  }
+}
