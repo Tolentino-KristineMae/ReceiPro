@@ -232,49 +232,19 @@ export default function CropStage({
         {/* Sidebar */}
         <div className="cs-sidebar">
           <div className={`cs-header-card ${currentCategory === 'gcash' ? 'gcash' : 'others'}`}>
-            <h3 className="cs-header-title">
-              {currentCategory === 'gcash' ? 'Crop GCash Receipts' : 'Input Other Receipts'}
-            </h3>
-            <p className="cs-header-subtitle">
-              {currentCategory === 'gcash'
-                ? 'Adjust the crop area to capture the transaction amount and reference number'
-                : 'Manually enter the transaction details for non-GCash receipts'}
-            </p>
-          </div>
-
-          <div className="cs-stats-grid">
-            <div className="cs-stat-card">
-              <div className="cs-stat-label">Total Progress</div>
-              <div className="cs-stat-value">{index + 1} / {total}</div>
-            </div>
-            {gcashTotal > 0 && (
-              <div className="cs-stat-card gcash">
-                <div className="cs-stat-label">GCash</div>
-                <div className="cs-stat-value">{gcashProcessed} / {gcashTotal}</div>
+            <div className="cs-header-top">
+              <h3 className="cs-header-title">
+                {currentCategory === 'gcash' ? 'Crop GCash' : 'Input Others'}
+              </h3>
+              <div className="cs-header-stats">
+                <span className="cs-header-stat">{index + 1}/{total}</span>
+                {gcashTotal > 0 && (
+                  <span className="cs-header-stat gcash-stat">{gcashProcessed}/{gcashTotal} G</span>
+                )}
+                {othersTotal > 0 && (
+                  <span className="cs-header-stat others-stat">{othersProcessed}/{othersTotal} O</span>
+                )}
               </div>
-            )}
-            {othersTotal > 0 && (
-              <div className="cs-stat-card others">
-                <div className="cs-stat-label">Others</div>
-                <div className="cs-stat-value">{othersProcessed} / {othersTotal}</div>
-              </div>
-            )}
-          </div>
-
-          <div className="cs-info-section">
-            <div className="cs-info-row">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="cs-info-label">Category</span>
-                <span className={`cs-info-value ${currentCategory === 'gcash' ? 'gcash' : 'others'}`}>
-                  {currentCategory}
-                </span>
-              </div>
-              {currentAccount && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="cs-info-label">Account</span>
-                  <span className={`cs-info-value account-${currentAccount.toLowerCase()}`}>{currentAccount}</span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -300,7 +270,7 @@ export default function CropStage({
 
           {isOthers && (
             <div className="cs-form">
-              <div className="cs-form-row" style={{ gridTemplateColumns: '0.8fr 2.2fr' }}>
+              <div className="cs-form-row date-account">
                 <div className="cs-form-group">
                   <label className="cs-form-label">Date *</label>
                   <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)}
@@ -322,7 +292,7 @@ export default function CropStage({
                   )}
                 </div>
               </div>
-              <div className="cs-form-row three-cols">
+              <div className="cs-form-row two-cols">
                 <div className="cs-form-group">
                   <label className="cs-form-label">Amount *</label>
                   <input type="number" value={manualAmount} onChange={e => setManualAmount(e.target.value)}
@@ -330,11 +300,11 @@ export default function CropStage({
                 </div>
                 <div className="cs-form-group">
                   <label className="cs-form-label">Label *</label>
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <div style={{ display: 'flex', gap: '4px' }}>
                     <input type="text" value={manualReference} onChange={e => setManualReference(e.target.value)}
                       className={`cs-form-input ${errors.reference ? 'error' : ''}`} placeholder="40315 or OTH" />
                     <button onClick={() => setManualReference('OTH')} className="cs-quick-fill-btn" type="button"
-                      style={{ width: 'auto', padding: '10px 12px', margin: 0, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      style={{ width: 'auto', padding: '0 10px', margin: 0, whiteSpace: 'nowrap', flexShrink: 0 }}>
                       OTH
                     </button>
                   </div>
@@ -348,11 +318,7 @@ export default function CropStage({
               <button onClick={handlePrev} className="cs-nav-btn prev" disabled={index === 0}>Prev</button>
               <button onClick={handleNext} className={`cs-nav-btn next ${currentCategory === 'gcash' ? 'gcash' : 'others'}`} disabled={isSaving}>Next</button>
             </div>
-            <div className="cs-nav-progress">
-              <div className="cs-nav-divider" />
-              <span className="cs-nav-text">Stage 3 of 8: Crop &amp; Input ({index + 1}/{total})</span>
-              <div className="cs-nav-divider" />
-            </div>
+            <div className="cs-nav-text-row">Stage 3 · {index + 1}/{total}</div>
           </div>
         </div>
       </div>
