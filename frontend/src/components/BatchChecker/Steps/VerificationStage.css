@@ -276,10 +276,10 @@
   .vs-banner-icon { width: 32px; height: 32px; min-width: 32px; }
   .vs-banner-title { font-size: 12px; }
   .vs-banner-sub   { font-size: 10px; }
-  .vs-stats-row    { gap: 5px; }
-  .vs-stat         { padding: 6px 4px; }
-  .vs-stat-val     { font-size: 16px; }
-  .vs-stat-lbl     { font-size: 8px; }
+  .vs-stats-row    { gap: 4px; }
+  .vs-stat         { padding: 5px 3px; }
+  .vs-stat-val     { font-size: 14px; }
+  .vs-stat-lbl     { font-size: 7px; letter-spacing: 0.02em; }
   .vs-progress-wrap { gap: 6px; }
   .vs-progress-pct { font-size: 10px; min-width: 28px; }
   .vs-notice       { padding: 6px 8px; font-size: 10px; gap: 5px; }
