@@ -17,6 +17,12 @@ class SettingsController extends Controller
     public function getAccounts()
     {
         $accounts = AccountHolder::active()
+            ->orderByRaw("CASE 
+                WHEN name = 'Kristine' THEN 1 
+                WHEN name = 'Nixie' THEN 2 
+                WHEN name = 'Babilyn' THEN 3 
+                ELSE 4 
+            END")
             ->orderBy('name')
             ->get(['name', 'short_code'])
             ->toArray();
@@ -48,6 +54,12 @@ class SettingsController extends Controller
         ]);
 
         $accounts = AccountHolder::active()
+            ->orderByRaw("CASE 
+                WHEN name = 'Kristine' THEN 1 
+                WHEN name = 'Nixie' THEN 2 
+                WHEN name = 'Babilyn' THEN 3 
+                ELSE 4 
+            END")
             ->orderBy('name')
             ->get(['name', 'short_code'])
             ->toArray();
@@ -74,6 +86,12 @@ class SettingsController extends Controller
         $account->save();
 
         $accounts = AccountHolder::active()
+            ->orderByRaw("CASE 
+                WHEN name = 'Kristine' THEN 1 
+                WHEN name = 'Nixie' THEN 2 
+                WHEN name = 'Babilyn' THEN 3 
+                ELSE 4 
+            END")
             ->orderBy('name')
             ->get(['name', 'short_code'])
             ->toArray();

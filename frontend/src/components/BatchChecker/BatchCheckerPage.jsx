@@ -239,9 +239,9 @@ export default function BatchCheckerPage() {
     openProcessor('verify');
   };
 
-  const handleDeleteBatch = async (e, id) => {
+  const handleDeleteBatch = async (e, id, skipConfirm = false) => {
     e.stopPropagation();
-    if (!window.confirm('Delete this batch?')) return;
+    if (!skipConfirm && !window.confirm('Delete this batch?')) return;
     try {
       await fetch(getApiUrl(`/api/batches/${id}`), { method: 'DELETE' });
       setBatches(prev => prev.filter(b => b.id !== id));
@@ -436,6 +436,7 @@ export default function BatchCheckerPage() {
           handleUpdateBatchName={handleUpdateBatchName}
           error={error}
           navigate={navigate}
+          fetchBatches={fetchBatches}
         />
       ) : (
         <BatchDetail

@@ -409,7 +409,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
   const [accountEntries, setAccountEntries] = useState({});
   
   const imgRef = useRef(null);
-  const ACCOUNTS = ['Babilyn', 'Nixie', 'Kristine'];
+  const ACCOUNTS = ['Kristine', 'Nixie', 'Babilyn'];
 
   // Critical safety check for receipts list
   const total = receipts?.length || 0;

@@ -64,6 +64,42 @@ export default function BatchDetail({
   const [sortBy, setSortBy] = React.useState('status');
   const fileInputRef = React.useRef(null);
 
+  // ── Multi-select state ──
+  const [selectedIds, setSelectedIds] = React.useState(new Set());
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = React.useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = React.useState(false);
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAll = (visibleReceipts) => {
+    const visibleIds = visibleReceipts.map(r => r.id);
+    const allSelected = visibleIds.every(id => selectedIds.has(id));
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(visibleIds));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setIsBulkDeleting(true);
+    try {
+      await Promise.all([...selectedIds].map(id => handleDeleteReceipt(id)));
+      setSelectedIds(new Set());
+      setShowBulkDeleteModal(false);
+    } catch (e) {
+      alert('Some receipts could not be deleted.');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
   if (!batch) {
     return (
       <div className="glass-card empty-box">
@@ -690,21 +726,134 @@ export default function BatchDetail({
             );
           }
 
+          const allVisibleSelected = processedReceipts.length > 0 &&
+            processedReceipts.every(r => selectedIds.has(r.id));
+
           return (
-            <div className="receipt-grid">
-              {processedReceipts.map(receipt => (
-                <ReceiptCard 
-                  key={receipt.id} 
-                  receipt={receipt} 
-                  parseOCRData={parseOCRData} 
-                  onDelete={() => setReceiptToDelete(receipt)}
-                  isBillingDone={batch.checker_status === 'billing_ready'}
-                />
-              ))}
-            </div>
+            <>
+              {/* ── Select all bar ── */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '8px 4px',
+              }}>
+                <label style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  cursor: 'pointer', userSelect: 'none',
+                  fontSize: '11px', fontWeight: 700,
+                  color: 'var(--text-muted)',
+                }}>
+                  <div
+                    onClick={() => handleSelectAll(processedReceipts)}
+                    style={{
+                      width: '16px', height: '16px', borderRadius: '4px', flexShrink: 0,
+                      border: `2px solid ${allVisibleSelected ? 'var(--danger-primary)' : 'var(--border-strong)'}`,
+                      background: allVisibleSelected ? 'var(--danger-primary)' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', transition: 'all 0.15s',
+                    }}
+                  >
+                    {allVisibleSelected && (
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </div>
+                  {allVisibleSelected ? 'Deselect all' : `Select all (${processedReceipts.length})`}
+                </label>
+
+                {selectedIds.size > 0 && (
+                  <>
+                    <span style={{ color: 'var(--border-strong)' }}>•</span>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#dc2626' }}>
+                      {selectedIds.size} selected
+                    </span>
+                    <button
+                      onClick={() => setShowBulkDeleteModal(true)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '5px',
+                        padding: '5px 12px', borderRadius: '7px', border: 'none',
+                        background: '#dc2626', color: 'white',
+                        fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                        textTransform: 'uppercase', letterSpacing: '0.05em',
+                        transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#b91c1c'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#dc2626'}
+                    >
+                      <Icon.Trash size={11} />
+                      Delete {selectedIds.size}
+                    </button>
+                    <button
+                      onClick={() => setSelectedIds(new Set())}
+                      style={{
+                        padding: '5px 10px', borderRadius: '7px',
+                        border: '1px solid rgba(239,68,68,0.3)', background: 'transparent',
+                        color: '#dc2626', fontSize: '11px', fontWeight: 600,
+                        cursor: 'pointer', transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      Clear
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className="receipt-grid">
+                {processedReceipts.map(receipt => (
+                  <ReceiptCard
+                    key={receipt.id}
+                    receipt={receipt}
+                    parseOCRData={parseOCRData}
+                    onDelete={() => setReceiptToDelete(receipt)}
+                    isBillingDone={batch.checker_status === 'billing_ready'}
+                    isSelected={selectedIds.has(receipt.id)}
+                    onToggleSelect={() => toggleSelect(receipt.id)}
+                  />
+                ))}
+              </div>
+            </>
           );
         })()}
       </div>
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteModal && (
+        <div className="ort-overlay" style={{ zIndex: 2000 }}>
+          <div className="glass-card" style={{ maxWidth: '420px', padding: '2.5rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>🗑️</div>
+            <h3 className="h2-modern" style={{ fontSize: '1.4rem', marginBottom: '0.75rem' }}>
+              Delete {selectedIds.size} Receipt{selectedIds.size !== 1 ? 's' : ''}?
+            </h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '2rem', lineHeight: 1.6 }}>
+              This will permanently remove {selectedIds.size} selected receipt{selectedIds.size !== 1 ? 's' : ''} and all their extracted data. This cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                className="btn-primary-modern"
+                style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)' }}
+                onClick={() => setShowBulkDeleteModal(false)}
+                disabled={isBulkDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn-primary-modern"
+                style={{ flex: 1, background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' }}
+                onClick={handleBulkDelete}
+                disabled={isBulkDeleting}
+              >
+                {isBulkDeleting ? (
+                  <><div className="spinner-modern" /> Deleting...</>
+                ) : (
+                  <><Icon.Trash size={14} /> Delete All</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Deletion Confirmation Modal */}
       {receiptToDelete && (
@@ -794,7 +943,7 @@ export default function BatchDetail({
   );
 }
 
-function ReceiptCard({ receipt, parseOCRData, onDelete, isBillingDone }) {
+function ReceiptCard({ receipt, parseOCRData, onDelete, isBillingDone, isSelected, onToggleSelect }) {
   const getStatus = () => {
     const ocr = parseOCRData(receipt.ocr_data);
     const mStatus = receipt.match_status?.toLowerCase();
@@ -838,8 +987,32 @@ function ReceiptCard({ receipt, parseOCRData, onDelete, isBillingDone }) {
   return (
     <div
       className={`receipt-card ${status.className === 'danger' ? 'is-not-found' : ''}`}
-      style={isBillingDone ? { outline: '2px solid rgba(16,185,129,0.4)', outlineOffset: '-2px' } : {}}
+      style={{
+        ...(isBillingDone ? { outline: '2px solid rgba(16,185,129,0.4)', outlineOffset: '-2px' } : {}),
+        ...(isSelected ? { outline: '2px solid #dc2626', outlineOffset: '-2px' } : {}),
+      }}
     >
+      {/* Checkbox — top left, always visible when selected, on hover otherwise */}
+      <div
+        onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}
+        style={{
+          position: 'absolute', top: '8px', left: '8px', zIndex: 20,
+          width: '20px', height: '20px', borderRadius: '5px',
+          border: `2px solid ${isSelected ? '#dc2626' : 'rgba(255,255,255,0.7)'}`,
+          background: isSelected ? '#dc2626' : 'rgba(0,0,0,0.35)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', transition: 'all 0.15s',
+          opacity: isSelected ? 1 : 0,
+        }}
+        className="receipt-checkbox"
+      >
+        {isSelected && (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        )}
+      </div>
       <button 
         className="receipt-delete-btn"
         onClick={(e) => { e.stopPropagation(); onDelete(); }}

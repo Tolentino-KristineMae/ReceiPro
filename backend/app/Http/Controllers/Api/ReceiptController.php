@@ -20,19 +20,11 @@ class ReceiptController extends Controller
             ? $receipt->cropped_image 
             : $receipt->file_path;
 
-        $path = storage_path('app/public/' . $filePath);
+        // Use correct Supabase Storage public URL format
+        $publicUrl = env('SUPABASE_URL') . '/storage/v1/object/public/' . env('SUPABASE_BUCKET') . '/' . $filePath;
 
-        if (!file_exists($path)) {
-            return response()->json(['error' => 'Image not found'], 404);
-        }
-
-        $mime = mime_content_type($path);
-
-        return response()->file($path, [
-            'Content-Type'                => $mime,
-            'Access-Control-Allow-Origin' => '*',
-            'Cache-Control'               => 'public, max-age=3600',
-        ]);
+        // Redirect to Supabase public URL
+        return redirect()->to($publicUrl);
     }
 
     public function upload(Request $request)
@@ -54,7 +46,7 @@ class ReceiptController extends Controller
         }
 
         foreach ($request->file('receipts') as $file) {
-            $path = $file->store('receipts', 'public');
+            $path = $file->store('receipts', 'supabase');
 
             $receipt = Receipt::create([
                 'file_path' => $path,
@@ -76,13 +68,10 @@ class ReceiptController extends Controller
     public function destroy(Receipt $receipt)
     {
         if ($receipt->cropped_image) {
-            Storage::disk('public')->delete($receipt->cropped_image);
+            Storage::disk('supabase')->delete($receipt->cropped_image);
         }
 
-        $path = storage_path('app/public/' . $receipt->file_path);
-        if (file_exists($path)) {
-            unlink($path);
-        }
+        Storage::disk('supabase')->delete($receipt->file_path);
 
         if ($receipt->transaction_id) {
             Transaction::where('id', $receipt->transaction_id)
@@ -130,7 +119,7 @@ class ReceiptController extends Controller
                 $base64 = base64_decode($base64);
                 
                 $fileName = 'crops/' . Str::random(40) . '.' . $type;
-                Storage::disk('public')->put($fileName, $base64);
+                Storage::disk('supabase')->put($fileName, $base64);
                 
                 // We store the path in cropped_image column for the frontend to use
                 $data['cropped_image'] = $fileName;

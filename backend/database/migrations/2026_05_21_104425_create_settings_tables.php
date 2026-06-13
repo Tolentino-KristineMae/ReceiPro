@@ -31,9 +31,9 @@ return new class extends Migration
 
         // Insert default account holders
         DB::table('account_holders')->insert([
-            ['name' => 'Babilyn', 'short_code' => 'BAB', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Nixie', 'short_code' => 'NIX', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'Kristine', 'short_code' => 'KRI', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'Nixie', 'short_code' => 'NIX', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'Babilyn', 'short_code' => 'BAB', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
         // Insert default deduction types

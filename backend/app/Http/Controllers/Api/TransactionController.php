@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class TransactionController extends Controller
 {
-    private const ACCOUNT_HOLDERS = ['Babilyn', 'Nixie', 'Kristine'];
+    private const ACCOUNT_HOLDERS = ['Kristine', 'Nixie', 'Babilyn'];
 
     public function store(Request $request)
     {

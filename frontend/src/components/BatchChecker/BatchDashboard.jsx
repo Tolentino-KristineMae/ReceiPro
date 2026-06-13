@@ -1,5 +1,6 @@
 import React from 'react';
 import BillingSummaryModal from './BillingSummaryModal';
+import { getApiUrl } from '../../apiConfig';
 
 const fmt = (n) =>
   Number(n ?? 0).toLocaleString('en-PH', {
@@ -74,7 +75,8 @@ export default function BatchDashboard({
   handleDeleteBatch, 
   handleUpdateBatchName,
   error,
-  navigate 
+  navigate,
+  fetchBatches
 }) {
   const nextBatchNumber = batches.length + 1;
   const autoBatchName = `Batch #${String(nextBatchNumber).padStart(3, '0')}`;
@@ -84,6 +86,43 @@ export default function BatchDashboard({
   const [summaryBatch, setSummaryBatch] = React.useState(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [sortBy, setSortBy] = React.useState('date-desc');
+
+  // ── Multi-select state ──
+  const [selectedBatchIds, setSelectedBatchIds] = React.useState(new Set());
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = React.useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = React.useState(false);
+
+  const toggleBatchSelect = (id, e) => {
+    e.stopPropagation();
+    setSelectedBatchIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAll = (visible) => {
+    const ids = visible.map(b => b.id);
+    const allSelected = ids.every(id => selectedBatchIds.has(id));
+    setSelectedBatchIds(allSelected ? new Set() : new Set(ids));
+  };
+
+  const handleBulkDelete = async () => {
+    setIsBulkDeleting(true);
+    try {
+      for (const id of selectedBatchIds) {
+        const fakeEvent = { stopPropagation: () => {} };
+        await handleDeleteBatch(fakeEvent, id, true);
+      }
+      await fetchBatches(true);
+      setSelectedBatchIds(new Set());
+      setShowBulkDeleteModal(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
 
   // Update custom name if it's empty or when batches change (if not manually editing)
   React.useEffect(() => {
@@ -624,22 +663,120 @@ export default function BatchDashboard({
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: '1rem' }}>
-            {filteredBatches.map((batch, i) => (
-              <BatchCard
-                key={batch.id}
-                batch={batch}
-                onClick={() => navigate(`/batch/${batch.id}`)}
-                onDelete={(e) => handleDeleteBatch(e, batch.id)}
-                onUpdateName={handleUpdateBatchName}
-                onViewSummary={(e) => {
-                  e.stopPropagation();
-                  setSummaryBatch(batch);
-                }}
-                delay={i * 0.03}
-              />
-            ))}
-          </div>
+          <>
+            {/* ── Select-all + bulk delete bar ── */}
+            {(() => {
+              const allSelected = filteredBatches.length > 0 && filteredBatches.every(b => selectedBatchIds.has(b.id));
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', minHeight: '26px' }}>
+                  <div
+                    onClick={() => handleSelectAll(filteredBatches)}
+                    style={{
+                      width: '16px', height: '16px', borderRadius: '4px', flexShrink: 0,
+                      border: `2px solid ${allSelected ? '#dc2626' : 'var(--border-strong)'}`,
+                      background: allSelected ? '#dc2626' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', transition: 'all 0.15s',
+                    }}
+                  >
+                    {allSelected && (
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', userSelect: 'none', cursor: 'pointer' }}
+                    onClick={() => handleSelectAll(filteredBatches)}>
+                    {allSelected ? 'Deselect all' : `Select all (${filteredBatches.length})`}
+                  </span>
+                  {selectedBatchIds.size > 0 && (
+                    <>
+                      <span style={{ color: 'var(--border-strong)' }}>•</span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#dc2626' }}>{selectedBatchIds.size} selected</span>
+                      <button
+                        onClick={() => setShowBulkDeleteModal(true)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '5px',
+                          padding: '5px 12px', borderRadius: '7px', border: 'none',
+                          background: '#dc2626', color: 'white',
+                          fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                          textTransform: 'uppercase', letterSpacing: '0.05em',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#b91c1c'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#dc2626'}
+                      >
+                        <Icon.Trash size={11} /> Delete {selectedBatchIds.size}
+                      </button>
+                      <button
+                        onClick={() => setSelectedBatchIds(new Set())}
+                        style={{
+                          padding: '5px 10px', borderRadius: '7px',
+                          border: '1px solid rgba(239,68,68,0.3)', background: 'transparent',
+                          color: '#dc2626', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        Clear
+                      </button>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+
+            <div style={{ display: 'grid', gap: '1rem' }}>
+              {filteredBatches.map((batch, i) => (
+                <BatchCard
+                  key={batch.id}
+                  batch={batch}
+                  isSelected={selectedBatchIds.has(batch.id)}
+                  onToggleSelect={(e) => toggleBatchSelect(batch.id, e)}
+                  onClick={() => navigate(`/batch/${batch.id}`)}
+                  onDelete={(e) => handleDeleteBatch(e, batch.id)}
+                  onUpdateName={handleUpdateBatchName}
+                  onViewSummary={(e) => { e.stopPropagation(); setSummaryBatch(batch); }}
+                  delay={i * 0.03}
+                />
+              ))}
+            </div>
+
+            {/* Bulk delete confirmation modal */}
+            {showBulkDeleteModal && (
+              <div className="ort-overlay" style={{ zIndex: 2000 }}>
+                <div className="glass-card" style={{ maxWidth: '420px', padding: '2.5rem', textAlign: 'center' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>🗑️</div>
+                  <h3 className="h2-modern" style={{ fontSize: '1.4rem', marginBottom: '0.75rem' }}>
+                    Delete {selectedBatchIds.size} Batch{selectedBatchIds.size !== 1 ? 'es' : ''}?
+                  </h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '2rem', lineHeight: 1.6 }}>
+                    This will permanently remove {selectedBatchIds.size} selected batch{selectedBatchIds.size !== 1 ? 'es' : ''} and all their receipts. This cannot be undone.
+                  </p>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button
+                      className="btn-primary-modern"
+                      style={{ flex: 1, background: 'rgba(0,0,0,0.05)', color: 'var(--text-primary)' }}
+                      onClick={() => setShowBulkDeleteModal(false)}
+                      disabled={isBulkDeleting}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="btn-primary-modern"
+                      style={{ flex: 1, background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' }}
+                      onClick={handleBulkDelete}
+                      disabled={isBulkDeleting}
+                    >
+                      {isBulkDeleting
+                        ? <><div className="spinner-modern" /> Deleting...</>
+                        : <><Icon.Trash size={14} /> Delete All</>
+                      }
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Billing Summary Modal */}
@@ -689,7 +826,7 @@ export default function BatchDashboard({
   );
 }
 
-function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, delay = 0 }) {
+function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, delay = 0, isSelected, onToggleSelect }) {
   const total = batch.stats?.total ?? batch.receipts?.length ?? 0;
   const verified = batch.stats?.ocr_finished ?? 0;
   const progress = batch.progress ?? 0;
@@ -723,24 +860,44 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, dela
         display: 'flex',
         alignItems: 'center',
         gap: '1.5rem',
-        border: '1px solid var(--border-subtle)',
-        background: 'var(--bg-secondary)',
+        border: `1px solid ${isSelected ? '#dc2626' : 'var(--border-subtle)'}`,
+        background: isSelected ? 'rgba(239,68,68,0.03)' : 'var(--bg-secondary)',
         borderRadius: 'var(--radius-lg)',
         boxShadow: 'var(--shadow-sm)'
       }}
       onClick={onClick}
       onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.borderColor = 'var(--accent-primary)';
-        e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+        if (!isSelected) {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.borderColor = 'var(--accent-primary)';
+          e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+        }
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.borderColor = 'var(--border-subtle)';
-        e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+        if (!isSelected) {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.borderColor = 'var(--border-subtle)';
+          e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+        }
       }}
     >
-      {/* Batch Identity */}
+      {/* Checkbox */}
+      <div
+        onClick={onToggleSelect}
+        style={{
+          width: '17px', height: '17px', borderRadius: '4px', flexShrink: 0,
+          border: `2px solid ${isSelected ? '#dc2626' : 'var(--border-strong)'}`,
+          background: isSelected ? '#dc2626' : 'transparent',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', transition: 'all 0.15s',
+        }}
+      >
+        {isSelected && (
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        )}
+      </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '220px', flexShrink: 0 }}>
         <div style={{
           width: '32px',

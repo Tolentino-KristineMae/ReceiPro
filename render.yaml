@@ -1,17 +1,49 @@
-# Render Config for ReciePro Backend (using external Supabase DB)
-# Use this as reference, but deploy manually via Render Dashboard
-# since we're using an existing Supabase database
-
+# Render Config for ReciePro Backend (using Docker + external Supabase DB and Storage)
 services:
   - type: web
     name: reciepro-backend
-    env: php
+    env: docker
     plan: starter
-    rootDir: backend
-    buildCommand: |
-      composer install --no-interaction --prefer-dist --optimize-autoloader
-      npm install
-      npm run build
-      php artisan storage:link
-    startCommand: php artisan serve --host 0.0.0.0 --port 10000
+    rootDir: .
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        value: aws-1-ap-southeast-2.pooler.supabase.com
+      - key: DB_PORT
+        value: 6543
+      - key: DB_DATABASE
+        value: postgres
+      - key: DB_USERNAME
+        value: postgres.lwdtqukafwqkxexvmcnp
+      - key: DB_PASSWORD
+        sync: false
+      - key: APP_KEY
+        sync: false
+      - key: CACHE_DRIVER
+        value: file
+      - key: SESSION_DRIVER
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: FILESYSTEM_DISK
+        value: supabase
+      - key: SUPABASE_ACCESS_KEY_ID
+        sync: false
+      - key: SUPABASE_SECRET_ACCESS_KEY
+        sync: false
+      - key: SUPABASE_DEFAULT_REGION
+        value: us-east-1
+      - key: SUPABASE_BUCKET
+        value: receipts
+      - key: SUPABASE_ENDPOINT
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
 

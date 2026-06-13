@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getApiUrl } from '../apiConfig';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 /* ─── Orange design tokens (matches rest of app) ─────────────────────────── */
 const T = {
@@ -219,14 +221,39 @@ export default function SettingsPage() {
   const [deductionTypes, setDeductions] = useState([]);
   const [loading, setLoading]           = useState(true);
   const [saving, setSaving]             = useState(false);
-  const [toast, setToast]               = useState(null);
 
   const [newAccName,  setNewAccName]   = useState('');
   const [newAccCode,  setNewAccCode]   = useState('');
   const [newDedLabel, setNewDedLabel]  = useState('');
   const [newDedKey,   setNewDedKey]    = useState('');
 
-  const flash = (type, msg) => { setToast({ type, msg }); setTimeout(()=>setToast(null), 3000); };
+  const [confirmModal, setConfirmModal] = useState({ show: false, message: '', onConfirm: null });
+
+  const flash = (type, msg) => {
+    if (type === 'success') {
+      toast.success(msg, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+    } else {
+      toast.error(msg, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+    }
+  };
 
   useEffect(() => { load(); }, []);
 
@@ -243,7 +270,7 @@ export default function SettingsPage() {
     finally { setLoading(false); }
   };
 
-  const defaultAccounts   = () => [{ name:'Babilyn',short_code:'BAB'},{ name:'Nixie',short_code:'NIX'},{ name:'Kristine',short_code:'KRI'}];
+  const defaultAccounts   = () => [{ name:'Kristine',short_code:'KRI'},{ name:'Nixie',short_code:'NIX'},{ name:'Babilyn',short_code:'BAB'}];
   const defaultDeductions = () => [{ key:'royal',label:'Cash in Royal Cable'},{ key:'bills',label:'Bills'},{ key:'others',label:'Others'}];
 
   const addAccount = async (e) => {
@@ -255,21 +282,62 @@ export default function SettingsPage() {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ name: newAccName.trim(), short_code: newAccCode.trim().toUpperCase() }),
       });
-      if (r.ok) { setNewAccName(''); setNewAccCode(''); await load(); flash('success','Account added'); }
-      else { const e = await r.json(); flash('error', e.message || 'Failed'); }
-    } catch { flash('error','Failed to add account'); }
+      if (r.ok) { 
+        const data = await r.json();
+        setAccounts(data.accounts);
+        setNewAccName(''); 
+        setNewAccCode(''); 
+        flash('success','Account added'); 
+      } else { 
+        const e = await r.json(); 
+        console.log('Account add error:', e); // debug
+        let errorMessage = e.message || 'Failed';
+        if (e.errors) {
+          const firstErrorKey = Object.keys(e.errors)[0];
+          if (firstErrorKey) {
+            errorMessage = e.errors[firstErrorKey][0];
+          }
+        }
+        flash('error', errorMessage); 
+      }
+    } catch (err) { 
+      console.error('Account add exception:', err);
+      flash('error','Failed to add account'); 
+    }
     finally { setSaving(false); }
   };
 
   const deleteAccount = async (name) => {
-    if (!confirm(`Remove "${name}"?`)) return;
-    try {
-      setSaving(true);
-      const r = await fetch(getApiUrl(`/api/settings/accounts/${encodeURIComponent(name)}`), { method:'DELETE' });
-      if (r.ok) { await load(); flash('success','Account removed'); }
-      else { const e = await r.json(); flash('error', e.message||'Failed'); }
-    } catch { flash('error','Failed'); }
-    finally { setSaving(false); }
+    setConfirmModal({
+      show: true,
+      message: `Remove "${name}"?`,
+      onConfirm: async () => {
+        try {
+          setSaving(true);
+          const r = await fetch(getApiUrl(`/api/settings/accounts/${encodeURIComponent(name)}`), { method:'DELETE' });
+          if (r.ok) { 
+            const data = await r.json();
+            setAccounts(data.accounts);
+            flash('success','Account removed'); 
+          }
+          else { 
+            const e = await r.json(); 
+            let errorMessage = e.message || 'Failed';
+            if (e.errors) {
+              const firstErrorKey = Object.keys(e.errors)[0];
+              if (firstErrorKey) {
+                errorMessage = e.errors[firstErrorKey][0];
+              }
+            }
+            flash('error', errorMessage); 
+          }
+        } catch { flash('error','Failed'); }
+        finally { 
+          setSaving(false); 
+          setConfirmModal({ show: false, message: '', onConfirm: null });
+        }
+      }
+    });
   };
 
   const addDeduction = async (e) => {
@@ -281,22 +349,60 @@ export default function SettingsPage() {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ key: newDedKey.trim().toLowerCase(), label: newDedLabel.trim() }),
       });
-      if (r.ok) { setNewDedLabel(''); setNewDedKey(''); await load(); flash('success','Deduction type added'); }
-      else { const e = await r.json(); flash('error', e.message||'Failed'); }
+      if (r.ok) { 
+        const data = await r.json();
+        setDeductions(data.deduction_types);
+        setNewDedLabel(''); 
+        setNewDedKey(''); 
+        flash('success','Deduction type added'); 
+      }
+      else { 
+        const e = await r.json(); 
+        let errorMessage = e.message || 'Failed';
+        if (e.errors) {
+          const firstErrorKey = Object.keys(e.errors)[0];
+          if (firstErrorKey) {
+            errorMessage = e.errors[firstErrorKey][0];
+          }
+        }
+        flash('error', errorMessage); 
+      }
     } catch { flash('error','Failed'); }
     finally { setSaving(false); }
   };
 
   const deleteDeduction = async (key) => {
     const d = deductionTypes.find(x=>x.key===key);
-    if (!confirm(`Remove "${d?.label}"?`)) return;
-    try {
-      setSaving(true);
-      const r = await fetch(getApiUrl(`/api/settings/deduction-types/${encodeURIComponent(key)}`), { method:'DELETE' });
-      if (r.ok) { await load(); flash('success','Removed'); }
-      else { const e = await r.json(); flash('error', e.message||'Failed'); }
-    } catch { flash('error','Failed'); }
-    finally { setSaving(false); }
+    setConfirmModal({
+      show: true,
+      message: `Remove "${d?.label}"?`,
+      onConfirm: async () => {
+        try {
+          setSaving(true);
+          const r = await fetch(getApiUrl(`/api/settings/deduction-types/${encodeURIComponent(key)}`), { method:'DELETE' });
+          if (r.ok) { 
+            const data = await r.json();
+            setDeductions(data.deduction_types);
+            flash('success','Removed'); 
+          }
+          else { 
+            const e = await r.json(); 
+            let errorMessage = e.message || 'Failed';
+            if (e.errors) {
+              const firstErrorKey = Object.keys(e.errors)[0];
+              if (firstErrorKey) {
+                errorMessage = e.errors[firstErrorKey][0];
+              }
+            }
+            flash('error', errorMessage); 
+          }
+        } catch { flash('error','Failed'); }
+        finally { 
+          setSaving(false); 
+          setConfirmModal({ show: false, message: '', onConfirm: null });
+        }
+      }
+    });
   };
 
   /* shared input style */
@@ -331,23 +437,106 @@ export default function SettingsPage() {
 
   return (
     <>
-      <style>{`@keyframes sp { to { transform:rotate(360deg); } } @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }`}</style>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
 
-      {/* ── Toast notification ── */}
-      {toast && (
+      {/* ── Confirm Modal ── */}
+      {confirmModal.show && (
         <div style={{
-          position:'fixed', bottom:'24px', right:'24px', zIndex:9999,
-          display:'flex', alignItems:'center', gap:'8px', padding:'10px 16px',
-          borderRadius:'10px', fontSize:'13px', fontWeight:600,
-          background: toast.type==='success' ? '#f0fdf4' : '#fef2f2',
-          border:`1px solid ${toast.type==='success' ? '#86efac':'#fca5a5'}`,
-          color: toast.type==='success' ? '#15803d' : '#dc2626',
-          boxShadow:'0 4px 16px rgba(0,0,0,0.10)', animation:'fadeUp 0.2s ease both',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
         }}>
-          {toast.type==='success' ? <Icon.Check /> : <Icon.Info />}
-          {toast.msg}
+          <div style={{
+            background: '#ffffff',
+            padding: '24px',
+            borderRadius: '12px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            maxWidth: '400px',
+            width: '100%',
+            margin: '0 20px',
+          }}>
+            <p style={{
+              color: '#431407',
+              fontSize: '16px',
+              fontWeight: 600,
+              marginBottom: '20px',
+              textAlign: 'center',
+            }}>
+              {confirmModal.message}
+            </p>
+            <div style={{
+              display: 'flex',
+              gap: '10px',
+              justifyContent: 'center',
+            }}>
+              <button
+                onClick={() => setConfirmModal({ show: false, message: '', onConfirm: null })}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: '1px solid #f1f5f9',
+                  background: '#f1f5f9',
+                  color: '#64748b',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#e2e8f0';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#f1f5f9';
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#dc2626',
+                  color: '#ffffff',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#b91c1c';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#dc2626';
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
+
+      <style>{`@keyframes sp { to { transform:rotate(360deg); } @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }`}</style>
 
       {/* ── Page wrapper — paddingTop gives breathing room from top ── */}
       <div style={{

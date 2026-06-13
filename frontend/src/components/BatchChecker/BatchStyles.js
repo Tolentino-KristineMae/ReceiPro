@@ -434,6 +434,10 @@ export const BATCH_STYLES = `
     transform: translateY(0);
   }
 
+  .receipt-card:hover .receipt-checkbox {
+    opacity: 1 !important;
+  }
+
   .receipt-delete-btn:hover {
     background: var(--danger-primary);
     color: white;

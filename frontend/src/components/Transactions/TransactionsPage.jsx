@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getApiUrl } from '../../apiConfig';
 import { playTransactionSound } from '../../utils/sound';
 
-const ACCOUNTS = ['Babilyn', 'Nixie', 'Kristine'];
+const ACCOUNTS = ['Kristine', 'Nixie', 'Babilyn'];
 
 // Batch color palette (5 colors cycling - Light mode friendly)
 const BATCH_COLORS = [
