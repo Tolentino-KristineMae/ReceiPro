@@ -557,14 +557,12 @@ export default function BatchDashboard({
             justifyContent: 'space-between'
           }}>
             <div>
-              <div className="section-label">Recent Batches</div>
               <div style={{ 
                 fontSize: '10px', 
                 fontWeight: 600,
                 color: 'var(--text-muted)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
-                marginTop: '4px'
               }}>
                 {filteredBatches.length} batch{filteredBatches.length !== 1 ? 'es' : ''} • Sorted by {sortBy}
               </div>

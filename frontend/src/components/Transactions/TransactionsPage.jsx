@@ -154,15 +154,15 @@ const CSS = `
   }
 
   .account-tab.active {
-    background: white;
-    color: var(--accent-primary);
+    background: var(--accent-primary);
+    color: white;
     box-shadow: var(--shadow-sm), 0 1px 2px rgba(249, 115, 22, 0.05);
-    border: 1px solid var(--border-subtle);
+    border: 1px solid var(--accent-primary);
   }
 
   .account-tab:hover:not(.active) {
-    color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.5);
+    color: var(--accent-primary);
+    background: rgba(249, 115, 22, 0.12);
   }
 
   /* ── Print Button ── */
@@ -565,10 +565,14 @@ const CSS = `
     backdrop-filter: blur(10px);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
-    padding: 6px 12px;
+    padding: 8px 12px;
     font-size: 11px;
     font-weight: 600;
     color: var(--text-muted);
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
   }
 
   /* ── Modern Table ── */
@@ -1961,10 +1965,11 @@ export default function TransactionsPage() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                       style={{
                         width: '220px',
+                        height: '36px',
                         paddingLeft: '34px',
                         paddingRight: searchQuery ? '32px' : '12px',
-                        paddingTop: '8px',
-                        paddingBottom: '8px',
+                        paddingTop: '0',
+                        paddingBottom: '0',
                         background: '#ffffff',
                         border: '1px solid rgba(251,146,60,0.25)',
                         borderRadius: '10px',
@@ -1972,6 +1977,7 @@ export default function TransactionsPage() {
                         color: '#431407',
                         fontFamily: 'inherit',
                         outline: 'none',
+                        boxSizing: 'border-box',
                         transition: 'border-color 0.15s, box-shadow 0.15s',
                       }}
                       onFocus={e => { e.target.style.borderColor = '#f97316'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.15)'; }}
