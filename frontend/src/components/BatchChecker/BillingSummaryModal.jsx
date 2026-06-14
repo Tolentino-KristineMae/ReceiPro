@@ -152,8 +152,18 @@ const BillingSummaryModal = ({
     return Object.entries(counts).map(([name, count]) => ({ name, count }));
   })();
 
+  // Check if we're on mobile
+  const isMobile = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const scale = isMobile() ? 1 : 2;
+  
   const captureCanvas = () =>
-    html2canvas(cardRef.current, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false });
+    html2canvas(cardRef.current, { 
+      backgroundColor: '#ffffff', 
+      scale, 
+      useCORS: true, 
+      logging: false,
+      imageTimeout: 10000 // Prevent hanging on image load
+    });
 
   const handleCopyImage = async () => {
     if (!cardRef.current) return;
@@ -174,7 +184,7 @@ const BillingSummaryModal = ({
           URL.revokeObjectURL(url);
         }
         setCopying(false);
-      }, 'image/png');
+      }, 'image/png', 0.92); // Add compression quality
     } catch { setCopying(false); }
   };
 
@@ -183,12 +193,16 @@ const BillingSummaryModal = ({
     setCopying(true);
     try {
       const canvas = await captureCanvas();
-      const a = document.createElement('a');
-      a.href = canvas.toDataURL('image/png');
-      a.download = `billing-${finalBatchNumber || batchNumber}-${Date.now()}.png`;
-      a.click();
-    } catch {}
-    setCopying(false);
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `billing-${finalBatchNumber || batchNumber}-${Date.now()}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setCopying(false);
+      }, 'image/png', 0.92);
+    } catch { setCopying(false); }
   };
 
   return (

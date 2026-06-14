@@ -576,15 +576,24 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
     const canvas = document.createElement('canvas');
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
-    canvas.width = completedCrop.width * scaleX;
-    canvas.height = completedCrop.height * scaleY;
+    // Resize canvas to max 1920px width for better performance on mobile
+    let finalWidth = completedCrop.width * scaleX;
+    let finalHeight = completedCrop.height * scaleY;
+    const maxWidth = 1920;
+    if (finalWidth > maxWidth) {
+      const ratio = maxWidth / finalWidth;
+      finalWidth = maxWidth;
+      finalHeight = finalHeight * ratio;
+    }
+    canvas.width = finalWidth;
+    canvas.height = finalHeight;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(image,
       completedCrop.x * scaleX, completedCrop.y * scaleY,
       completedCrop.width * scaleX, completedCrop.height * scaleY,
-      0, 0, canvas.width, canvas.height
+      0, 0, finalWidth, finalHeight
     );
-    return canvas.toDataURL('image/png');
+    return canvas.toDataURL('image/jpeg', 0.85); // Use JPEG with 85% quality for smaller size and faster processing
   }, [completedCrop]);
 
   const handlePrev = async () => {
