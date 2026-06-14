@@ -113,6 +113,13 @@ class BatchController extends Controller
 
         $data = ['checker_status' => $request->checker_status];
 
+        // Clear summary and billing data when moving back to earlier stages
+        $earlierStages = ['open', 'claiming', 'verified', 'finalized'];
+        if (in_array($request->checker_status, $earlierStages)) {
+            $data['summary_data'] = null;
+            $data['billing_data'] = null;
+        }
+
         // Persist summary figures when moving to summarized
         if ($request->has('summary_data')) {
             $data['summary_data'] = $request->summary_data;

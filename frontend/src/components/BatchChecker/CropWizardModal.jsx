@@ -403,7 +403,9 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
               setVerificationSummary(batch.verification_summary);
             }
             
-            if (batch.summary_data) {
+            // Only load saved deductions and final net amount if we're in billing phase
+            // For summary phase, start fresh with recalculated values
+            if (phase === 'billing' && batch.summary_data) {
               if (batch.summary_data.deductions) {
                 console.log('Setting savedDeductions:', batch.summary_data.deductions);
                 setSavedDeductions(batch.summary_data.deductions);
@@ -411,6 +413,10 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
               if (batch.summary_data.net_amount) {
                 setFinalNetAmount(batch.summary_data.net_amount);
               }
+            } else {
+              // Reset to fresh calculations for summary phase
+              setSavedDeductions([]);
+              setFinalNetAmount(0);
             }
             
             // Load billing data if in billing phase
