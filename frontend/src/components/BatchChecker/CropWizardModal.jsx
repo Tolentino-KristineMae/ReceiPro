@@ -2337,30 +2337,32 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                           };
                           const ac = acctColors[holder];
                           return (
-                            <div key={i} style={{
-                              background: isUnknown ? 'rgba(239,68,68,0.04)' : '#ffffff',
-                              border: isUnknown ? '1.5px solid rgba(239,68,68,0.3)' : '1px solid rgba(251,146,60,0.15)',
-                              borderRadius: '14px',
-                              padding: '18px 20px',
-                              display: 'flex', flexDirection: 'column', gap: '16px',
-                              transition: 'all 0.2s', cursor: 'pointer', position: 'relative',
-                              boxShadow: isUnknown ? '0 2px 8px rgba(239,68,68,0.08)' : '0 2px 8px rgba(67,20,7,0.04)',
-                              minHeight: '112px'
-                            }}>
-                            onClick={() => { if (res.receipt) handleReceiptClick(res.receipt); }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = '#fffbf5';
-                              e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)';
-                              e.currentTarget.style.transform = 'translateY(-1px)';
-                              e.currentTarget.style.boxShadow = '0 4px 16px rgba(249,115,22,0.1)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = '#ffffff';
-                              e.currentTarget.style.borderColor = 'rgba(251,146,60,0.15)';
-                              e.currentTarget.style.transform = 'translateY(0)';
-                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(67,20,7,0.04)';
-                            }}
-                            title={`Receipt ID: ${receiptId} - Click to edit`}>
+                            <div 
+                              key={i} 
+                              onClick={() => { if (res.receipt) handleReceiptClick(res.receipt); }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = '#fffbf5';
+                                e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)';
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = '0 4px 16px rgba(249,115,22,0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = '#ffffff';
+                                e.currentTarget.style.borderColor = 'rgba(251,146,60,0.15)';
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(67,20,7,0.04)';
+                              }}
+                              title={`Receipt ID: ${receiptId} - Click to edit`}
+                              style={{
+                                background: isUnknown ? 'rgba(239,68,68,0.04)' : '#ffffff',
+                                border: isUnknown ? '1.5px solid rgba(239,68,68,0.3)' : '1px solid rgba(251,146,60,0.15)',
+                                borderRadius: '14px',
+                                padding: '18px 20px',
+                                display: 'flex', flexDirection: 'column', gap: '16px',
+                                transition: 'all 0.2s', cursor: 'pointer', position: 'relative',
+                                boxShadow: isUnknown ? '0 2px 8px rgba(239,68,68,0.08)' : '0 2px 8px rgba(67,20,7,0.04)',
+                                minHeight: '112px'
+                              }}>
                               {/* Top row: number, account, warning badge */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'space-between' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
