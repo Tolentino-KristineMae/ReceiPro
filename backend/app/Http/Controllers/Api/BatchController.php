@@ -394,15 +394,13 @@ class BatchController extends Controller
             }
 
             // Transaction Matching Logic (Phase 4: Run Check)
-            // Auto-match uses exact reference/label + amount only; user must Confirm to verify
+            $isVerified = false;
             $isMatched = false;
             $matchDetails = null;
+            $selectedTransaction = null;
 
             if ($ocrData['reference'] && trim($ocrData['reference']) !== 'MISSING') {
                 // Query the Transactions table to find a match
-                // For GCash: match reference/label, amount, and account_holder
-                // For others: match reference/label and amount (account_holder may be 'OTHERS')
-                // If the full reference doesn't match, allow a partial match on the last 4 or 5 digits.
                 $reference = trim($ocrData['reference']);
                 $digitReference = preg_replace('/\D+/', '', $reference);
                 $partialMatches = [];
@@ -454,16 +452,23 @@ class BatchController extends Controller
                     continue;
                 }
 
+                // First, try to find a transaction with exact or partial (last 4-5 digits) match
                 $query = \App\Models\Transaction::whereNull('batch_id')
                     ->whereRaw('ABS(amount - ?) < 0.01', [$ocrData['amount'] ?? 0])
-                    ->where(function($subQuery) use ($reference, $receipt) {
-                        // Exact match on reference or label only (no partial digit matching)
+                    ->where(function($subQuery) use ($reference, $partialMatches, $receipt) {
+                        // Exact match first
                         $subQuery->where('reference', $reference)
                                 ->orWhere('label', $reference);
-
-                        // For others category, also check if source_label matches transaction label
+                        
+                        // For others category, check source_label
                         if ($receipt->category === 'others' && $receipt->source_label) {
                             $subQuery->orWhere('label', trim($receipt->source_label));
+                        }
+                        
+                        // Partial matches on last 4-5 digits
+                        foreach ($partialMatches as $part) {
+                            $subQuery->orWhere('reference', 'like', '%' . $part)
+                                  ->orWhere('label', 'like', '%' . $part);
                         }
                     });
 
@@ -476,7 +481,8 @@ class BatchController extends Controller
                 \Log::info("Verification result for receipt {$receipt->id}: " . ($transaction ? "FOUND transaction {$transaction->id} (ref: {$transaction->reference}, label: {$transaction->label})" : "NOT FOUND"));
 
                 if ($transaction) {
-                    $isMatched = true;
+                    $isVerified = true;
+                    $selectedTransaction = $transaction;
                     $matchDetails = [
                         'bank' => $receipt->category === 'gcash' ? 'GCash' : ($receipt->source_label ?? 'Bank'),
                         'timestamp' => $transaction->transaction_date ? $transaction->transaction_date->format('H:i') : now()->format('H:i'),
@@ -501,17 +507,27 @@ class BatchController extends Controller
                 }
             }
 
-            $verificationStatus = $isMatched ? 'matched' : 'flagged';
+            $verificationStatus = $isVerified ? 'verified' : ($isMatched ? 'matched' : 'flagged');
 
             $oldTxId = $receipt->transaction_id;
 
-            // Save check result — only manualVerify may set match_status to 'verified'
-            $receipt->update([
+            // Update receipt based on verification status
+            $updateData = [
                 'match_status'   => $verificationStatus,
-                'transaction_id' => null,
-            ]);
+                'transaction_id' => $isVerified ? $selectedTransaction->id : null,
+            ];
+            
+            if ($isVerified) {
+                // Update ocr_data with confirmed reference/amount
+                $newOcrData = $receipt->ocr_data ?? [];
+                $newOcrData['reference'] = $selectedTransaction->reference ?? $selectedTransaction->label ?? $newOcrData['reference'] ?? null;
+                $newOcrData['amount'] = $selectedTransaction->amount ?? $newOcrData['amount'] ?? 0;
+                $updateData['ocr_data'] = $newOcrData;
+            }
 
-            if ($oldTxId) {
+            $receipt->update($updateData);
+
+            if ($oldTxId && (!$isVerified || $oldTxId !== $selectedTransaction->id)) {
                 Transaction::where('id', $oldTxId)
                     ->where('batch_id', $batch->id)
                     ->update(['batch_id' => null, 'status' => 'pending']);
