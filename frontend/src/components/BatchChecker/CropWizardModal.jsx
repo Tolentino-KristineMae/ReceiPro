@@ -2162,44 +2162,44 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
               {phase === 'ocr' && showOcrPreview && (
                 <div className="flex-1 flex flex-col overflow-hidden" style={{ 
                   background: '#fffbf5',
-                  padding: '40px'
+                  padding: '20px 16px'
                 }}>
                   {/* Header */}
-                  <div style={{ marginBottom: '32px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
+                  <div style={{ marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px', flexWrap: 'wrap' }}>
                       <div style={{
-                        padding: '10px 18px',
-                        borderRadius: '12px',
+                        padding: '8px 14px',
+                        borderRadius: '10px',
                         background: 'rgba(249, 115, 22, 0.08)',
                         border: '1px solid rgba(249, 115, 22, 0.25)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '10px'
+                        gap: '8px'
                       }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                           <polyline points="22 4 12 14.01 9 11.01" />
                         </svg>
                         <span style={{ 
                           color: '#f97316', 
-                          fontSize: '11px', 
+                          fontSize: '10px', 
                           fontWeight: 900, 
                           textTransform: 'uppercase', 
-                          letterSpacing: '0.1em',
+                          letterSpacing: '0.08em',
                           fontFamily: "'Inter', sans-serif"
                         }}>
                           Extraction Complete
                         </span>
                       </div>
                       <div style={{
-                        padding: '8px 16px',
-                        borderRadius: '10px',
+                        padding: '6px 12px',
+                        borderRadius: '8px',
                         background: 'rgba(249, 115, 22, 0.06)',
                         border: '1px solid rgba(249, 115, 22, 0.15)'
                       }}>
                         <span style={{ 
                           color: 'rgba(67, 20, 7, 0.7)', 
-                          fontSize: '11px', 
+                          fontSize: '10px', 
                           fontWeight: 700,
                           fontFamily: "'Inter', sans-serif"
                         }}>
@@ -2209,7 +2209,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                     </div>
                     <p style={{ 
                       color: 'rgba(67, 20, 7, 0.55)', 
-                      fontSize: '13px', 
+                      fontSize: '12px', 
                       fontWeight: 500,
                       fontFamily: "'Inter', sans-serif",
                       margin: 0
@@ -2233,21 +2233,22 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                       return !h || h === 'Unknown' || h === 'OTHERS';
                     }).length || 0;
                     return (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
                         <div 
                           onClick={() => setOcrAccountFilter('All')}
                           style={{
-                            padding: '10px 16px',
-                            borderRadius: '12px',
+                            padding: '8px 12px',
+                            borderRadius: '10px',
                             background: ocrAccountFilter === 'All' ? colors.All.bg : '#ffffff',
                             border: `1px solid ${ocrAccountFilter === 'All' ? colors.All.border : 'rgba(251,146,60,0.15)'}`,
-                            display: 'flex', alignItems: 'center', gap: '12px',
+                            display: 'flex', alignItems: 'center', gap: '8px',
                             transition: 'all 0.2s', cursor: 'pointer',
-                            boxShadow: ocrAccountFilter === 'All' ? '0 2px 8px rgba(249,115,22,0.12)' : 'none'
+                            boxShadow: ocrAccountFilter === 'All' ? '0 2px 8px rgba(249,115,22,0.12)' : 'none',
+                            minHeight: '40px'
                           }}
                         >
-                          <span style={{ color: colors.All.text, fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>All</span>
-                          <span style={{ background: 'rgba(249,115,22,0.1)', color: colors.All.count, borderRadius: '8px', padding: '4px 10px', fontSize: '13px', fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", minWidth: '32px', textAlign: 'center' }}>{allCount}</span>
+                          <span style={{ color: colors.All.text, fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: "'Inter', sans-serif" }}>All</span>
+                          <span style={{ background: 'rgba(249,115,22,0.1)', color: colors.All.count, borderRadius: '6px', padding: '3px 8px', fontSize: '11px', fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", minWidth: '28px', textAlign: 'center' }}>{allCount}</span>
                         </div>
                         
                         {accounts.map(acc => {
@@ -2258,16 +2259,17 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                               key={acc}
                               onClick={() => setOcrAccountFilter(acc)}
                               style={{
-                                padding: '10px 16px', borderRadius: '12px',
+                                padding: '8px 12px', borderRadius: '10px',
                                 background: ocrAccountFilter === acc ? c.bg : '#ffffff',
                                 border: `1px solid ${ocrAccountFilter === acc ? c.border : 'rgba(251,146,60,0.15)'}`,
-                                display: 'flex', alignItems: 'center', gap: '12px',
+                                display: 'flex', alignItems: 'center', gap: '8px',
                                 transition: 'all 0.2s', cursor: 'pointer',
-                                boxShadow: ocrAccountFilter === acc ? `0 2px 8px ${c.bg}` : 'none'
+                                boxShadow: ocrAccountFilter === acc ? `0 2px 8px ${c.bg}` : 'none',
+                                minHeight: '40px'
                               }}
                             >
-                              <span style={{ color: c.text, fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>{acc}</span>
-                              <span style={{ background: c.bg, color: c.count, borderRadius: '8px', padding: '4px 10px', fontSize: '13px', fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", minWidth: '32px', textAlign: 'center' }}>{count}</span>
+                              <span style={{ color: c.text, fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: "'Inter', sans-serif" }}>{acc}</span>
+                              <span style={{ background: c.bg, color: c.count, borderRadius: '6px', padding: '3px 8px', fontSize: '11px', fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", minWidth: '28px', textAlign: 'center' }}>{count}</span>
                             </div>
                           );
                         })}
@@ -2277,19 +2279,20 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                           <div
                             onClick={() => setOcrAccountFilter('Unknown')}
                             style={{
-                              padding: '10px 16px', borderRadius: '12px',
+                              padding: '8px 12px', borderRadius: '10px',
                               background: ocrAccountFilter === 'Unknown' ? 'rgba(239,68,68,0.1)' : '#ffffff',
                               border: `1.5px solid ${ocrAccountFilter === 'Unknown' ? 'rgba(239,68,68,0.4)' : 'rgba(239,68,68,0.25)'}`,
-                              display: 'flex', alignItems: 'center', gap: '12px',
+                              display: 'flex', alignItems: 'center', gap: '8px',
                               transition: 'all 0.2s', cursor: 'pointer',
-                              boxShadow: ocrAccountFilter === 'Unknown' ? '0 2px 8px rgba(239,68,68,0.15)' : 'none'
+                              boxShadow: ocrAccountFilter === 'Unknown' ? '0 2px 8px rgba(239,68,68,0.15)' : 'none',
+                              minHeight: '40px'
                             }}
                           >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                               <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                             </svg>
-                            <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>Unknown</span>
-                            <span style={{ background: 'rgba(239,68,68,0.12)', color: '#dc2626', borderRadius: '8px', padding: '4px 10px', fontSize: '13px', fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", minWidth: '32px', textAlign: 'center' }}>{unknownCount}</span>
+                            <span style={{ color: '#ef4444', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: "'Inter', sans-serif" }}>Unknown</span>
+                            <span style={{ background: 'rgba(239,68,68,0.12)', color: '#dc2626', borderRadius: '6px', padding: '3px 8px', fontSize: '11px', fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", minWidth: '28px', textAlign: 'center' }}>{unknownCount}</span>
                           </div>
                         )}
                       </div>
@@ -2297,8 +2300,8 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                   })()}
 
                   {/* Results list */}
-                  <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
+                  <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                       {(() => {
                         const filteredResults = ocrAccountFilter === 'All' 
                           ? ocrResults 
@@ -2331,18 +2334,19 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                             <div key={i} style={{
                               background: isUnknown ? 'rgba(239,68,68,0.04)' : '#ffffff',
                               border: isUnknown ? '1.5px solid rgba(239,68,68,0.3)' : '1px solid rgba(251,146,60,0.15)',
-                              borderRadius: '14px',
-                              padding: '16px 20px',
-                              display: 'flex', alignItems: 'center', gap: '20px',
+                              borderRadius: '12px',
+                              padding: '14px 16px',
+                              display: 'flex', flexDirection: 'column', gap: '12px',
                               transition: 'all 0.2s', cursor: 'pointer', position: 'relative',
-                              boxShadow: isUnknown ? '0 2px 8px rgba(239,68,68,0.08)' : '0 2px 8px rgba(67,20,7,0.04)'
+                              boxShadow: isUnknown ? '0 2px 8px rgba(239,68,68,0.08)' : '0 2px 8px rgba(67,20,7,0.04)',
+                              minHeight: '88px'
                             }}
                             onClick={() => { if (res.receipt) handleReceiptClick(res.receipt); }}
                             onMouseEnter={(e) => {
                               e.currentTarget.style.background = '#fffbf5';
                               e.currentTarget.style.borderColor = 'rgba(249,115,22,0.3)';
-                              e.currentTarget.style.transform = 'translateY(-2px)';
-                              e.currentTarget.style.boxShadow = '0 6px 20px rgba(249,115,22,0.1)';
+                              e.currentTarget.style.transform = 'translateY(-1px)';
+                              e.currentTarget.style.boxShadow = '0 4px 16px rgba(249,115,22,0.1)';
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.background = '#ffffff';
@@ -2351,62 +2355,75 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                               e.currentTarget.style.boxShadow = '0 2px 8px rgba(67,20,7,0.04)';
                             }}
                             title={`Receipt ID: ${receiptId} - Click to edit`}>
+                              {/* Top row: number, account, warning badge */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  {/* Number */}
+                                  <div style={{
+                                    width: '32px', height: '32px', borderRadius: '8px',
+                                    background: 'rgba(249,115,22,0.08)',
+                                    border: '1px solid rgba(249,115,22,0.15)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                  }}>
+                                    <span style={{ color: '#f97316', fontSize: '13px', fontWeight: 900, fontFamily: "'JetBrains Mono', monospace" }}>{i + 1}</span>
+                                  </div>
+                                  
+                                  {/* Account badge */}
+                                  <div style={{
+                                    padding: '6px 12px', borderRadius: '8px',
+                                    background: ac ? ac.bg : 'rgba(249,115,22,0.06)',
+                                    border: `1px solid ${ac ? ac.border : 'rgba(249,115,22,0.15)'}`,
+                                    color: ac ? ac.text : 'rgba(67,20,7,0.5)',
+                                    fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
+                                    fontFamily: "'Inter', system-ui, sans-serif"
+                                  }}>
+                                    {holder || 'Unknown'}
+                                  </div>
+                                </div>
+                                
+                                {/* Amount */}
+                                <div style={{ textAlign: 'right' }}>
+                                  <div style={{ fontSize: '8px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px', fontFamily: "'Inter', system-ui, sans-serif" }}>Amount</div>
+                                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#f97316', letterSpacing: '-0.01em', fontFamily: "'JetBrains Mono', monospace" }}>
+                                    ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                  </div>
+                                </div>
+                              </div>
+
                               {/* Unknown warning badge */}
                               {isUnknown && (
                                 <div style={{
-                                  position: 'absolute', top: '10px', left: '60px',
-                                  padding: '3px 8px', borderRadius: '6px',
+                                  alignSelf: 'flex-start',
+                                  padding: '2px 6px', borderRadius: '4px',
                                   background: 'rgba(239,68,68,0.1)',
                                   border: '1px solid rgba(239,68,68,0.3)',
                                   display: 'flex', alignItems: 'center', gap: '4px'
                                 }}>
-                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                                   </svg>
-                                  <span style={{ color: '#ef4444', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: "'Inter', sans-serif" }}>
+                                  <span style={{ color: '#ef4444', fontSize: '8px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Inter', sans-serif" }}>
                                     Needs Attention
                                   </span>
                                 </div>
                               )}
-                              {/* Number + Receipt ID */}
-                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                                <div style={{
-                                  width: '36px', height: '36px', borderRadius: '10px',
-                                  background: 'rgba(249,115,22,0.08)',
-                                  border: '1px solid rgba(249,115,22,0.15)',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                }}>
-                                  <span style={{ color: '#f97316', fontSize: '14px', fontWeight: 900, fontFamily: "'JetBrains Mono', monospace" }}>{i + 1}</span>
-                                </div>
-                                <span style={{ color: 'rgba(67,20,7,0.4)', fontSize: '8px', fontWeight: 700, letterSpacing: '0.06em', fontFamily: "'JetBrains Mono', monospace" }}>
-                                  #{receiptId}
-                                </span>
-                              </div>
                               
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
-                                {/* Account badge */}
-                                <div style={{
-                                  minWidth: '90px', padding: '8px 14px', borderRadius: '10px', textAlign: 'center',
-                                  background: ac ? ac.bg : 'rgba(249,115,22,0.06)',
-                                  border: `1px solid ${ac ? ac.border : 'rgba(249,115,22,0.15)'}`,
-                                  color: ac ? ac.text : 'rgba(67,20,7,0.5)',
-                                  fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em',
-                                  fontFamily: "'Inter', system-ui, sans-serif"
-                                }}>
-                                  {holder || 'Unknown'}
-                                </div>
-                                {/* Reference */}
-                                <div>
-                                  <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px', fontFamily: "'Inter', system-ui, sans-serif" }}>Reference</div>
-                                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#431407', letterSpacing: '0.02em', fontFamily: "'JetBrains Mono', monospace" }}>{res.reference || '—'}</div>
-                                </div>
+                              {/* Reference */}
+                              <div style={{ marginTop: isUnknown ? '4px' : '0' }}>
+                                <div style={{ fontSize: '8px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px', fontFamily: "'Inter', system-ui, sans-serif" }}>Reference</div>
+                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#431407', letterSpacing: '0.01em', fontFamily: "'JetBrains Mono', monospace", wordBreak: 'break-all' }}>{res.reference || '—'}</div>
                               </div>
-                              {/* Amount */}
-                              <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px', fontFamily: "'Inter', system-ui, sans-serif" }}>Amount</div>
-                                <div style={{ fontSize: '20px', fontWeight: 900, color: '#f97316', letterSpacing: '-0.01em', fontFamily: "'JetBrains Mono', monospace" }}>
-                                  ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                </div>
+
+                              {/* Receipt ID */}
+                              <div style={{ 
+                                alignSelf: 'flex-end',
+                                color: 'rgba(67,20,7,0.35)', 
+                                fontSize: '8px', 
+                                fontWeight: 700, 
+                                letterSpacing: '0.05em', 
+                                fontFamily: "'JetBrains Mono', monospace" 
+                              }}>
+                                Receipt #{receiptId}
                               </div>
                             </div>
                           );
