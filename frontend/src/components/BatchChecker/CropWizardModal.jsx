@@ -675,7 +675,8 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
     }
 
     if (dataUrl) setCrops(prev => ({ ...prev, [index]: dataUrl }));
-    if (onSaved) await onSaved();
+    // Background refresh — don't block the caller on network round-trip
+    if (onSaved) onSaved().catch(e => console.warn('[CropWizard] background refresh failed:', e));
     return true;
   }, [current, currentCategory, currentAccount, manualAmount, manualReference, manualDate, index, getCroppedDataUrl, onSaved]);
 
@@ -982,7 +983,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || `HTTP ${res.status}`);
       }
-      if (onSaved) await onSaved();
+      if (onSaved) onSaved().catch(e => console.warn('[CropWizard] background refresh failed:', e));
     } catch (e) {
       showToast('Update failed', e.message, 'error');
       return;
@@ -1051,7 +1052,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || `HTTP ${res.status}`);
       }
-      if (onSaved) await onSaved();
+      if (onSaved) onSaved().catch(e => console.warn('[CropWizard] background refresh failed:', e));
     } catch (e) {
       showToast('Update failed', e.message, 'error');
       return;
@@ -1188,7 +1189,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
       }));
     }
 
-    // 3. Immediate save to DB
+    // 3. Immediate save to DB — fire background refresh (onSaved) without blocking navigation
     try {
       const response = await fetch(getApiUrl(`/api/receipts/${current.id}`), {
         method: 'PATCH',
@@ -1200,7 +1201,8 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
         const err = await response.json().catch(() => ({}));
         throw new Error(err.message || `HTTP ${response.status}`);
       }
-      if (onSaved) await onSaved();
+      // Refresh batch stats in the background — don't await so UI moves instantly
+      if (onSaved) onSaved().catch(e => console.warn('[CropWizard] background refresh failed:', e));
     } catch (e) {
       console.error('Failed to save Stage 3 data to DB', e);
       showToast('Save failed', e.message, 'error', 6000);
@@ -1213,28 +1215,50 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
       
       try {
         setIsProcessingOcr(true);
-        
+
         const worker = await createWorker('eng', 1, {
-          logger: m => console.log(m),
+          logger: m => {
+            if (m.status === 'recognizing text') console.log(`[OCR re-crop] ${Math.round(m.progress * 100)}%`);
+          },
         });
 
-        const loadCanvas = (src) => new Promise((resolve, reject) => {
+        await worker.setParameters({
+          tessedit_pageseg_mode: '6',
+          tessedit_ocr_engine_mode: '1',
+        });
+
+        const loadCanvas = (src, enhance = false) => new Promise((resolve, reject) => {
           const img = new Image();
           img.crossOrigin = 'anonymous';
           const timeout = setTimeout(() => { img.src = ''; reject(new Error(`Timeout: receipt #${current.id}`)); }, 15000);
           img.onload = () => {
             clearTimeout(timeout);
+            const scale = (enhance && img.naturalWidth < 400) ? 2 : 1;
             const canvas = document.createElement('canvas');
-            canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
-            canvas.getContext('2d').drawImage(img, 0, 0);
+            canvas.width  = img.naturalWidth  * scale;
+            canvas.height = img.naturalHeight * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            if (enhance) {
+              const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const d  = id.data;
+              for (let p = 0; p < d.length; p += 4) {
+                const grey = 0.299 * d[p] + 0.587 * d[p+1] + 0.114 * d[p+2];
+                const out  = grey > 128 ? Math.min(255, grey * 1.15) : Math.max(0, grey * 0.7);
+                d[p] = d[p+1] = d[p+2] = out;
+              }
+              ctx.putImageData(id, 0, 0);
+            }
             resolve(canvas);
           };
           img.onerror = () => { clearTimeout(timeout); reject(new Error(`Load failed: receipt #${current.id}`)); };
           img.src = src;
         });
 
-        // OCR the crop for amount/reference
-        const cropCanvas = await loadCanvas(dataUrl);
+        // OCR the crop with enhancement for amount/reference
+        const cropCanvas = await loadCanvas(dataUrl, true);
         const { data: { text: cropText } } = await worker.recognize(cropCanvas);
         const extracted = extractFields(cropText);
 
@@ -1244,7 +1268,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
 
         if (!detectedAccount || detectedAccount === 'Unknown' || detectedAccount === 'OTHERS') {
           try {
-            const fullCanvas = await loadCanvas(getApiUrl(`/api/receipts/${current.id}/image`));
+            const fullCanvas = await loadCanvas(getApiUrl(`/api/receipts/${current.id}/image`), false);
             const { data: { text: fullText } } = await worker.recognize(fullCanvas);
             const phoneAccount = detectAccountFromPhone(fullText);
             if (phoneAccount) detectedAccount = phoneAccount;
@@ -1343,15 +1367,28 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
     const nextNeedsCrop = nextGcash !== -1 ? nextGcash : nextOthers;
 
     if (nextNeedsCrop !== -1) {
+      const nextReceipt = receipts[nextNeedsCrop];
+      const savedLabel = currentCategory === 'others'
+        ? (manualReference?.trim() ? `₱${Number(manualAmount).toLocaleString()} · ${manualReference.trim()}` : `₱${Number(manualAmount).toLocaleString()}`)
+        : 'Crop saved';
+      const nextNum = nextNeedsCrop + 1;
+      const nextType = nextReceipt?.category === 'gcash' ? 'GCash' : 'Others';
+      showToast(
+        `Saved · Moving to receipt ${nextNum}`,
+        `${savedLabel} → Next: ${nextType}`,
+        'success',
+        2500
+      );
       setIndex(nextNeedsCrop);
       setCrop(null);
       setCompletedCrop(null);
       setImageRotation(0);
     } else {
       // Phase 2 complete -> Automatically start Phase 3
+      showToast('All done! ✓', 'All receipts have been cropped & filled. Proceeding to extraction.', 'success', 3000);
       startOcrPhase();
     }
-  }, [current, currentCategory, manualAmount, manualReference, manualDate, currentAccount, ocrResults, crops, index, liveReceipts, receipts, manualEntries, accountEntries, getCroppedDataUrl]);
+  }, [current, currentCategory, manualAmount, manualReference, manualDate, currentAccount, ocrResults, crops, index, liveReceipts, receipts, manualEntries, accountEntries, getCroppedDataUrl, showToast]);
 
   const startOcrPhase = () => {
     setPhase('ocr');
@@ -1460,12 +1497,23 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
     setIsProcessingOcr(true);
     setOcrResults(null);
     setOcrProgress(0); // Initialize progress
-    
+
     const worker = await createWorker('eng', 1, {
-      logger: m => console.log(m),
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          console.log(`[OCR] ${Math.round(m.progress * 100)}%`);
+        }
+      },
       errorHandler: e => console.error('Tesseract Worker Error:', e),
     });
-    
+
+    // PSM 6 = single uniform text block — ideal for cropped receipt sections
+    // OEM 1 = LSTM only (more accurate than legacy)
+    await worker.setParameters({
+      tessedit_pageseg_mode: '6',
+      tessedit_ocr_engine_mode: '1',
+    });
+
     try {
       const results = [];
       const failedReceipts = [];
@@ -1482,8 +1530,12 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
         
         // Skip OCR if it's 'Others' and already has manual data
         const sessionManual = manualEntries[i];
-        if ((r.category === 'others' && r.ocr_data?.manual) || sessionManual) {
-          const data = sessionManual || r.ocr_data;
+        // ocr_data can arrive as a string if the backend didn't cast it
+        const ocrDataParsed = r.ocr_data
+          ? (typeof r.ocr_data === 'string' ? (() => { try { return JSON.parse(r.ocr_data); } catch { return {}; } })() : r.ocr_data)
+          : null;
+        if ((r.category === 'others' && ocrDataParsed?.manual) || sessionManual) {
+          const data = sessionManual || ocrDataParsed;
           // Account: prefer accountEntries (set during manual input), then receipt's saved value
           const resolvedAccount = accountEntries[r.id] || r.account_holder;
           const resolvedReceipt = resolvedAccount
@@ -1504,6 +1556,13 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
         // Use the saved cropped image or the original for amount/reference extraction
         let imageSrc = crops[i];
         if (!imageSrc) {
+          // GCash receipts need a cropped image — without one, OCR on the full receipt
+          // is too noisy to reliably extract amount/reference. Skip and warn.
+          if (r.category === 'gcash' && !r.cropped_image) {
+            console.warn(`Receipt #${r.id} (GCash) has no cropped image — skipping OCR, marking as failed.`);
+            failedReceipts.push(r.id);
+            continue;
+          }
           imageSrc = r.cropped_image
             ? getApiUrl(`/api/receipts/${r.id}/image?type=crop`)
             : getApiUrl(`/api/receipts/${r.id}/image`);
@@ -1515,8 +1574,8 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
 
         // ─── Per-receipt try/catch so one failure doesn't kill the batch ───
         try {
-          // Load both crop (for amount/ref) and full image (for phone/account) in parallel
-          const loadCanvas = (src) => new Promise((resolve, reject) => {
+          // Load image → canvas, with optional contrast-boost preprocessing for OCR accuracy
+          const loadCanvas = (src, enhance = false) => new Promise((resolve, reject) => {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             const timeout = setTimeout(() => {
@@ -1525,10 +1584,31 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
             }, 15000);
             img.onload = () => {
               clearTimeout(timeout);
+              // Scale up small images — Tesseract works best at ~300 DPI equivalent.
+              // If the crop is very small (< 400px wide), upscale 2×.
+              const scale = (enhance && img.naturalWidth < 400) ? 2 : 1;
               const canvas = document.createElement('canvas');
-              canvas.width = img.naturalWidth;
-              canvas.height = img.naturalHeight;
-              canvas.getContext('2d').drawImage(img, 0, 0);
+              canvas.width  = img.naturalWidth  * scale;
+              canvas.height = img.naturalHeight * scale;
+              const ctx = canvas.getContext('2d');
+              ctx.imageSmoothingEnabled = true;
+              ctx.imageSmoothingQuality = 'high';
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+              if (enhance) {
+                // Simple contrast boost: convert to greyscale + high contrast
+                const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const d  = id.data;
+                for (let p = 0; p < d.length; p += 4) {
+                  // Luminance-weighted greyscale
+                  const grey = 0.299 * d[p] + 0.587 * d[p+1] + 0.114 * d[p+2];
+                  // High-contrast threshold: push towards black or white
+                  const out  = grey > 128 ? Math.min(255, grey * 1.15) : Math.max(0, grey * 0.7);
+                  d[p] = d[p+1] = d[p+2] = out;
+                }
+                ctx.putImageData(id, 0, 0);
+              }
+
               resolve(canvas);
             };
             img.onerror = () => {
@@ -1538,8 +1618,8 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
             img.src = src;
           });
 
-          // Run OCR on crop first (fast, financial data)
-          const cropCanvas = await loadCanvas(imageSrc);
+          // Run OCR on crop with enhancement (contrast boost + upscale for small crops)
+          const cropCanvas = await loadCanvas(imageSrc, true);
           const { data: { text: cropText } } = await worker.recognize(cropCanvas);
           const extracted = extractFields(cropText);
 
@@ -1550,7 +1630,8 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
 
           if (!detectedAccount || detectedAccount === 'Unknown' || detectedAccount === 'OTHERS') {
             try {
-              const fullCanvas = await loadCanvas(fullImageSrc);
+              // Full image: no enhance — we want the raw text for phone number detection
+              const fullCanvas = await loadCanvas(fullImageSrc, false);
               const { data: { text: fullText } } = await worker.recognize(fullCanvas);
               // Try phone detection on full text
               const phoneAccount = detectAccountFromPhone(fullText);
@@ -3373,6 +3454,7 @@ function detectAccountFromPhone(text) {
 
 // ─── Real OCR Field Extraction Helpers ─────────────────────────────────────────
 function extractFields(text) {
+  // ── Normalise raw OCR text ──────────────────────────────────────────────────
   const normalized = text
     .replace(/\r/g, '\n')
     .replace(/[|\\\[\]{}]/g, ' ')
@@ -3384,61 +3466,105 @@ function extractFields(text) {
   let amount = null;
   let reference = null;
 
-  // Pattern for 13-digit reference numbers (specifically GCash format)
-  const pull13 = (str) => {
-    let m = str.replace(/\s/g, '').match(/\d{13}/);
+  // ── Reference extraction ────────────────────────────────────────────────────
+  // Fully collapse ALL inter-digit spaces (repeat until stable) so that
+  // "1 2 3 4 5 6 7 8 9 0 1 2 3" becomes "1234567890123".
+  const collapseDigits = (str) => {
+    let prev = str;
+    // Keep collapsing adjacent digit–space–digit pairs until nothing changes
+    let next = prev.replace(/(\d)\s+(\d)/g, '$1$2');
+    while (next !== prev) { prev = next; next = prev.replace(/(\d)\s+(\d)/g, '$1$2'); }
+    return next;
+  };
+
+  // Pull a run of 11–16 digits (GCash refs are 13; allow tolerance for OCR extras)
+  const pullRef = (str) => {
+    const clean = collapseDigits(str.replace(/\s/g, ''));
+    // Prefer exactly 13 digits
+    let m = clean.match(/\d{13}/);
     if (m) return m[0];
-    const collapsed = str.replace(/(\d)\s+(\d)/g, '$1$2').replace(/(\d)\s+(\d)/g, '$1$2');
-    m = collapsed.match(/\d{13}/);
+    // Accept 11–16 as fallback (trace numbers vary)
+    m = clean.match(/\d{11,16}/);
     if (m) return m[0];
     return null;
   };
 
-  const refLabelRe = /(?:ref(?:erence)?(?:\s*(?:no|num|number)\.?)?|trace\s*no|transaction\s*(?:ref|id|no))[:\s#.]*/i;
+  const refLabelRe = /(?:ref(?:erence)?(?:\s*(?:no|num|number|\.)?)?|trace\s*(?:no|number)?|transaction\s*(?:ref|id|no)|gcash\s*ref)[:\s#.]*/i;
 
+  // Pass 1: look for a line that contains a reference label
   for (let i = 0; i < lines.length; i++) {
     if (!refLabelRe.test(lines[i])) continue;
     const afterLabel = lines[i].replace(refLabelRe, '').trim();
-    const fromSameLine = pull13(afterLabel);
+    const fromSameLine = pullRef(afterLabel);
     if (fromSameLine) { reference = fromSameLine; break; }
-    const fromNextLine = pull13(lines[i + 1] || '');
-    if (fromNextLine) { reference = fromNextLine; break; }
+    // Check up to 2 following lines (label can be on its own line)
+    const fromNext = pullRef((lines[i + 1] || '') + ' ' + (lines[i + 2] || ''));
+    if (fromNext) { reference = fromNext; break; }
   }
 
+  // Pass 2: scan every line for a standalone digit run (no label needed)
   if (!reference) {
     for (const line of lines) {
-      const found = pull13(line);
+      const found = pullRef(line);
       if (found) { reference = found; break; }
     }
   }
 
-  // Amount extraction
-  const amountLabelRe = /\b(?:total\s*amount|amount|total|amt)\b[\s:]*/i;
-  const currencyRe    = /(?:php|₱|P)\s*([\d,]+(?:\.[0-9]{1,2})?)/i;
+  // ── Amount extraction ───────────────────────────────────────────────────────
+  // Normalize OCR-misread currency symbols: 'Php', 'PhP', 'php', '₱', 'P ' (with space)
+  // Do NOT match a bare capital P that is part of a word.
+  const currencyRe = /(?:php|₱|P(?=\s*[\d,]))\s*([\d,]+(?:\.[0-9]{1,2})?)/gi;
 
-  for (const line of lines) {
-    const labelMatch = line.match(amountLabelRe);
-    if (labelMatch) {
-      const afterAmt = line.slice(labelMatch.index + labelMatch[0].length).trim();
-      const numMatch = afterAmt.match(/([\d,]+(?:\.[0-9]{1,2})?)/);
-      if (numMatch) {
-        const val = parseFloat(numMatch[1].replace(/,/g, ''));
-        if (!isNaN(val) && val > 0 && val < 10_000_000) { amount = val; break; }
-      }
-    }
-    const currMatch = line.match(currencyRe);
-    if (currMatch && !amount) {
-      const val = parseFloat(currMatch[1].replace(/,/g, ''));
-      if (!isNaN(val) && val > 0 && val < 10_000_000) { amount = val; }
+  // Labels that precede the amount on GCash receipts
+  const amountLabelRe = /\b(?:total\s*amount(?:\s*sent)?|amount\s*(?:sent|received|paid)?|total|amt)\s*[:\-]?\s*/i;
+
+  const parseAmt = (str) => {
+    const n = parseFloat(str.replace(/,/g, ''));
+    return (!isNaN(n) && n > 0 && n < 10_000_000) ? n : null;
+  };
+
+  // Strategy 1: label → number on same or next line
+  for (let i = 0; i < lines.length && !amount; i++) {
+    const lm = lines[i].match(amountLabelRe);
+    if (!lm) continue;
+    const rest = lines[i].slice(lm.index + lm[0].length).trim();
+    // Same-line number (with or without currency prefix)
+    const nm = rest.match(/([\d,]+(?:\.[0-9]{1,2})?)/);
+    if (nm) { amount = parseAmt(nm[1]); }
+    // Next line number
+    if (!amount && lines[i + 1]) {
+      const nm2 = lines[i + 1].match(/([\d,]+(?:\.[0-9]{1,2})?)/);
+      if (nm2) { amount = parseAmt(nm2[1]); }
     }
   }
 
+  // Strategy 2: currency symbol → number (₱500.00 or Php 500)
+  if (!amount) {
+    currencyRe.lastIndex = 0;
+    const fullText = lines.join('\n');
+    let m;
+    while ((m = currencyRe.exec(fullText)) !== null) {
+      const val = parseAmt(m[1]);
+      if (val) { amount = val; break; }
+    }
+  }
+
+  // Strategy 3: any decimal number on its own (e.g. "500.00")
   if (!amount) {
     for (const line of lines) {
       const m = line.match(/\b([\d,]+\.[0-9]{2})\b/);
+      if (m) { const val = parseAmt(m[1]); if (val) { amount = val; break; } }
+    }
+  }
+
+  // Strategy 4: large standalone integer — last resort (e.g. "500" on a clean line)
+  if (!amount) {
+    for (const line of lines) {
+      const m = line.match(/^\s*([\d,]+)\s*$/);
       if (m) {
-        const val = parseFloat(m[1].replace(/,/g, ''));
-        if (!isNaN(val) && val > 0 && val < 10_000_000) { amount = val; break; }
+        const val = parseAmt(m[1]);
+        // Only accept if it looks like a plausible cash amount (≥ 10)
+        if (val && val >= 10) { amount = val; break; }
       }
     }
   }
@@ -3452,15 +3578,37 @@ function extractDate(lines) {
   const toMonthName = (idx) => ['January','February','March','April','May','June','July','August','September','October','November','December'][idx];
   const fmt = (month, day, year) => `${toMonthName(month)} ${parseInt(day)}, ${year}`;
 
-  for (const line of lines) {
+  // Normalise OCR digit substitutions in a line before date parsing
+  const fixOcrDigits = (s) =>
+    s.replace(/O/g, '0').replace(/[Il]/g, '1').replace(/S/g, '5').replace(/G/g, '6').replace(/B/g, '8');
+
+  for (const rawLine of lines) {
+    const line = fixOcrDigits(rawLine);
+
+    // "May 14, 2026" / "May 14 2026" / "May. 14, 2026"
     for (let mi = 0; mi < MONTHS.length; mi++) {
       const re = new RegExp(`\\b(?:${MONTHS[mi]}|${MONTH_SHORT[mi]})\\.?\\s+(\\d{1,2}),?\\s+(\\d{4})\\b`, 'i');
       const m = line.match(re);
       if (m) return fmt(mi, m[1], m[2]);
     }
+
+    // MM/DD/YYYY or MM-DD-YYYY or MM.DD.YYYY
     {
       const m = line.match(/\b(0?[1-9]|1[0-2])[\/\-\.](0?[1-9]|[12]\d|3[01])[\/\-\.](\d{4})\b/);
       if (m) return fmt(parseInt(m[1]) - 1, m[2], m[3]);
+    }
+
+    // YYYY/MM/DD or YYYY-MM-DD (ISO-like)
+    {
+      const m = line.match(/\b(\d{4})[\/\-\.](0?[1-9]|1[0-2])[\/\-\.](0?[1-9]|[12]\d|3[01])\b/);
+      if (m) return fmt(parseInt(m[2]) - 1, m[3], m[1]);
+    }
+
+    // "14 May 2026" or "14 May, 2026"
+    for (let mi = 0; mi < MONTHS.length; mi++) {
+      const re = new RegExp(`\\b(\\d{1,2})\\s+(?:${MONTHS[mi]}|${MONTH_SHORT[mi]})\\.?,?\\s+(\\d{4})\\b`, 'i');
+      const m = line.match(re);
+      if (m) return fmt(mi, m[1], m[2]);
     }
   }
   return null;
