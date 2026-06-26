@@ -145,7 +145,7 @@ export const BATCH_STYLES = `
   }
 
   .metric-label-sm {
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 800;
     color: var(--text-muted);
     letter-spacing: 0.1em;
@@ -164,7 +164,7 @@ export const BATCH_STYLES = `
   .metric-value-sm.warning { color: var(--warning-primary); }
 
   .form-label {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--text-muted);
     letter-spacing: 0.05em;
@@ -260,7 +260,7 @@ export const BATCH_STYLES = `
     gap: 0.4rem;
     padding: 4px 10px;
     border-radius: 20px;
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -403,7 +403,7 @@ export const BATCH_STYLES = `
   }
 
   .receipt-meta {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -493,7 +493,7 @@ export const BATCH_STYLES = `
     border: 1px solid rgba(234,88,12,0.25);
     color: #ea580c;
     font-weight: 900;
-    font-size: 10px;
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     cursor: pointer;
@@ -730,7 +730,7 @@ export const BATCH_STYLES = `
   }
 
   .stage-label {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 800;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -776,7 +776,7 @@ export const BATCH_STYLES = `
     .batch-header { padding: 1.25rem; }
     .stages-wrap { padding: 0; gap: 0.5rem; }
     .stage-item { width: auto; }
-    .stage-label { font-size: 8px; }
+    .stage-label { font-size: 10px; }
     .h1-modern { font-size: 1.5rem; }
     
     /* Mobile-specific fixes for search and controls */
@@ -886,7 +886,7 @@ export const BATCH_STYLES = `
       grid-template-columns: 1fr !important;
     }
     .stage-label {
-      font-size: 7px !important;
+      font-size: 9px !important;
     }
     .stage-circle {
       width: 32px !important;

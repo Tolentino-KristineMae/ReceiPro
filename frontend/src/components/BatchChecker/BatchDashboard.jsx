@@ -188,7 +188,7 @@ export default function BatchDashboard({
               <line x1="8" y1="12" x2="16" y2="12"/>
             </svg>
             <span style={{
-              fontSize: '9px',
+              fontSize: '11px',
               fontWeight: 900,
               color: 'var(--text-muted)',
               textTransform: 'uppercase',
@@ -256,7 +256,7 @@ export default function BatchDashboard({
             }}>
               <div style={{ flex: 1 }}>
                 <div style={{
-                  fontSize: '9px',
+                  fontSize: '11px',
                   fontWeight: 900,
                   color: 'var(--text-muted)',
                   textTransform: 'uppercase',
@@ -329,7 +329,7 @@ export default function BatchDashboard({
               padding: '6px 10px',
               borderRadius: '8px',
               background: 'rgba(251, 146, 60, 0.08)',
-              fontSize: '10px',
+              fontSize: '11px',
               color: 'var(--text-muted)',
               fontFamily: "'Inter', sans-serif",
               display: 'flex',
@@ -478,7 +478,7 @@ export default function BatchDashboard({
                     borderRadius: '8px',
                     background: 'rgba(249, 115, 22, 0.08)',
                     border: '1px solid var(--border-subtle)',
-                    fontSize: '10px',
+                    fontSize: '11px',
                     fontWeight: 800,
                     color: 'var(--accent-primary)',
                     fontFamily: "'Inter', sans-serif"
@@ -558,7 +558,7 @@ export default function BatchDashboard({
           }}>
             <div>
               <div style={{ 
-                fontSize: '10px', 
+                fontSize: '11px', 
                 fontWeight: 600,
                 color: 'var(--text-muted)',
                 textTransform: 'uppercase',
@@ -976,7 +976,7 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, dela
               </svg>
             </div>
           )}
-          <div style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Icon.Calendar size={10} />
             {formattedDate} • {batch.final_batch_number ? `ID: ${batch.final_batch_number}` : 'Draft'}
           </div>
@@ -987,16 +987,16 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, dela
       <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem', flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
           <div style={{ width: '45px' }}>
-            <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted-alt)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Items</div>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted-alt)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Items</div>
             <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>{total}</div>
           </div>
           <div style={{ width: '55px' }}>
-            <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted-alt)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Verified</div>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted-alt)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Verified</div>
             <div style={{ fontSize: '14px', fontWeight: 700, color: '#15803d', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>{verified}</div>
           </div>
           {hasNetAmount && (
             <div style={{ width: '100px' }}>
-              <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted-alt)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Net Total</div>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted-alt)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Net Total</div>
               <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--accent-primary)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
                 ₱{fmt(netAmount)}
               </div>
@@ -1006,7 +1006,7 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, dela
 
         {/* Progress Mini */}
         <div style={{ flex: 1, maxWidth: '160px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '6px' }}>
             <span style={{ letterSpacing: '0.05em' }}>PROGRESS</span>
             <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>{progress}%</span>
           </div>
@@ -1062,7 +1062,7 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, dela
           background: status.bg,
           border: `1px solid ${status.border}`,
           color: status.color,
-          fontSize: '9px',
+          fontSize: '11px',
           fontWeight: 800,
           textTransform: 'uppercase',
           letterSpacing: '0.05em'

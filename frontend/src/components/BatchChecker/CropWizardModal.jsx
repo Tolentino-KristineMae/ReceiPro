@@ -1870,7 +1870,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                     background: 'rgba(249, 115, 22, 0.1)',
                     border: '1.5px solid rgba(249, 115, 22, 0.3)',
                     color: '#f97316',
-                    fontSize: '10px', fontWeight: 800,
+                    fontSize: '12px', fontWeight: 800,
                     textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Inter', system-ui, sans-serif",
                   }}>
@@ -1906,7 +1906,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                     background: '#f97316',
                     border: '1.5px solid #f97316',
                     color: '#fff',
-                    fontSize: '10px', fontWeight: 800,
+                    fontSize: '12px', fontWeight: 800,
                     textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Inter', system-ui, sans-serif",
                   }}>
@@ -1942,7 +1942,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                     background: '#f97316',
                     border: '1.5px solid #f97316',
                     color: '#fff',
-                    fontSize: '10px', fontWeight: 800,
+                    fontSize: '12px', fontWeight: 800,
                     textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Inter', system-ui, sans-serif",
                   }}>
@@ -1978,7 +1978,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                     background: '#f97316',
                     border: '1.5px solid #f97316',
                     color: '#fff',
-                    fontSize: '10px', fontWeight: 800,
+                    fontSize: '12px', fontWeight: 800,
                     textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Inter', system-ui, sans-serif",
                   }}>
@@ -2014,7 +2014,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                     background: '#f97316',
                     border: '1.5px solid #f97316',
                     color: '#fff',
-                    fontSize: '10px', fontWeight: 800,
+                    fontSize: '12px', fontWeight: 800,
                     textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Inter', system-ui, sans-serif",
                   }}>
@@ -2050,7 +2050,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                     background: '#f97316',
                     border: '1.5px solid #f97316',
                     color: '#fff',
-                    fontSize: '10px', fontWeight: 800,
+                    fontSize: '12px', fontWeight: 800,
                     textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Inter', system-ui, sans-serif",
                   }}>
@@ -2086,7 +2086,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                     background: '#f97316',
                     border: '1.5px solid #f97316',
                     color: '#fff',
-                    fontSize: '10px', fontWeight: 800,
+                    fontSize: '12px', fontWeight: 800,
                     textTransform: 'uppercase', letterSpacing: '0.15em',
                     fontFamily: "'Inter', system-ui, sans-serif",
                   }}>
@@ -2406,7 +2406,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                                 
                                 {/* Amount */}
                                 <div style={{ textAlign: 'right' }}>
-                                  <div style={{ fontSize: '10px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px', fontFamily: "'Inter', system-ui, sans-serif" }}>Amount</div>
+                                  <div style={{ fontSize: '11px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px', fontFamily: "'Inter', system-ui, sans-serif" }}>Amount</div>
                                   <div style={{ fontSize: '24px', fontWeight: 900, color: '#f97316', letterSpacing: '-0.01em', fontFamily: "'JetBrains Mono', monospace" }}>
                                     ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                                   </div>
@@ -2433,7 +2433,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                               
                               {/* Reference */}
                               <div style={{ marginTop: isUnknown ? '8px' : '0' }}>
-                                <div style={{ fontSize: '10px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px', fontFamily: "'Inter', system-ui, sans-serif" }}>Reference</div>
+                                <div style={{ fontSize: '11px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px', fontFamily: "'Inter', system-ui, sans-serif" }}>Reference</div>
                                 <div style={{ fontSize: '16px', fontWeight: 700, color: '#431407', letterSpacing: '0.01em', fontFamily: "'JetBrains Mono', monospace", wordBreak: 'break-all' }}>{res.reference || '—'}</div>
                               </div>
 
@@ -2511,12 +2511,12 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                                 <div style={{ fontSize: '12px', fontWeight: 700, color: '#431407', fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {res.reference || '—'}
                                 </div>
-                                <div style={{ fontSize: '10px', fontWeight: 600, color: statusColor, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                <div style={{ fontSize: '11px', fontWeight: 600, color: statusColor, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {statusText}
                                 </div>
                               </div>
                               {holder && (
-                                <div style={{ padding: '2px 6px', borderRadius: '5px', background: `${acctColor ?? '#f97316'}18`, color: acctColor ?? '#f97316', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', flexShrink: 0 }}>
+                                <div style={{ padding: '2px 6px', borderRadius: '5px', background: `${acctColor ?? '#f97316'}18`, color: acctColor ?? '#f97316', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', flexShrink: 0 }}>
                                   {holder.slice(0, 3)}
                                 </div>
                               )}
@@ -2531,13 +2531,13 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                                   <div key={j} style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                       <span style={{ fontSize: '11px', fontWeight: 700, color: '#431407', fontFamily: "'JetBrains Mono', monospace" }}>{tx.reference || tx.label || '—'}</span>
-                                      {tx.account_holder && <span style={{ fontSize: '9px', color: 'rgba(67,20,7,0.5)', marginLeft: '5px' }}>{tx.account_holder}</span>}
+                                      {tx.account_holder && <span style={{ fontSize: '11px', color: 'rgba(67,20,7,0.5)', marginLeft: '5px' }}>{tx.account_holder}</span>}
                                     </div>
                                     <span style={{ fontSize: '12px', fontWeight: 800, color: '#f97316', fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
                                       ₱{Number(tx.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                                     </span>
                                     <button onClick={() => confirmTransactionMatch(res.receipt?.id, tx)}
-                                      style={{ flexShrink: 0, padding: '5px 10px', borderRadius: '7px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#059669', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }}>
+                                      style={{ flexShrink: 0, padding: '5px 10px', borderRadius: '7px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#059669', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }}>
                                       Confirm
                                     </button>
                                   </div>
@@ -2562,17 +2562,17 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
                         </svg>
-                        <span style={{ color: '#f97316', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>Batch Summary</span>
+                        <span style={{ color: '#f97316', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>Batch Summary</span>
                       </div>
                       {/* Stat badges */}
                       <div style={{ padding: '4px 8px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                        <span style={{ color: '#059669', fontSize: '10px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
+                        <span style={{ color: '#059669', fontSize: '11px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
                           {verificationSummary?.confirmed ?? 0} Confirmed
                         </span>
                       </div>
                       {(verificationSummary?.not_found ?? 0) > 0 && (
                         <div style={{ padding: '4px 8px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                          <span style={{ color: '#dc2626', fontSize: '10px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
+                          <span style={{ color: '#dc2626', fontSize: '11px', fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
                             {verificationSummary.not_found} Not Found
                           </span>
                         </div>
@@ -2628,7 +2628,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                                 background: ac ? ac.bg : 'rgba(249,115,22,0.06)',
                                 border: `1px solid ${ac ? ac.border : 'rgba(249,115,22,0.15)'}`,
                                 color: ac ? ac.text : 'rgba(67,20,7,0.5)',
-                                fontSize: '8px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',
+                                fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',
                                 fontFamily: "'Inter', sans-serif"
                               }}>
                                 {holder || 'Unknown'}
@@ -2640,7 +2640,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                                 ₱{Number(res.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                               </div>
                               {!isVerified && (
-                                <div style={{ fontSize: '7px', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: "'Inter', sans-serif" }}>Not Found</div>
+                                <div style={{ fontSize: '10px', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: "'Inter', sans-serif" }}>Not Found</div>
                               )}
                             </div>
                           </div>
@@ -2678,24 +2678,24 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                     {/* Gross + Service Fee cards */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                       <div style={{ padding: '14px 12px', borderRadius: '14px', background: '#ffffff', border: '1px solid rgba(16,185,129,0.2)', boxShadow: '0 2px 8px rgba(16,185,129,0.06)', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
-                        <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>Gross Claims</div>
+                        <div style={{ fontSize: '11px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>Gross Claims</div>
                         <div style={{ fontSize: '17px', fontWeight: 900, color: '#059669', letterSpacing: '-0.02em', fontFamily: "'JetBrains Mono', monospace", wordBreak: 'break-all', lineHeight: 1.2 }}>
                           ₱{totalClaimsAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                         </div>
-                        <div style={{ fontSize: '9px', color: 'rgba(67,20,7,0.4)', fontWeight: 600, textTransform: 'uppercase', fontFamily: "'Inter', sans-serif" }}>Sum of verified receipts</div>
+                        <div style={{ fontSize: '11px', color: 'rgba(67,20,7,0.4)', fontWeight: 600, textTransform: 'uppercase', fontFamily: "'Inter', sans-serif" }}>Sum of verified receipts</div>
                       </div>
                       <div style={{ padding: '14px 12px', borderRadius: '14px', background: '#ffffff', border: '1px solid rgba(239,68,68,0.2)', boxShadow: '0 2px 8px rgba(239,68,68,0.06)', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
-                        <div style={{ fontSize: '9px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>Service Fee</div>
+                        <div style={{ fontSize: '11px', fontWeight: 900, color: 'rgba(67,20,7,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', sans-serif" }}>Service Fee</div>
                         <div style={{ fontSize: '17px', fontWeight: 900, color: '#dc2626', letterSpacing: '-0.02em', fontFamily: "'JetBrains Mono', monospace", wordBreak: 'break-all', lineHeight: 1.2 }}>
                           − ₱{serviceFee.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                         </div>
-                        <div style={{ fontSize: '9px', color: 'rgba(67,20,7,0.4)', fontWeight: 600, textTransform: 'uppercase', fontFamily: "'Inter', sans-serif" }}>₱10 per ₱1,000</div>
+                        <div style={{ fontSize: '11px', color: 'rgba(67,20,7,0.4)', fontWeight: 600, textTransform: 'uppercase', fontFamily: "'Inter', sans-serif" }}>₱10 per ₱1,000</div>
                       </div>
                     </div>
 
                     {/* Claims Breakdown by account */}
                     <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid rgba(251,146,60,0.15)', padding: '20px', boxShadow: '0 2px 8px rgba(67,20,7,0.03)' }}>
-                      <div style={{ fontSize: '10px', fontWeight: 900, color: 'rgba(67,20,7,0.5)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: "'Inter', sans-serif" }}>Claims Breakdown</div>
+                      <div style={{ fontSize: '11px', fontWeight: 900, color: 'rgba(67,20,7,0.5)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: "'Inter', sans-serif" }}>Claims Breakdown</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {(() => {
                           const accountSummary = {};
@@ -2718,7 +2718,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                                   <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#ffffff', border: `1px solid ${ac ? ac.border : 'rgba(249,115,22,0.15)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>👤</div>
                                   <div>
                                     <div style={{ fontSize: '12px', fontWeight: 800, color: ac ? ac.text : '#f97316', fontFamily: "'Inter', sans-serif" }}>{holder}</div>
-                                    <div style={{ fontSize: '9px', color: 'rgba(67,20,7,0.45)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>{data.count} {data.count === 1 ? 'claim' : 'claims'}</div>
+                                    <div style={{ fontSize: '11px', color: 'rgba(67,20,7,0.45)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>{data.count} {data.count === 1 ? 'claim' : 'claims'}</div>
                                   </div>
                                 </div>
                                 <div style={{ fontSize: '16px', fontWeight: 900, color: '#431407', fontFamily: "'JetBrains Mono', monospace" }}>

@@ -202,11 +202,22 @@ const ReceiptDetailModal = ({ receipt, onClose }) => {
           from { opacity:0; transform:scale(0.97) translateY(8px); }
           to   { opacity:1; transform:scale(1) translateY(0); }
         }
+        @media (max-width: 640px) {
+          .rdm-card { flex-direction: column !important; max-height: 92vh; overflow-y: auto; }
+          .rdm-img-col {
+            min-height: 200px !important;
+            max-height: 40vh !important;
+            flex: none !important;
+            width: 100% !important;
+          }
+          .rdm-detail-col { flex: none !important; width: 100% !important; }
+        }
       `}</style>
 
       {/* Card */}
       <div
         onClick={e => e.stopPropagation()}
+        className="rdm-card"
         style={{
           background: '#ffffff',
           borderRadius: '20px',
@@ -220,14 +231,14 @@ const ReceiptDetailModal = ({ receipt, onClose }) => {
         }}
       >
         {/* ── Left: Image ── */}
-        <div style={{
+        <div className="rdm-img-col" style={{
           flex: '1 1 50%',
           background: 'linear-gradient(135deg, #fff7ed 0%, #fffbf5 100%)',
           padding: '24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          minHeight: '450px'
+          minHeight: '380px'
         }}>
           {!imgError ? (
             <img
@@ -262,7 +273,7 @@ const ReceiptDetailModal = ({ receipt, onClose }) => {
         </div>
 
         {/* ── Right: Details ── */}
-        <div style={{
+        <div className="rdm-detail-col" style={{
           flex: '1 1 50%',
           display: 'flex',
           flexDirection: 'column',

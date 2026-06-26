@@ -133,7 +133,7 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
       <aside
         style={{
           width: isMobile 
-            ? (isMobileMenuOpen ? '260px' : '0') 
+            ? (isMobileMenuOpen ? '240px' : '0') 
             : (collapsed ? '64px' : '220px'),
           minWidth: isMobile 
             ? '0' 
@@ -147,7 +147,7 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
             ? 'fixed' 
             : 'relative',
           left: isMobile 
-            ? (isMobileMenuOpen ? 0 : '-260px') 
+            ? (isMobileMenuOpen ? 0 : '-240px') 
             : 0,
           top: 0,
           transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
