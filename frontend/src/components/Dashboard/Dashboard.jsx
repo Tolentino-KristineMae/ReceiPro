@@ -442,6 +442,90 @@ function RecentActivity({ receipts, onSelectReceipt, onNavigate }) {
   );
 }
 
+function FeeTiers() {
+  const tiers = [
+    { min: 0, max: 499, fee: 5 },
+    { min: 500, max: 1499, fee: 10 },
+    { min: 1500, max: 2499, fee: 20 },
+    { min: 2500, max: 3499, fee: 30 },
+    { min: 3500, max: 4499, fee: 40 },
+    { min: 4500, max: 5499, fee: 50 },
+  ];
+
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const checkSize = () => setIsMobile(window.innerWidth < 640);
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
+  return (
+    <div style={{
+      background: 'white',
+      borderRadius: '16px',
+      padding: isMobile ? '1.25rem 1rem' : '1.5rem',
+      boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05)',
+      border: '1px solid rgba(248, 250, 252, 1)'
+    }}>
+      <h2 style={{
+        fontSize: '1rem',
+        fontWeight: '700',
+        color: '#0f172a',
+        fontFamily: 'Inter, sans-serif',
+        marginBottom: '1rem'
+      }}>
+        Fee Tiers
+      </h2>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '0.75rem' }}>
+        {tiers.map((tier, idx) => (
+          <div key={idx} style={{
+            padding: '0.875rem 1rem',
+            borderRadius: '12px',
+            background: tier.max < 500 ? 'rgba(248, 250, 252)' : 'rgba(248, 113, 113, 0.05)',
+            border: '1px solid rgba(226, 232, 240, 1)',
+            transition: 'all 0.2s ease',
+          }} onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
+          }} onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'none';
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+              <div style={{
+                fontSize: '0.6875rem',
+                fontWeight: '700',
+                color: tier.max < 500 ? '#64748b' : '#c2410c',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                fontFamily: 'Inter, sans-serif'
+              }}>
+                {tier.max < 500 ? 'Under ₱500' : `₱${tier.min} - ₱${tier.max}`}
+              </div>
+              <div style={{
+                fontFamily: 'JetBrains Mono, monospace',
+                fontSize: '1.125rem',
+                fontWeight: '800',
+                color: tier.max < 500 ? '#1e293b' : '#f97316'
+              }}>
+                ₱{tier.fee}
+              </div>
+            </div>
+            <div style={{
+              fontSize: '0.75rem',
+              color: '#64748b',
+              fontFamily: 'Inter, sans-serif'
+            }}>
+              {tier.max < 500 ? 'Flat fee' : 'Flat fee for tier'}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function QuickActions({ onNavigate }) {
   const actions = [
     { 
@@ -586,7 +670,10 @@ export default function Dashboard({
         gap: '1rem', 
         marginTop: '1rem' 
       }}>
-        <QuickActions onNavigate={onNavigate} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <QuickActions onNavigate={onNavigate} />
+          <FeeTiers />
+        </div>
         <RecentActivity receipts={receipts} onSelectReceipt={onSelectReceipt} onNavigate={onNavigate} />
       </div>
     </div>
