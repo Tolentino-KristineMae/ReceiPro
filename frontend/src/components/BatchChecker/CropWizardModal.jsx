@@ -413,8 +413,15 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
               if (batch.summary_data.net_amount) {
                 setFinalNetAmount(batch.summary_data.net_amount);
               }
+            } else if (phase === 'summary' && batch.summary_data && batch.summary_data.deductions) {
+              // If viewing summary and we have saved deductions, load them for editing
+              console.log('Loading saved deductions for summary phase:', batch.summary_data.deductions);
+              setSavedDeductions(batch.summary_data.deductions);
+              if (batch.summary_data.net_amount) {
+                setFinalNetAmount(batch.summary_data.net_amount);
+              }
             } else {
-              // Reset to fresh calculations for summary phase
+              // Reset to fresh calculations for new summary phase
               setSavedDeductions([]);
               setFinalNetAmount(0);
             }
@@ -2952,6 +2959,17 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                         };
                       });
                       setOcrResults(freshResults);
+                      
+                      // Load saved deductions if available (for edit/review scenario)
+                      if (freshBatch.summary_data) {
+                        if (freshBatch.summary_data.deductions) {
+                          console.log('Loading saved deductions from freshBatch:', freshBatch.summary_data.deductions);
+                          setSavedDeductions(freshBatch.summary_data.deductions);
+                        }
+                        if (freshBatch.summary_data.net_amount) {
+                          setFinalNetAmount(freshBatch.summary_data.net_amount);
+                        }
+                      }
                     }
                   } catch (e) {
                     console.error('Failed to refresh batch data:', e);
@@ -3169,6 +3187,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                   onProceed={async (deductions, calculatedNetAmount) => {
                     // Store the calculated net amount for use in billing stage
                     setFinalNetAmount(calculatedNetAmount);
+                    setSavedDeductions(deductions); // Save deductions to state
                     
                     try {
                       const res = await fetch(getApiUrl(`/api/batches/${batchId}/status`), {
