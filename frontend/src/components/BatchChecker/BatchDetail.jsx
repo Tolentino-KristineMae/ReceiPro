@@ -838,17 +838,20 @@ export default function BatchDetail({
         const bd = batch.billing_data || {};
 
         // Build verified receipts list from backend-computed claims
-        const verifiedReceipts = batch.verified_claims || [];
+          const verifiedReceipts = batch.verified_claims || [];
 
-        // Fallback: reconstruct financials from receipts if summary_data wasn't saved
-        const grossFallback = verifiedReceipts.reduce((s, r) => s + r.amount, 0);
-        const feeFallback = Math.floor(grossFallback / 1000) * 10;
-        const netFallback = grossFallback - feeFallback;
+          // Fallback: reconstruct financials from receipts if summary_data wasn't saved
+          const grossFallback = verifiedReceipts.reduce((s, r) => s + r.amount, 0);
+          const feeFallback = Math.floor(grossFallback / 1000) * 10;
+          const deductionsFallback = sd.deductions || [];
+          const totalDeductionsFallback = deductionsFallback.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+          const netFallback = grossFallback - feeFallback - totalDeductionsFallback;
 
-        const grossAmount   = sd.gross_amount   ?? grossFallback;
-        const serviceFee    = sd.service_fee    ?? feeFallback;
-        const netAmount     = sd.net_amount     ?? netFallback;
-        const deductions    = sd.deductions     || []; // Use deductions array
+          const grossAmount   = sd.gross_amount   ?? grossFallback;
+          const serviceFee    = sd.service_fee    ?? feeFallback;
+          const deductions    = sd.deductions     || [];
+          const totalDeductions = deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+          const netAmount     = sd.net_amount     ?? (grossAmount - serviceFee - totalDeductions); // Use deductions array
 
         // Fallback billing: if billing_data missing, show cash total from denominations
         const billingMethod      = bd.method              || 'both';

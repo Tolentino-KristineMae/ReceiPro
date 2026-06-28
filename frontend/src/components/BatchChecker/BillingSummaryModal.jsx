@@ -359,26 +359,19 @@ const BillingSummaryModal = ({
               <Row label="Gross Claims Amount" value={'₱' + fmt(grossAmount)} valueColor="#0a1628" />
               <Divider />
               <Row label="Service Fee" value={'− ₱' + fmt(serviceFee)} valueColor="#ef4444" />
-              
-              {/* Debug: Always show this to verify rendering */}
-              {console.log('Rendering deductions section:', { deductions, hasDeductions: deductions && deductions.length > 0 })}
+
               
               {/* Render deductions */}
-              {deductions && deductions.length > 0 ? (
-                deductions.map((deduction, index) => {
-                  console.log(`Rendering deduction ${index}:`, deduction);
-                  return (
-                    <Row 
-                      key={index}
-                      label={getDeductionLabel(deduction.type)} 
-                      value={'− ₱' + fmt(deduction.amount)} 
-                      valueColor="#f97316" 
-                    />
-                  );
-                })
-              ) : (
-                console.log('No deductions to render')
-              )}
+          {deductions && deductions.length > 0 &&
+            deductions.map((deduction, index) => (
+              <Row 
+                key={index}
+                label={getDeductionLabel(deduction.type)} 
+                value={'− ₱' + fmt(deduction.amount)} 
+                valueColor="#f97316" 
+              />
+            ))
+          }
 
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',

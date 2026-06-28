@@ -789,12 +789,15 @@ export default function BatchDashboard({
           // Fallback: reconstruct financials from receipts if summary_data wasn't saved
           const grossFallback = verifiedReceipts.reduce((s, r) => s + r.amount, 0);
           const feeFallback = Math.floor(grossFallback / 1000) * 10;
-          const netFallback = grossFallback - feeFallback;
+          const deductionsFallback = sd.deductions || [];
+          const totalDeductionsFallback = deductionsFallback.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+          const netFallback = grossFallback - feeFallback - totalDeductionsFallback;
 
           const grossAmount   = sd.gross_amount   ?? grossFallback;
           const serviceFee    = sd.service_fee    ?? feeFallback;
-          const netAmount     = sd.net_amount     ?? netFallback;
           const deductions    = sd.deductions     || [];
+          const totalDeductions = deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+          const netAmount     = sd.net_amount     ?? (grossAmount - serviceFee - totalDeductions);
 
           const billingMethod      = bd.method              || 'both';
           const cashDenoms         = bd.cash_denominations  || {};
