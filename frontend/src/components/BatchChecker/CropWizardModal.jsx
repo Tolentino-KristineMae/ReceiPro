@@ -2928,7 +2928,34 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                 ocrResults={ocrResults}
                 verificationSummary={verificationSummary}
                 onDone={onDone}
-                onViewSummary={() => {
+                onViewSummary={async () => {
+                  // Refresh batch data to get updated receipts with account_holder
+                  try {
+                    const res = await fetch(getApiUrl(`/api/batches/${batchId}`));
+                    if (res.ok) {
+                      const freshBatch = await res.json();
+                      setFinalizedBatch(freshBatch);
+                      
+                      // Reconstruct ocrResults from fresh receipt data
+                      const freshReceipts = freshBatch.receipts || [];
+                      const freshResults = freshReceipts.map(r => {
+                        const ocr = r.ocr_data ? (typeof r.ocr_data === 'string' ? JSON.parse(r.ocr_data) : r.ocr_data) : {};
+                        return {
+                          receipt: r,
+                          amount: ocr.amount || 0,
+                          reference: ocr.reference || null,
+                          date: ocr.date || null,
+                          confidence: ocr.confidence || 100,
+                          manualEntry: !!ocr.manual,
+                          account_holder: ocr.account_holder || r.account_holder,
+                          verification_status: r.match_status
+                        };
+                      });
+                      setOcrResults(freshResults);
+                    }
+                  } catch (e) {
+                    console.error('Failed to refresh batch data:', e);
+                  }
                   setPhase('summary');
                 }}
                 onReCrop={handleReCrop}

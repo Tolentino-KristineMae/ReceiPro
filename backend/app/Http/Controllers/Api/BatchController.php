@@ -168,6 +168,14 @@ class BatchController extends Controller
                 }
 
                 $transaction->update(['batch_id' => $batch->id]);
+
+                // Update receipt's ocr_data with verified account_holder from transaction
+                // This ensures that when moving to Stage 7 (Summary), the account holder is already populated
+                $ocrData['account_holder'] = $transaction->account_holder;
+                $receipt->update([
+                    'ocr_data' => $ocrData,
+                    'account_holder' => $transaction->account_holder, // Also update the direct field
+                ]);
             }
 
             return $this->respondWithBatch($batch->fresh());
