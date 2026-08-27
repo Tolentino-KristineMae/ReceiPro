@@ -959,6 +959,53 @@ const CSS = `
     }
   }
 
+  /* ── Checkboxes ── */
+  .checkbox-cell {
+    width: 40px;
+    text-align: center;
+  }
+
+  .custom-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--accent-primary);
+  }
+
+  .bulk-delete-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+  }
+
+  .bulk-delete-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  }
+
+  .bulk-delete-button:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .bulk-delete-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
   /* ── Footer ── */
   .table-footer {
     background: var(--bg-secondary);
@@ -1417,6 +1464,8 @@ export default function TransactionsPage() {
     startDate: '',
     endDate: ''
   });
+  const [selectedTransactions, setSelectedTransactions] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const form = forms[activeAccount] || EMPTY_FORM();
   const setForm = (updater) => setForms(prev => {
@@ -1463,6 +1512,7 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     fetchTransactions();
+    setSelectedTransactions([]); // Clear selection when account, search, or sort changes
   }, [activeAccount, searchQuery, sortOrder]);
 
   useEffect(() => {
@@ -1547,6 +1597,57 @@ export default function TransactionsPage() {
       });
     } catch {
       // Silent fail
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTransactions.length === 0) return;
+    
+    if (!window.confirm(`Delete ${selectedTransactions.length} selected transaction${selectedTransactions.length > 1 ? 's' : ''}? This action cannot be undone.`)) return;
+    
+    setIsDeleting(true);
+    try {
+      // Delete all selected transactions
+      await Promise.all(
+        selectedTransactions.map(id => 
+          fetch(getApiUrl(`/api/transactions/${id}`), { method: 'DELETE' })
+        )
+      );
+      
+      // Update local state
+      setTransactions(prev => {
+        const filtered = prev.filter(t => !selectedTransactions.includes(t.id));
+        const { transactions: computed, meta } = recomputeBalances(
+          filtered,
+          transactionMeta.opening_balance,
+          sortOrder
+        );
+        setTransactionMeta(meta);
+        return computed;
+      });
+      
+      // Clear selection
+      setSelectedTransactions([]);
+    } catch (error) {
+      alert('Failed to delete some transactions. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSelectTransaction = (id) => {
+    setSelectedTransactions(prev => 
+      prev.includes(id) 
+        ? prev.filter(txId => txId !== id)
+        : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTransactions.length === transactions.length) {
+      setSelectedTransactions([]);
+    } else {
+      setSelectedTransactions(transactions.map(t => t.id));
     }
   };
 
@@ -2059,6 +2160,26 @@ export default function TransactionsPage() {
                   <p className="form-subtitle">{activeAccount} • All activity</p>
                 </div>
                 <div className="flex items-center gap-3" style={{ gap: '10px' }}>
+                  {selectedTransactions.length > 0 && (
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={isDeleting}
+                      className="bulk-delete-button"
+                      title={`Delete ${selectedTransactions.length} selected transaction${selectedTransactions.length > 1 ? 's' : ''}`}
+                    >
+                      {isDeleting ? (
+                        <>
+                          <div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px', borderTopColor: 'white' }} />
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <Icon.Trash className="w-4 h-4" />
+                          Delete ({selectedTransactions.length})
+                        </>
+                      )}
+                    </button>
+                  )}
                   <div style={{ position: 'relative', flexShrink: 0 }}>
                     {/* Search icon */}
                     <div style={{
@@ -2158,6 +2279,15 @@ export default function TransactionsPage() {
                   <table className="table">
                     <thead>
                       <tr>
+                        <th className="checkbox-cell">
+                          <input
+                            type="checkbox"
+                            className="custom-checkbox"
+                            checked={transactions.length > 0 && selectedTransactions.length === transactions.length}
+                            onChange={handleSelectAll}
+                            title="Select all transactions"
+                          />
+                        </th>
                         <th>Date</th>
                         <th>Type</th>
                         <th>Batch</th>
@@ -2188,6 +2318,14 @@ export default function TransactionsPage() {
                             // Inline edit mode
                             return (
                               <tr key={t.id} className="editing-row">
+                                <td data-label="Select" className="checkbox-cell">
+                                  <input
+                                    type="checkbox"
+                                    className="custom-checkbox"
+                                    checked={selectedTransactions.includes(t.id)}
+                                    onChange={() => handleSelectTransaction(t.id)}
+                                  />
+                                </td>
                                 <td data-label="Date">
                                   <input
                                     type="date"
@@ -2298,6 +2436,14 @@ export default function TransactionsPage() {
                           // Normal display mode
                           return (
                             <tr key={t.id}>
+                              <td data-label="Select" className="checkbox-cell">
+                                <input
+                                  type="checkbox"
+                                  className="custom-checkbox"
+                                  checked={selectedTransactions.includes(t.id)}
+                                  onChange={() => handleSelectTransaction(t.id)}
+                                />
+                              </td>
                               <td data-label="Date">
                                 <div className="date-display">{d}</div>
                               </td>
@@ -2377,7 +2523,7 @@ export default function TransactionsPage() {
                     </tbody>
                     <tfoot className="table-footer">
                       <tr>
-                        <td colSpan={5}>
+                        <td colSpan={6}>
                           <div className="footer-stats">Total Activity</div>
                           <div className="footer-amounts">
                             <div className="footer-credit">+₱{fmt(totalCredit)}</div>
