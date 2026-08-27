@@ -102,11 +102,7 @@ async function generateBatchSummaryPNG({ html2canvas, finalBatchNumber, batchNum
   
   const headerBatch = document.createElement('div');
   headerBatch.style.cssText = 'font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.03em; font-family: "DM Mono", monospace;';
-  
-  // Debug: Log what we're receiving
-  console.log('Batch number debug:', { finalBatchNumber, batchNumber, displaying: finalBatchNumber || batchNumber });
-  
-  headerBatch.textContent = finalBatchNumber || batchNumber;
+  headerBatch.textContent = batchNumber;
   
   const headerDate = document.createElement('div');
   headerDate.style.cssText = 'font-size: 10px; color: #93c5fd; margin-top: 6px; font-weight: 500;';
@@ -489,7 +485,7 @@ export default function BatchDashboard({
           const pngData = await generateBatchSummaryPNG({
             html2canvas,
             finalBatchNumber: summary.final_batch_number,
-            batchNumber: summary.batch_number,
+            batchNumber: summary.name || summary.final_batch_number || summary.batch_number,
             grossAmount: summary.financial.gross_amount,
             serviceFee: summary.financial.service_fee,
             deductions: summary.financial.deductions,
