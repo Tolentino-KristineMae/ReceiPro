@@ -78,6 +78,8 @@ async function downloadBatchSummary({ html2canvas, finalBatchNumber, batchNumber
   tempDiv.style.position = 'fixed';
   tempDiv.style.left = '-9999px';
   tempDiv.style.top = '0';
+  tempDiv.style.width = '520px';
+  tempDiv.style.zIndex = '-1';
   document.body.appendChild(tempDiv);
 
   // Generate the billing summary HTML
@@ -96,16 +98,33 @@ async function downloadBatchSummary({ html2canvas, finalBatchNumber, batchNumber
   });
 
   try {
-    const canvas = await html2canvas(tempDiv.firstChild, { 
+    // Wait a bit for rendering
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const element = tempDiv.firstChild;
+    if (!element) {
+      throw new Error('Failed to create summary element');
+    }
+    
+    const canvas = await html2canvas(element, { 
       backgroundColor: '#ffffff',
-      scale: 2 
+      scale: 2,
+      logging: false,
+      useCORS: true,
+      allowTaint: true
     });
+    
     const url = canvas.toDataURL('image/png');
     const a = document.createElement('a');
     a.href = url;
     a.download = `billing-${finalBatchNumber || batchNumber}-${Date.now()}.png`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error generating summary image:', error);
+    throw error;
   } finally {
     document.body.removeChild(tempDiv);
   }
@@ -297,6 +316,8 @@ export default function BatchDashboard({
     
     setIsDownloadingAll(true);
     try {
+      console.log('Starting bulk download for batch IDs:', Array.from(selectedBatchIds));
+      
       // Call backend API to get batch summaries
       const response = await fetch(getApiUrl('/api/batches/bulk-download-summaries'), {
         method: 'POST',
@@ -304,19 +325,30 @@ export default function BatchDashboard({
         body: JSON.stringify({ batch_ids: Array.from(selectedBatchIds) })
       });
 
-      const result = await response.json();
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`API returned ${response.status}: ${errorText}`);
+      }
 
-      if (!response.ok || !result.success) {
+      const result = await response.json();
+      console.log('API Result:', result);
+
+      if (!result.success) {
         alert(result.message || 'Failed to retrieve batch summaries');
         setIsDownloadingAll(false);
         return;
       }
 
-      if (result.summaries.length === 0) {
+      if (!result.summaries || result.summaries.length === 0) {
         alert('None of the selected batches have billing summaries ready to download.');
         setIsDownloadingAll(false);
         return;
       }
+
+      console.log(`Downloading ${result.summaries.length} summaries...`);
 
       // Import html2canvas dynamically
       const html2canvas = (await import('html2canvas')).default;
@@ -325,31 +357,38 @@ export default function BatchDashboard({
       for (let i = 0; i < result.summaries.length; i++) {
         const summary = result.summaries[i];
         
-        await downloadBatchSummary({
-          html2canvas,
-          finalBatchNumber: summary.final_batch_number,
-          batchNumber: summary.batch_number,
-          grossAmount: summary.financial.gross_amount,
-          serviceFee: summary.financial.service_fee,
-          deductions: summary.financial.deductions,
-          netAmount: summary.financial.net_amount,
-          billingMethod: summary.billing.method,
-          cashDenominations: summary.billing.cash_denominations,
-          bankTransferAmounts: summary.billing.bank_transfer_amounts,
-          totalPrepared: summary.billing.total_prepared,
-          verifiedClaims: summary.verified_claims
-        });
+        console.log(`Downloading summary ${i + 1}/${result.summaries.length} for batch ${summary.final_batch_number || summary.batch_number}`);
+        
+        try {
+          await downloadBatchSummary({
+            html2canvas,
+            finalBatchNumber: summary.final_batch_number,
+            batchNumber: summary.batch_number,
+            grossAmount: summary.financial.gross_amount,
+            serviceFee: summary.financial.service_fee,
+            deductions: summary.financial.deductions,
+            netAmount: summary.financial.net_amount,
+            billingMethod: summary.billing.method,
+            cashDenominations: summary.billing.cash_denominations,
+            bankTransferAmounts: summary.billing.bank_transfer_amounts,
+            totalPrepared: summary.billing.total_prepared,
+            verifiedClaims: summary.verified_claims
+          });
 
-        // Add delay between downloads to avoid browser blocking
-        if (i < result.summaries.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Add delay between downloads to avoid browser blocking
+          if (i < result.summaries.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        } catch (downloadError) {
+          console.error(`Failed to download summary for batch ${summary.final_batch_number || summary.batch_number}:`, downloadError);
+          // Continue with next batch even if one fails
         }
       }
 
       alert(result.message);
     } catch (error) {
       console.error('Error downloading summaries:', error);
-      alert('Failed to download summaries. Please try again.');
+      alert('Failed to download summaries: ' + error.message);
     } finally {
       setIsDownloadingAll(false);
     }
