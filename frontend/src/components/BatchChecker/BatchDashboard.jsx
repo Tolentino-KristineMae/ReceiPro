@@ -974,12 +974,6 @@ export default function BatchDashboard({
                         Clear
                       </button>
                     </>
-                  )}seEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                      >
-                        Clear
-                      </button>
-                    </>
                   )}
                 </div>
               );
