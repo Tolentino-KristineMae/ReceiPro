@@ -33,17 +33,36 @@ class BatchController extends Controller
     }
 
     /** List all batches with their receipts */
-    public function index()
+    public function index(Request $request)
     {
+        // Get pagination parameters
+        $perPage = $request->get('per_page', 20); // Default 20 batches per page
+        $page = $request->get('page', 1);
+        
+        // For dashboard stats, we still need all batches (but without receipts)
+        $allBatches = Batch::orderBy('created_at', 'desc')->get();
+        $dashboard = $this->statsService->dashboardSummary($allBatches);
+        
+        // For the list, paginate and include receipts
         $batches = Batch::with(['receipts' => function ($query) {
             $query->orderBy('created_at', 'asc')->with('transaction');
-        }])->orderBy('created_at', 'desc')->get();
+        }])
+        ->orderBy('created_at', 'desc')
+        ->paginate($perPage);
 
-        $enriched = $batches->map(fn (Batch $batch) => $this->statsService->enrichBatch($batch));
+        $enriched = $batches->getCollection()->map(fn (Batch $batch) => $this->statsService->enrichBatch($batch));
 
         return response()->json([
             'batches'   => $enriched,
-            'dashboard' => $this->statsService->dashboardSummary($batches),
+            'dashboard' => $dashboard,
+            'pagination' => [
+                'current_page' => $batches->currentPage(),
+                'per_page' => $batches->perPage(),
+                'total' => $batches->total(),
+                'last_page' => $batches->lastPage(),
+                'from' => $batches->firstItem(),
+                'to' => $batches->lastItem(),
+            ]
         ]);
     }
 

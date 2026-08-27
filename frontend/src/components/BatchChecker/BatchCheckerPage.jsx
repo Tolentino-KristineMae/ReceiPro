@@ -88,12 +88,17 @@ export default function BatchCheckerPage() {
 
   const fetchBatches = async (silent = false) => {
     try {
-      const res = await fetch(getApiUrl(`/api/batches?t=${Date.now()}`), { cache: 'no-store' });
+      // Load first 20 batches (pagination)
+      const res = await fetch(getApiUrl(`/api/batches?per_page=20&t=${Date.now()}`), { cache: 'no-store' });
       if (res.status === 429) return;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setBatches(Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []));
       if (data?.dashboard) setDashboard(data.dashboard);
+      // Store pagination info if needed for "Load More" feature later
+      if (data?.pagination) {
+        console.log(`Loaded ${data.pagination.to} of ${data.pagination.total} batches`);
+      }
     } catch (e) {
       if (navigator.onLine) console.warn('[BatchChecker] fetchBatches:', e.message);
     } finally {
