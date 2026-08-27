@@ -62,7 +62,159 @@ const Icon = {
       <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
     </svg>
   ),
+  Download: ({ size = 14 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+  ),
 };
+
+// Helper function to download a batch summary
+async function downloadBatchSummary({ html2canvas, finalBatchNumber, batchNumber, grossAmount, serviceFee, deductions, netAmount, billingMethod, cashDenominations, bankTransferAmounts, totalPrepared, verifiedClaims }) {
+  // Create a temporary container
+  const tempDiv = document.createElement('div');
+  tempDiv.style.position = 'fixed';
+  tempDiv.style.left = '-9999px';
+  tempDiv.style.top = '0';
+  document.body.appendChild(tempDiv);
+
+  // Generate the billing summary HTML
+  tempDiv.innerHTML = generateBillingSummaryHTML({
+    finalBatchNumber,
+    batchNumber,
+    grossAmount,
+    serviceFee,
+    deductions,
+    netAmount,
+    billingMethod,
+    cashDenominations,
+    bankTransferAmounts,
+    totalPrepared,
+    verifiedClaims
+  });
+
+  try {
+    const canvas = await html2canvas(tempDiv.firstChild, { 
+      backgroundColor: '#ffffff',
+      scale: 2 
+    });
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `billing-${finalBatchNumber || batchNumber}-${Date.now()}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } finally {
+    document.body.removeChild(tempDiv);
+  }
+}
+
+// Helper function to generate billing summary HTML
+function generateBillingSummaryHTML({ finalBatchNumber, batchNumber, grossAmount, serviceFee, deductions, netAmount, billingMethod, cashDenominations, bankTransferAmounts, totalPrepared, verifiedClaims }) {
+  const totalDeductions = deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+  const bankTotal = Array.isArray(bankTransferAmounts) ? bankTransferAmounts.reduce((s, v) => s + Number(v || 0), 0) : Number(bankTransferAmounts || 0);
+  
+  return `
+    <div style="width: 520px; background: white; border-radius: 22px; box-shadow: 0 25px 50px rgba(0,0,0,0.15); overflow: hidden; font-family: 'Inter', -apple-system, sans-serif;">
+      <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 24px 28px;">
+        <div style="font-size: 12px; color: rgba(255,255,255,0.85); font-weight: 700; textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '6px';">
+          Billing Summary
+        </div>
+        <div style="font-size: 38px; color: white; font-weight: 800; font-family: 'JetBrains Mono', monospace; letter-spacing: '-0.03em';">
+          ${finalBatchNumber || batchNumber || 'DRAFT'}
+        </div>
+      </div>
+      
+      <div style="padding: 18px 28px; border-bottom: 1px solid #dbeafe;">
+        <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 3px;">
+          Financial Summary
+        </div>
+        
+        ${[
+          { label: 'Gross Amount', value: `₱${fmt(grossAmount)}`, color: '#1e293b' },
+          { label: 'Service Fee', value: `−₱${fmt(serviceFee)}`, color: '#ef4444' },
+          ...(totalDeductions > 0 ? [{ label: 'Total Deductions', value: `−₱${fmt(totalDeductions)}`, color: '#f97316' }] : []),
+        ].map(item => `
+          <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
+            <span style="font-size: 13px; color: #475569; font-weight: 600;">${item.label}</span>
+            <span style="font-size: 16px; font-weight: 700; color: ${item.color}; font-family: 'JetBrains Mono', monospace;">
+              ${item.value}
+            </span>
+          </div>
+        `).join('')}
+        
+        <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 16px 0; background: #f0f9ff; margin: 12px -28px 0; padding-left: 28px; padding-right: 28px; border-top: 2px solid #3b82f6;">
+          <span style="font-size: 13px; color: #1e40af; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;">Net Amount</span>
+          <span style="font-size: 24px; font-weight: 800; color: #1e40af; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;">
+            ₱${fmt(netAmount)}
+          </span>
+        </div>
+      </div>
+      
+      ${deductions.length > 0 ? `
+        <div style="padding: 18px 28px; border-bottom: 1px solid #dbeafe;">
+          <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 8px;">
+            Deduction Breakdown
+          </div>
+          ${deductions.map(d => `
+            <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0;">
+              <span style="font-size: 12px; color: #64748b; font-weight: 500;">${d.type || 'Deduction'}</span>
+              <span style="font-size: 13px; font-weight: 700; color: #f97316; font-family: 'JetBrains Mono', monospace;">
+                −₱${fmt(d.amount)}
+              </span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+      
+      ${billingMethod !== 'bank' && Object.keys(cashDenominations || {}).length > 0 ? `
+        <div style="padding: 18px 28px; border-bottom: 1px solid #dbeafe;">
+          <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 8px;">
+            Cash Denominations
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px;">
+            ${Object.entries(cashDenominations || {}).map(([denom, count]) => `
+              <div style="text-align: center; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div style="font-size: 10px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">₱${denom}</div>
+                <div style="font-size: 16px; font-weight: 800; color: #1e293b; font-family: 'JetBrains Mono', monospace;">×${count}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+      
+      ${billingMethod !== 'cash' && bankTotal > 0 ? `
+        <div style="padding: 18px 28px; border-bottom: 1px solid #dbeafe;">
+          <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 8px;">
+            Bank Transfer
+          </div>
+          ${Array.isArray(bankTransferAmounts) && bankTransferAmounts.length > 1 ? 
+            bankTransferAmounts.map((amt, idx) => `
+              <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0;">
+                <span style="font-size: 12px; color: #64748b; font-weight: 500;">Transfer ${idx + 1}</span>
+                <span style="font-size: 14px; font-weight: 700; color: #059669; font-family: 'JetBrains Mono', monospace;">
+                  ₱${fmt(amt)}
+                </span>
+              </div>
+            `).join('') :
+            `<div style="font-size: 18px; font-weight: 800; color: #059669; font-family: 'JetBrains Mono', monospace; text-align: center; padding: 8px 0;">
+              ₱${fmt(bankTotal)}
+            </div>`
+          }
+        </div>
+      ` : ''}
+      
+      <div style="padding: 18px 28px; background: #f8fafc;">
+        <div style="font-size: 10px; color: #94a3b8; text-align: center; margin-bottom: 4px;">Generated on</div>
+        <div style="font-size: 11px; color: #64748b; font-weight: 600; text-align: center;">
+          ${new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}
+        </div>
+      </div>
+    </div>
+  `;
+}
 
 export default function BatchDashboard({ 
   batches, 
@@ -91,6 +243,7 @@ export default function BatchDashboard({
   const [selectedBatchIds, setSelectedBatchIds] = React.useState(new Set());
   const [showBulkDeleteModal, setShowBulkDeleteModal] = React.useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = React.useState(false);
+  const [isDownloadingAll, setIsDownloadingAll] = React.useState(false);
 
   const toggleBatchSelect = (id, e) => {
     e.stopPropagation();
@@ -121,6 +274,69 @@ export default function BatchDashboard({
       console.error(e);
     } finally {
       setIsBulkDeleting(false);
+    }
+  };
+
+  const handleDownloadAllSummaries = async () => {
+    if (selectedBatchIds.size === 0) return;
+    
+    setIsDownloadingAll(true);
+    try {
+      // Call backend API to get batch summaries
+      const response = await fetch(getApiUrl('/api/batches/bulk-download-summaries'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batch_ids: Array.from(selectedBatchIds) })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        alert(result.message || 'Failed to retrieve batch summaries');
+        setIsDownloadingAll(false);
+        return;
+      }
+
+      if (result.summaries.length === 0) {
+        alert('None of the selected batches have billing summaries ready to download.');
+        setIsDownloadingAll(false);
+        return;
+      }
+
+      // Import html2canvas dynamically
+      const html2canvas = (await import('html2canvas')).default;
+
+      // Download each summary
+      for (let i = 0; i < result.summaries.length; i++) {
+        const summary = result.summaries[i];
+        
+        await downloadBatchSummary({
+          html2canvas,
+          finalBatchNumber: summary.final_batch_number,
+          batchNumber: summary.batch_number,
+          grossAmount: summary.financial.gross_amount,
+          serviceFee: summary.financial.service_fee,
+          deductions: summary.financial.deductions,
+          netAmount: summary.financial.net_amount,
+          billingMethod: summary.billing.method,
+          cashDenominations: summary.billing.cash_denominations,
+          bankTransferAmounts: summary.billing.bank_transfer_amounts,
+          totalPrepared: summary.billing.total_prepared,
+          verifiedClaims: summary.verified_claims
+        });
+
+        // Add delay between downloads to avoid browser blocking
+        if (i < result.summaries.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
+      alert(result.message);
+    } catch (error) {
+      console.error('Error downloading summaries:', error);
+      alert('Failed to download summaries. Please try again.');
+    } finally {
+      setIsDownloadingAll(false);
     }
   };
 
@@ -693,6 +909,30 @@ export default function BatchDashboard({
                       <span style={{ color: 'var(--border-strong)' }}>•</span>
                       <span style={{ fontSize: '11px', fontWeight: 700, color: '#dc2626' }}>{selectedBatchIds.size} selected</span>
                       <button
+                        onClick={handleDownloadAllSummaries}
+                        disabled={isDownloadingAll}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '5px',
+                          padding: '5px 12px', borderRadius: '7px', border: 'none',
+                          background: isDownloadingAll ? '#94a3b8' : '#059669', color: 'white',
+                          fontSize: '11px', fontWeight: 700, cursor: isDownloadingAll ? 'not-allowed' : 'pointer',
+                          textTransform: 'uppercase', letterSpacing: '0.05em',
+                        }}
+                        onMouseEnter={e => !isDownloadingAll && (e.currentTarget.style.background = '#047857')}
+                        onMouseLeave={e => !isDownloadingAll && (e.currentTarget.style.background = '#059669')}
+                      >
+                        {isDownloadingAll ? (
+                          <>
+                            <div className="spinner-modern" style={{ width: '11px', height: '11px', borderWidth: '2px' }} />
+                            Downloading...
+                          </>
+                        ) : (
+                          <>
+                            <Icon.Download size={11} /> Download {selectedBatchIds.size}
+                          </>
+                        )}
+                      </button>
+                      <button
                         onClick={() => setShowBulkDeleteModal(true)}
                         style={{
                           display: 'flex', alignItems: 'center', gap: '5px',
@@ -714,6 +954,12 @@ export default function BatchDashboard({
                           color: '#dc2626', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
                         }}
                         onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        Clear
+                      </button>
+                    </>
+                  )}seEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       >
                         Clear
