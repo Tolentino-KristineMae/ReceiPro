@@ -1412,6 +1412,11 @@ export default function TransactionsPage() {
   const [reportData, setReportData] = useState({ accounts: {}, completed_batches: [], can_print: false });
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printDateRange, setPrintDateRange] = useState({
+    startDate: '',
+    endDate: ''
+  });
 
   const form = forms[activeAccount] || EMPTY_FORM();
   const setForm = (updater) => setForms(prev => {
@@ -1590,18 +1595,23 @@ export default function TransactionsPage() {
   const completedBatches = reportData.completed_batches || [];
   const canPrint = !!reportData.can_print;
 
+  const handlePrintClick = () => {
+    setShowPrintModal(true);
+  };
+
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
-    const printContent = generatePrintContent();
+    const printContent = generatePrintContent(printDateRange.startDate, printDateRange.endDate);
     printWindow.document.write(printContent);
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => {
       printWindow.print();
+      setShowPrintModal(false);
     }, 250);
   };
 
-  const generatePrintContent = () => {
+  const generatePrintContent = (startDate = '', endDate = '') => {
     let html = `
       <!DOCTYPE html>
       <html>
@@ -1732,18 +1742,44 @@ export default function TransactionsPage() {
             month: 'long', 
             day: 'numeric' 
           })}</p>
+          ${startDate || endDate ? `<p style="margin-top: 8px; font-size: 13px; color: #f97316; font-weight: 700;">
+            Date Range: ${startDate ? new Date(startDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Beginning'} 
+            to ${endDate ? new Date(endDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Present'}
+          </p>` : ''}
         </div>
     `;
 
     ACCOUNTS.forEach(account => {
       const accountReport = reportData.accounts?.[account];
-      const accountTransactions = accountReport?.transactions || [];
+      let accountTransactions = accountReport?.transactions || [];
+      
+      // Filter by date range if provided
+      if (startDate || endDate) {
+        accountTransactions = accountTransactions.filter(t => {
+          const txDate = new Date(t.transaction_date);
+          const start = startDate ? new Date(startDate) : new Date('1900-01-01');
+          const end = endDate ? new Date(endDate) : new Date('2100-12-31');
+          return txDate >= start && txDate <= end;
+        });
+      }
+      
       if (accountTransactions.length === 0) return;
 
-      const totalCredit = accountReport.meta?.total_credit ?? 0;
-      const totalDebit = accountReport.meta?.total_debit ?? 0;
-      const openingBalance = accountReport.meta?.opening_balance ?? 0;
-      const currentBalance = accountReport.meta?.current_balance ?? 0;
+      // Recalculate totals for filtered transactions
+      let totalCredit = 0;
+      let totalDebit = 0;
+      let openingBalance = accountReport.meta?.opening_balance ?? 0;
+      
+      accountTransactions.forEach(t => {
+        const amt = parseFloat(t.amount || 0);
+        if (t.entry_type === 'credit') {
+          totalCredit += amt;
+        } else {
+          totalDebit += amt;
+        }
+      });
+      
+      const currentBalance = openingBalance + totalCredit - totalDebit;
 
       html += `
         <div class="account-section">
@@ -1849,7 +1885,7 @@ export default function TransactionsPage() {
           
           {canPrint && (
             <button
-              onClick={handlePrint}
+              onClick={handlePrintClick}
               className="print-button"
               title={`Print report for ${completedBatches.length} completed batches`}
             >
@@ -2361,6 +2397,99 @@ export default function TransactionsPage() {
           </div>
         </div>
       </div>
+
+      {/* Print Date Range Modal */}
+      {showPrintModal && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all animate-in fade-in duration-300"
+          onClick={() => setShowPrintModal(false)}
+        >
+          <div 
+            className="bg-white border border-orange-200 rounded-[24px] p-8 max-w-md w-full shadow-2xl shadow-orange-900/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight text-orange-900">Print Transactions</h2>
+                <p className="text-[13px] text-orange-700/60 mt-1 uppercase tracking-wider font-semibold">Select date range (optional)</p>
+              </div>
+              <button 
+                onClick={() => setShowPrintModal(false)} 
+                className="w-10 h-10 flex items-center justify-center rounded-xl text-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={printDateRange.startDate}
+                  onChange={(e) => setPrintDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                  className="input-field w-full"
+                  placeholder="Leave empty for all"
+                />
+                <p className="text-[11px] text-orange-600/60 mt-1 ml-1">Leave empty to include all transactions from the beginning</p>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={printDateRange.endDate}
+                  onChange={(e) => setPrintDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                  className="input-field w-full"
+                  placeholder="Leave empty for all"
+                />
+                <p className="text-[11px] text-orange-600/60 mt-1 ml-1">Leave empty to include all transactions up to present</p>
+              </div>
+
+              <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-4">
+                <p className="text-[12px] text-orange-800 font-medium">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline mr-2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  {printDateRange.startDate || printDateRange.endDate 
+                    ? `Printing transactions from ${printDateRange.startDate ? new Date(printDateRange.startDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'beginning'} to ${printDateRange.endDate ? new Date(printDateRange.endDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'present'}`
+                    : 'Printing all transactions (no date filter)'
+                  }
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowPrintModal(false)}
+                  className="flex-1 px-6 py-3.5 border border-orange-200 text-orange-600 font-bold text-[13px] uppercase tracking-wider rounded-xl hover:bg-orange-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePrint}
+                  className="flex-1 print-button"
+                  style={{ margin: 0 }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9" />
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                    <rect x="6" y="14" width="12" height="8" />
+                  </svg>
+                  Print Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Removed EditTransactionModal - using inline editing instead */}
     </>
