@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TransactionController extends Controller
 {
@@ -150,12 +152,96 @@ class TransactionController extends Controller
 
     public function destroy($id)
     {
-        $transaction = Transaction::findOrFail($id);
-        $transaction->delete();
+        try {
+            $transaction = Transaction::findOrFail($id);
+            
+            // Use database transaction for safety
+            \DB::beginTransaction();
+            
+            try {
+                // The foreign key constraint will automatically set null on related receipts
+                $transaction->delete();
+                
+                // Bust report cache on deletion
+                Cache::forget('transactions_report');
+                
+                \DB::commit();
+                
+                return response()->json([
+                    'message' => 'Transaction deleted successfully',
+                    'success' => true
+                ], 200);
+                
+            } catch (\Exception $e) {
+                \DB::rollBack();
+                \Log::error('Failed to delete transaction', [
+                    'transaction_id' => $id,
+                    'error' => $e->getMessage()
+                ]);
+                
+                return response()->json([
+                    'message' => 'Failed to delete transaction',
+                    'error' => $e->getMessage(),
+                    'success' => false
+                ], 500);
+            }
+            
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Transaction not found',
+                'success' => false
+            ], 404);
+        }
+    }
 
-        Cache::forget('transactions_report');
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer|exists:transactions,id'
+        ]);
 
-        return response()->json(['message' => 'Deleted']);
+        $ids = $validated['ids'];
+
+        try {
+            DB::beginTransaction();
+
+            try {
+                // Delete all transactions with the given IDs
+                $deletedCount = Transaction::whereIn('id', $ids)->delete();
+                
+                // Bust report cache
+                Cache::forget('transactions_report');
+                
+                DB::commit();
+
+                return response()->json([
+                    'message' => "Successfully deleted {$deletedCount} transaction(s)",
+                    'success' => true,
+                    'deleted_count' => $deletedCount
+                ], 200);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Failed to bulk delete transactions', [
+                    'transaction_ids' => $ids,
+                    'error' => $e->getMessage()
+                ]);
+
+                return response()->json([
+                    'message' => 'Failed to delete transactions',
+                    'error' => $e->getMessage(),
+                    'success' => false
+                ], 500);
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Invalid transaction IDs provided',
+                'errors' => $e->errors(),
+                'success' => false
+            ], 422);
+        }
     }
 
     private function buildQuery(Request $request)

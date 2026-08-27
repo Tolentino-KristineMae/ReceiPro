@@ -1584,19 +1584,26 @@ export default function TransactionsPage() {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this transaction? This action cannot be undone.')) return;
     try {
-      await fetch(getApiUrl(`/api/transactions/${id}`), { method: 'DELETE' });
-      setTransactions(prev => {
-        const filtered = prev.filter(t => t.id !== id);
-        const { transactions: computed, meta } = recomputeBalances(
-          filtered,
-          transactionMeta.opening_balance,
-          sortOrder
-        );
-        setTransactionMeta(meta);
-        return computed;
-      });
-    } catch {
-      // Silent fail
+      const response = await fetch(getApiUrl(`/api/transactions/${id}`), { method: 'DELETE' });
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        setTransactions(prev => {
+          const filtered = prev.filter(t => t.id !== id);
+          const { transactions: computed, meta } = recomputeBalances(
+            filtered,
+            transactionMeta.opening_balance,
+            sortOrder
+          );
+          setTransactionMeta(meta);
+          return computed;
+        });
+      } else {
+        throw new Error(result.message || 'Failed to delete transaction');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert(`Failed to delete transaction: ${error.message}`);
     }
   };
 
@@ -1607,29 +1614,39 @@ export default function TransactionsPage() {
     
     setIsDeleting(true);
     try {
-      // Delete all selected transactions
-      await Promise.all(
-        selectedTransactions.map(id => 
-          fetch(getApiUrl(`/api/transactions/${id}`), { method: 'DELETE' })
-        )
-      );
-      
-      // Update local state
-      setTransactions(prev => {
-        const filtered = prev.filter(t => !selectedTransactions.includes(t.id));
-        const { transactions: computed, meta } = recomputeBalances(
-          filtered,
-          transactionMeta.opening_balance,
-          sortOrder
-        );
-        setTransactionMeta(meta);
-        return computed;
+      // Use bulk delete endpoint for better performance
+      const response = await fetch(getApiUrl('/api/transactions/bulk-delete'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedTransactions })
       });
-      
-      // Clear selection
-      setSelectedTransactions([]);
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Update local state
+        setTransactions(prev => {
+          const filtered = prev.filter(t => !selectedTransactions.includes(t.id));
+          const { transactions: computed, meta } = recomputeBalances(
+            filtered,
+            transactionMeta.opening_balance,
+            sortOrder
+          );
+          setTransactionMeta(meta);
+          return computed;
+        });
+        
+        // Clear selection
+        setSelectedTransactions([]);
+        
+        // Show success message (optional)
+        console.log(result.message);
+      } else {
+        throw new Error(result.message || 'Failed to delete transactions');
+      }
     } catch (error) {
-      alert('Failed to delete some transactions. Please try again.');
+      console.error('Delete error:', error);
+      alert(`Failed to delete transactions: ${error.message}`);
     } finally {
       setIsDeleting(false);
     }
