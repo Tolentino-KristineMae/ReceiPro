@@ -73,45 +73,60 @@ const Icon = {
 
 // Helper function to generate batch summary PNG and return base64 data (for ZIP)
 async function generateBatchSummaryPNG({ html2canvas, finalBatchNumber, batchNumber, grossAmount, serviceFee, deductions, netAmount, billingMethod, cashDenominations, bankTransferAmounts, totalPrepared, verifiedClaims }) {
-  // Create a temporary container
+  // Create a temporary container that's visible but off-screen
   const tempDiv = document.createElement('div');
-  tempDiv.style.position = 'fixed';
-  tempDiv.style.left = '-9999px';
+  tempDiv.style.position = 'absolute';
+  tempDiv.style.left = '-10000px';
   tempDiv.style.top = '0';
   tempDiv.style.width = '520px';
-  tempDiv.style.zIndex = '-1';
+  tempDiv.style.visibility = 'visible';
+  tempDiv.style.opacity = '1';
   document.body.appendChild(tempDiv);
 
-  // Generate the billing summary HTML
-  tempDiv.innerHTML = generateBillingSummaryHTML({
-    finalBatchNumber,
-    batchNumber,
-    grossAmount,
-    serviceFee,
-    deductions,
-    netAmount,
-    billingMethod,
-    cashDenominations,
-    bankTransferAmounts,
-    totalPrepared,
-    verifiedClaims
-  });
-
   try {
-    // Wait a bit for rendering
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Generate the billing summary HTML
+    tempDiv.innerHTML = generateBillingSummaryHTML({
+      finalBatchNumber,
+      batchNumber,
+      grossAmount,
+      serviceFee,
+      deductions,
+      netAmount,
+      billingMethod,
+      cashDenominations,
+      bankTransferAmounts,
+      totalPrepared,
+      verifiedClaims
+    });
+
+    // Wait for DOM to settle and styles to be applied
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     const element = tempDiv.firstChild;
     if (!element) {
       throw new Error('Failed to create summary element');
     }
     
+    // Force a reflow to ensure the element is fully rendered
+    void element.offsetHeight;
+    
     const canvas = await html2canvas(element, { 
       backgroundColor: '#ffffff',
       scale: 2,
       logging: false,
       useCORS: true,
-      allowTaint: true
+      allowTaint: true,
+      windowWidth: 520,
+      windowHeight: element.scrollHeight || 800,
+      onclone: (clonedDoc) => {
+        // Ensure the cloned element is visible
+        const clonedElement = clonedDoc.querySelector('body > div');
+        if (clonedElement) {
+          clonedElement.style.display = 'block';
+          clonedElement.style.visibility = 'visible';
+          clonedElement.style.opacity = '1';
+        }
+      }
     });
     
     // Return the base64 data URL instead of downloading
@@ -120,7 +135,10 @@ async function generateBatchSummaryPNG({ html2canvas, finalBatchNumber, batchNum
     console.error('Error generating summary image:', error);
     throw error;
   } finally {
-    document.body.removeChild(tempDiv);
+    // Clean up
+    if (tempDiv && tempDiv.parentNode) {
+      document.body.removeChild(tempDiv);
+    }
   }
 }
 
@@ -382,6 +400,7 @@ export default function BatchDashboard({
       const zip = new JSZip();
 
       // Generate all summaries and add to ZIP
+      let successCount = 0;
       for (let i = 0; i < result.summaries.length; i++) {
         const summary = result.summaries[i];
         
@@ -407,6 +426,12 @@ export default function BatchDashboard({
           // Add to ZIP with a nice filename
           const filename = `${summary.final_batch_number || summary.batch_number}_${summary.name || 'summary'}.png`;
           zip.file(filename, pngData.split(',')[1], { base64: true });
+          successCount++;
+          
+          // Small delay between batches to prevent overwhelming the browser
+          if (i < result.summaries.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
           
         } catch (downloadError) {
           console.error(`Failed to generate summary for batch ${summary.final_batch_number || summary.batch_number}:`, downloadError);
@@ -414,8 +439,14 @@ export default function BatchDashboard({
         }
       }
 
+      if (successCount === 0) {
+        alert('Failed to generate any batch summaries. Please try again.');
+        setIsDownloadingAll(false);
+        return;
+      }
+
       // Generate the ZIP file
-      console.log('Creating ZIP file...');
+      console.log(`Creating ZIP file with ${successCount} summaries...`);
       const zipBlob = await zip.generateAsync({ 
         type: 'blob',
         compression: 'DEFLATE',
@@ -432,7 +463,11 @@ export default function BatchDashboard({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      alert(`Successfully downloaded ${result.summaries.length} batch summar${result.summaries.length === 1 ? 'y' : 'ies'} as ZIP file!`);
+      if (successCount < result.summaries.length) {
+        alert(`Downloaded ${successCount} of ${result.summaries.length} batch summaries. Some summaries failed to generate.`);
+      } else {
+        alert(`Successfully downloaded ${successCount} batch summar${successCount === 1 ? 'y' : 'ies'} as ZIP file!`);
+      }
     } catch (error) {
       console.error('Error downloading summaries:', error);
       alert('Failed to download summaries: ' + error.message);
