@@ -71,8 +71,8 @@ const Icon = {
   ),
 };
 
-// Helper function to download a batch summary
-async function downloadBatchSummary({ html2canvas, finalBatchNumber, batchNumber, grossAmount, serviceFee, deductions, netAmount, billingMethod, cashDenominations, bankTransferAmounts, totalPrepared, verifiedClaims }) {
+// Helper function to generate batch summary PNG and return base64 data (for ZIP)
+async function generateBatchSummaryPNG({ html2canvas, finalBatchNumber, batchNumber, grossAmount, serviceFee, deductions, netAmount, billingMethod, cashDenominations, bankTransferAmounts, totalPrepared, verifiedClaims }) {
   // Create a temporary container
   const tempDiv = document.createElement('div');
   tempDiv.style.position = 'fixed';
@@ -114,19 +114,43 @@ async function downloadBatchSummary({ html2canvas, finalBatchNumber, batchNumber
       allowTaint: true
     });
     
-    const url = canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `billing-${finalBatchNumber || batchNumber}-${Date.now()}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Return the base64 data URL instead of downloading
+    return canvas.toDataURL('image/png');
   } catch (error) {
     console.error('Error generating summary image:', error);
     throw error;
   } finally {
     document.body.removeChild(tempDiv);
+  }
+}
+
+// Helper function to download a single batch summary (for individual downloads)
+async function downloadBatchSummary({ html2canvas, finalBatchNumber, batchNumber, grossAmount, serviceFee, deductions, netAmount, billingMethod, cashDenominations, bankTransferAmounts, totalPrepared, verifiedClaims }) {
+  try {
+    const pngData = await generateBatchSummaryPNG({
+      html2canvas,
+      finalBatchNumber,
+      batchNumber,
+      grossAmount,
+      serviceFee,
+      deductions,
+      netAmount,
+      billingMethod,
+      cashDenominations,
+      bankTransferAmounts,
+      totalPrepared,
+      verifiedClaims
+    });
+    
+    const a = document.createElement('a');
+    a.href = pngData;
+    a.download = `billing-${finalBatchNumber || batchNumber}-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error('Error downloading summary:', error);
+    throw error;
   }
 }
 
@@ -348,19 +372,24 @@ export default function BatchDashboard({
         return;
       }
 
-      console.log(`Downloading ${result.summaries.length} summaries...`);
+      console.log(`Generating ${result.summaries.length} summaries for ZIP file...`);
 
-      // Import html2canvas dynamically
+      // Import required libraries
       const html2canvas = (await import('html2canvas')).default;
+      const JSZip = (await import('jszip')).default;
+      
+      // Create a new ZIP file
+      const zip = new JSZip();
 
-      // Download each summary
+      // Generate all summaries and add to ZIP
       for (let i = 0; i < result.summaries.length; i++) {
         const summary = result.summaries[i];
         
-        console.log(`Downloading summary ${i + 1}/${result.summaries.length} for batch ${summary.final_batch_number || summary.batch_number}`);
+        console.log(`Processing ${i + 1}/${result.summaries.length}: ${summary.final_batch_number || summary.batch_number}`);
         
         try {
-          await downloadBatchSummary({
+          // Generate PNG data for this batch
+          const pngData = await generateBatchSummaryPNG({
             html2canvas,
             finalBatchNumber: summary.final_batch_number,
             batchNumber: summary.batch_number,
@@ -375,17 +404,35 @@ export default function BatchDashboard({
             verifiedClaims: summary.verified_claims
           });
 
-          // Add delay between downloads to avoid browser blocking
-          if (i < result.summaries.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
+          // Add to ZIP with a nice filename
+          const filename = `${summary.final_batch_number || summary.batch_number}_${summary.name || 'summary'}.png`;
+          zip.file(filename, pngData.split(',')[1], { base64: true });
+          
         } catch (downloadError) {
-          console.error(`Failed to download summary for batch ${summary.final_batch_number || summary.batch_number}:`, downloadError);
+          console.error(`Failed to generate summary for batch ${summary.final_batch_number || summary.batch_number}:`, downloadError);
           // Continue with next batch even if one fails
         }
       }
 
-      alert(result.message);
+      // Generate the ZIP file
+      console.log('Creating ZIP file...');
+      const zipBlob = await zip.generateAsync({ 
+        type: 'blob',
+        compression: 'DEFLATE',
+        compressionOptions: { level: 6 }
+      });
+
+      // Download the ZIP file
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `batch-summaries-${Date.now()}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      alert(`Successfully downloaded ${result.summaries.length} batch summar${result.summaries.length === 1 ? 'y' : 'ies'} as ZIP file!`);
     } catch (error) {
       console.error('Error downloading summaries:', error);
       alert('Failed to download summaries: ' + error.message);

@@ -491,7 +491,7 @@ class BatchController extends Controller
                 
                 // Get verified receipts/claims
                 $verifiedReceipts = $batch->receipts()
-                    ->where('match_status', 'verified')
+                    ->where('match_status', '=', 'verified')
                     ->get()
                     ->map(function ($receipt) {
                         $ocrData = $receipt->ocr_data ?? [];
