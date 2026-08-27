@@ -73,71 +73,149 @@ const Icon = {
 
 // Helper function to generate batch summary PNG and return base64 data (for ZIP)
 async function generateBatchSummaryPNG({ html2canvas, finalBatchNumber, batchNumber, grossAmount, serviceFee, deductions, netAmount, billingMethod, cashDenominations, bankTransferAmounts, totalPrepared, verifiedClaims }) {
-  // Create a temporary container that's visible but off-screen
-  const tempDiv = document.createElement('div');
-  tempDiv.style.position = 'absolute';
-  tempDiv.style.left = '-10000px';
-  tempDiv.style.top = '0';
-  tempDiv.style.width = '520px';
-  tempDiv.style.visibility = 'visible';
-  tempDiv.style.opacity = '1';
-  document.body.appendChild(tempDiv);
+  // Create a properly structured container with real DOM elements (not innerHTML)
+  const container = document.createElement('div');
+  container.style.cssText = 'position: absolute; left: -10000px; top: 0; width: 560px;';
+  
+  // Create the card wrapper
+  const card = document.createElement('div');
+  card.style.cssText = `
+    width: 560px;
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid #dbeafe;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, sans-serif;
+    box-shadow: 0 20px 60px rgba(14,58,110,0.14);
+  `;
+  
+  // Create header
+  const header = document.createElement('div');
+  header.style.cssText = `
+    padding: 24px 28px 20px;
+    background: linear-gradient(135deg, #0f2448 0%, #0e3a6e 60%, #1e5fa8 100%);
+  `;
+  
+  const headerTitle = document.createElement('div');
+  headerTitle.style.cssText = 'font-size: 11px; font-weight: 700; color: #7dd3fc; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 6px;';
+  headerTitle.textContent = 'Billing Summary';
+  
+  const headerBatch = document.createElement('div');
+  headerBatch.style.cssText = 'font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.03em; font-family: "DM Mono", monospace;';
+  
+  // Debug: Log what we're receiving
+  console.log('Batch number debug:', { finalBatchNumber, batchNumber, displaying: finalBatchNumber || batchNumber });
+  
+  headerBatch.textContent = finalBatchNumber || batchNumber;
+  
+  const headerDate = document.createElement('div');
+  headerDate.style.cssText = 'font-size: 10px; color: #93c5fd; margin-top: 6px; font-weight: 500;';
+  headerDate.textContent = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+  
+  header.appendChild(headerTitle);
+  header.appendChild(headerBatch);
+  header.appendChild(headerDate);
+  
+  // Create financial summary section
+  const financialSection = document.createElement('div');
+  financialSection.style.cssText = 'padding: 18px 28px; border-bottom: 1px solid #dbeafe;';
+  financialSection.innerHTML = `
+    <div style="font-size: 11px; font-weight: 700; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 8px;">Financial Summary</div>
+    <div style="display: flex; justify-content: space-between; padding: 9px 0;">
+      <span style="font-size: 12px; font-weight: 500; color: #64748b;">Gross Claims Amount</span>
+      <span style="font-size: 13px; font-weight: 700; color: #0a1628; font-family: 'DM Mono', monospace;">₱${fmt(grossAmount)}</span>
+    </div>
+    <div style="height: 1px; background: #dbeafe; margin: 4px 0;"></div>
+    <div style="display: flex; justify-content: space-between; padding: 9px 0;">
+      <span style="font-size: 12px; font-weight: 500; color: #64748b;">Service Fee</span>
+      <span style="font-size: 13px; font-weight: 700; color: #ef4444; font-family: 'DM Mono', monospace;">− ₱${fmt(serviceFee)}</span>
+    </div>
+    ${deductions && deductions.length > 0 ? deductions.map(d => `
+      <div style="display: flex; justify-content: space-between; padding: 9px 0;">
+        <span style="font-size: 12px; font-weight: 500; color: #64748b;">${d.type || 'Deduction'}</span>
+        <span style="font-size: 13px; font-weight: 700; color: #f97316; font-family: 'DM Mono', monospace;">− ₱${fmt(d.amount)}</span>
+      </div>
+    `).join('') : ''}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1.5px solid #bfdbfe;">
+      <span style="font-size: 11px; font-weight: 700; color: #0f2448; text-transform: uppercase; letter-spacing: 0.1em;">Net Amount Due</span>
+      <span style="font-size: 22px; font-weight: 800; color: #1c7a48; letter-spacing: -0.03em; font-family: 'DM Mono', monospace;">₱${fmt(netAmount)}</span>
+    </div>
+  `;
+  
+  // Create billing section (simplified)
+  const billingSection = document.createElement('div');
+  billingSection.style.cssText = 'padding: 18px 28px; border-bottom: 1px solid #dbeafe;';
+  
+  let billingHTML = '<div style="font-size: 11px; font-weight: 700; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 14px;">Fund Allocation</div>';
+  
+  if (billingMethod !== 'bank' && cashDenominations && Object.keys(cashDenominations).length > 0) {
+    const cashTotal = Object.entries(cashDenominations).reduce((sum, [key, count]) => {
+      const val = key.startsWith('c') ? Number(key.slice(1)) : Number(key);
+      return sum + val * (count || 0);
+    }, 0);
+    billingHTML += `<div style="padding: 14px 18px; border-radius: 12px; background: #eff6ff; border: 1px solid #bfdbfe;">
+      <div style="font-size: 11px; font-weight: 700; color: #1e5fa8; margin-bottom: 8px;">Cash: ₱${fmt(cashTotal)}</div>
+    </div>`;
+  }
+  
+  if (billingMethod !== 'cash') {
+    const bankTotal = Array.isArray(bankTransferAmounts) ? bankTransferAmounts.reduce((s, v) => s + Number(v || 0), 0) : Number(bankTransferAmounts || 0);
+    if (bankTotal > 0) {
+      billingHTML += `<div style="padding: 14px 18px; border-radius: 12px; background: linear-gradient(135deg, #0f2448 0%, #0e3a6e 100%); border: 1px solid #1e5fa8; margin-top: 8px;">
+        <div style="font-size: 11px; font-weight: 700; color: #7dd3fc; margin-bottom: 4px;">Bank Transfer</div>
+        <div style="font-size: 15px; font-weight: 800; color: #ffffff; font-family: 'DM Mono', monospace;">₱${fmt(bankTotal)}</div>
+      </div>`;
+    }
+  }
+  
+  billingSection.innerHTML = billingHTML;
+  
+  // Create claims section
+  const claimsSection = document.createElement('div');
+  claimsSection.style.cssText = 'padding: 14px 28px; border-bottom: 1px solid #dbeafe;';
+  claimsSection.innerHTML = `
+    <div style="font-size: 11px; font-weight: 700; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 6px;">Verified Claims</div>
+    <div style="font-size: 13px; font-weight: 800; color: #0f2448;">${verifiedClaims?.length || 0} ${(verifiedClaims?.length || 0) === 1 ? 'Claim' : 'Claims'}</div>
+  `;
+  
+  // Create footer
+  const footer = document.createElement('div');
+  footer.style.cssText = 'padding: 12px 28px; background: #f0f9ff; font-size: 10px; font-weight: 600; color: #93c5fd; text-align: center;';
+  footer.textContent = `Generated ${new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+  
+  // Assemble the card
+  card.appendChild(header);
+  card.appendChild(financialSection);
+  card.appendChild(billingSection);
+  card.appendChild(claimsSection);
+  card.appendChild(footer);
+  container.appendChild(card);
+  document.body.appendChild(container);
 
   try {
-    // Generate the billing summary HTML
-    tempDiv.innerHTML = generateBillingSummaryHTML({
-      finalBatchNumber,
-      batchNumber,
-      grossAmount,
-      serviceFee,
-      deductions,
-      netAmount,
-      billingMethod,
-      cashDenominations,
-      bankTransferAmounts,
-      totalPrepared,
-      verifiedClaims
-    });
-
-    // Wait for DOM to settle and styles to be applied
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Wait for DOM to render
+    await new Promise(resolve => setTimeout(resolve, 100));
     
-    const element = tempDiv.firstChild;
-    if (!element) {
-      throw new Error('Failed to create summary element');
-    }
-    
-    // Force a reflow to ensure the element is fully rendered
-    void element.offsetHeight;
-    
-    const canvas = await html2canvas(element, { 
+    // Capture with html2canvas
+    const canvas = await html2canvas(card, { 
       backgroundColor: '#ffffff',
       scale: 2,
       logging: false,
       useCORS: true,
-      allowTaint: true,
-      windowWidth: 520,
-      windowHeight: element.scrollHeight || 800,
-      onclone: (clonedDoc) => {
-        // Ensure the cloned element is visible
-        const clonedElement = clonedDoc.querySelector('body > div');
-        if (clonedElement) {
-          clonedElement.style.display = 'block';
-          clonedElement.style.visibility = 'visible';
-          clonedElement.style.opacity = '1';
-        }
-      }
+      allowTaint: false,
+      width: 560,
+      height: card.scrollHeight,
     });
     
-    // Return the base64 data URL instead of downloading
-    return canvas.toDataURL('image/png');
+    // Return the base64 data URL
+    return canvas.toDataURL('image/png', 0.92);
   } catch (error) {
     console.error('Error generating summary image:', error);
     throw error;
   } finally {
     // Clean up
-    if (tempDiv && tempDiv.parentNode) {
-      document.body.removeChild(tempDiv);
+    if (container && container.parentNode) {
+      document.body.removeChild(container);
     }
   }
 }
