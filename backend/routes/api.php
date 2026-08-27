@@ -50,6 +50,7 @@ Route::prefix('batches')->group(function () {
     Route::get('/', [BatchController::class, 'index']);
     Route::post('/', [BatchController::class, 'store']);
     Route::post('/bulk-download-summaries', [BatchController::class, 'bulkDownloadSummaries']);
+    Route::post('/bulk-delete', [BatchController::class, 'bulkDestroy']);
     Route::get('/{batch}', [BatchController::class, 'show']);
     Route::patch('/{batch}', [BatchController::class, 'update']);
     Route::patch('/{batch}/status', [BatchController::class, 'updateStatus']);

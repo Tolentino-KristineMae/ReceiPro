@@ -263,15 +263,30 @@ export default function BatchDashboard({
   const handleBulkDelete = async () => {
     setIsBulkDeleting(true);
     try {
-      for (const id of selectedBatchIds) {
-        const fakeEvent = { stopPropagation: () => {} };
-        await handleDeleteBatch(fakeEvent, id, true);
+      const response = await fetch(getApiUrl('/api/batches/bulk-delete'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batch_ids: Array.from(selectedBatchIds) })
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Refresh batches list
+        await fetchBatches(true);
+        
+        // Clear selection
+        setSelectedBatchIds(new Set());
+        setShowBulkDeleteModal(false);
+        
+        // Show success message
+        console.log(result.message);
+      } else {
+        throw new Error(result.message || 'Failed to delete batches');
       }
-      await fetchBatches(true);
-      setSelectedBatchIds(new Set());
-      setShowBulkDeleteModal(false);
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      alert(`Failed to delete batches: ${error.message}`);
     } finally {
       setIsBulkDeleting(false);
     }

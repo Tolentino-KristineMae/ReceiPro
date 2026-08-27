@@ -308,6 +308,93 @@ class BatchController extends Controller
         return response()->json(['message' => 'Deleted and batches re-sequenced']);
     }
 
+    /** Bulk delete batches - deletes multiple batches efficiently */
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'batch_ids' => 'required|array|min:1',
+            'batch_ids.*' => 'required|integer|exists:batches,id'
+        ]);
+
+        $batchIds = $validated['batch_ids'];
+
+        try {
+            DB::beginTransaction();
+
+            // Get all batches to delete
+            $batches = Batch::whereIn('id', $batchIds)->get();
+            
+            if ($batches->isEmpty()) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'No batches found',
+                    'success' => false
+                ], 404);
+            }
+
+            $deletedCount = 0;
+
+            foreach ($batches as $batch) {
+                // Delete receipts for each batch
+                $receiptsDeleted = $batch->receipts()->delete();
+                
+                // Delete the batch
+                $batch->delete();
+                $deletedCount++;
+
+                \Log::info("Deleted batch {$batch->id} with {$receiptsDeleted} receipts");
+            }
+
+            // Re-sequence final_batch_numbers for remaining finalized batches
+            $finalizedBatches = Batch::whereNotNull('final_batch_number')
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            foreach ($finalizedBatches as $index => $b) {
+                $newNumber = 'B-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT);
+                if ($b->final_batch_number !== $newNumber) {
+                    $b->update(['final_batch_number' => $newNumber]);
+                }
+            }
+
+            // Re-sequence display names for non-finalized batches
+            $openBatches = Batch::whereNull('final_batch_number')
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            foreach ($openBatches as $index => $b) {
+                if (preg_match('/^Batch #\d+$/', $b->name)) {
+                    $newName = 'Batch #' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+                    if ($b->name !== $newName) {
+                        $b->update(['name' => $newName]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => "Successfully deleted {$deletedCount} batch" . ($deletedCount === 1 ? '' : 'es'),
+                'success' => true,
+                'deleted_count' => $deletedCount
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Failed to bulk delete batches', [
+                'batch_ids' => $batchIds,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to delete batches',
+                'error' => $e->getMessage(),
+                'success' => false
+            ], 500);
+        }
+    }
+
     /** Reset a batch — clears all checker progress, unlinking transactions and resetting receipt statuses */
     public function reset(Batch $batch)
     {
@@ -369,6 +456,105 @@ class BatchController extends Controller
                 $query->orderBy('created_at', 'asc');
             }])),
         ]);
+    }
+
+    /** Bulk download batch summaries - returns batch data for multiple batches */
+    public function bulkDownloadSummaries(Request $request)
+    {
+        $validated = $request->validate([
+            'batch_ids' => 'required|array|min:1',
+            'batch_ids.*' => 'required|integer|exists:batches,id'
+        ]);
+
+        $batchIds = $validated['batch_ids'];
+
+        try {
+            $batches = Batch::whereIn('id', $batchIds)
+                ->where('checker_status', 'billing_ready')
+                ->whereNotNull('summary_data')
+                ->with(['receipts' => function ($query) {
+                    $query->orderBy('created_at', 'asc');
+                }])
+                ->get();
+
+            if ($batches->isEmpty()) {
+                return response()->json([
+                    'message' => 'No batches found with billing summaries ready',
+                    'success' => false
+                ], 404);
+            }
+
+            // Prepare summary data for each batch
+            $summaries = $batches->map(function ($batch) {
+                $sd = $batch->summary_data ?? [];
+                $bd = $batch->billing_data ?? [];
+                
+                // Get verified receipts/claims
+                $verifiedReceipts = $batch->receipts()
+                    ->where('match_status', 'verified')
+                    ->get()
+                    ->map(function ($receipt) {
+                        $ocrData = $receipt->ocr_data ?? [];
+                        return [
+                            'id' => $receipt->id,
+                            'amount' => $ocrData['amount'] ?? 0,
+                            'reference' => $ocrData['reference'] ?? 'N/A',
+                            'date' => $ocrData['date'] ?? null,
+                            'account_holder' => $receipt->account_holder,
+                        ];
+                    });
+
+                // Calculate fallbacks if summary_data is incomplete
+                $grossFallback = $verifiedReceipts->sum('amount');
+                $feeFallback = floor($grossFallback / 1000) * 10;
+                $deductions = $sd['deductions'] ?? [];
+                $totalDeductions = collect($deductions)->sum('amount');
+                $netFallback = $grossFallback - $feeFallback - $totalDeductions;
+
+                return [
+                    'batch_id' => $batch->id,
+                    'batch_number' => $batch->batch_number,
+                    'final_batch_number' => $batch->final_batch_number,
+                    'name' => $batch->name,
+                    'financial' => [
+                        'gross_amount' => $sd['gross_amount'] ?? $grossFallback,
+                        'service_fee' => $sd['service_fee'] ?? $feeFallback,
+                        'deductions' => $deductions,
+                        'total_deductions' => $totalDeductions,
+                        'net_amount' => $sd['net_amount'] ?? $netFallback,
+                    ],
+                    'billing' => [
+                        'method' => $bd['method'] ?? 'both',
+                        'cash_denominations' => $bd['cash_denominations'] ?? [],
+                        'bank_transfer_amounts' => is_array($bd['bank_transfer_amount'] ?? null) 
+                            ? $bd['bank_transfer_amount'] 
+                            : (isset($bd['bank_transfer_amount']) ? [$bd['bank_transfer_amount']] : []),
+                        'total_prepared' => $bd['total_prepared'] ?? ($sd['net_amount'] ?? $netFallback),
+                    ],
+                    'verified_claims' => $verifiedReceipts,
+                    'created_at' => $batch->created_at,
+                ];
+            });
+
+            return response()->json([
+                'message' => "Successfully retrieved {$batches->count()} batch summar" . ($batches->count() === 1 ? 'y' : 'ies'),
+                'success' => true,
+                'count' => $batches->count(),
+                'summaries' => $summaries,
+            ], 200);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to bulk download batch summaries', [
+                'batch_ids' => $batchIds,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to retrieve batch summaries',
+                'error' => $e->getMessage(),
+                'success' => false
+            ], 500);
+        }
     }
 
     /** Run verification check and match with transactions using existing OCR data */

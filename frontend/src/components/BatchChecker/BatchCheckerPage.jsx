@@ -243,13 +243,22 @@ export default function BatchCheckerPage() {
     e.stopPropagation();
     if (!skipConfirm && !window.confirm('Delete this batch?')) return;
     try {
-      await fetch(getApiUrl(`/api/batches/${id}`), { method: 'DELETE' });
-      setBatches(prev => prev.filter(b => b.id !== id));
-      if (String(selectedBatch?.id) === String(id)) {
-        navigate('/batch');
-        setSelectedBatch(null);
+      const response = await fetch(getApiUrl(`/api/batches/${id}`), { method: 'DELETE' });
+      const result = await response.json();
+      
+      if (response.ok) {
+        setBatches(prev => prev.filter(b => b.id !== id));
+        if (String(selectedBatch?.id) === String(id)) {
+          navigate('/batch');
+          setSelectedBatch(null);
+        }
+      } else {
+        throw new Error(result.message || 'Failed to delete batch');
       }
-    } catch (e) { console.error(e); }
+    } catch (error) {
+      console.error('Delete batch error:', error);
+      alert(`Failed to delete batch: ${error.message}`);
+    }
   };
 
   const handleDeleteReceipt = async (receiptId) => {
