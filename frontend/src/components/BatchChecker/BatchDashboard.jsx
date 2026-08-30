@@ -363,9 +363,29 @@ export default function BatchDashboard({
   handleUpdateBatchName,
   error,
   navigate,
-  fetchBatches
+  fetchBatches,
+  nextBatchNumber: nextBatchNumberProp
 }) {
-  const nextBatchNumber = batches.length + 1;
+  // Use backend-calculated next batch number if available, otherwise calculate from visible batches
+  const calculateNextBatchNumber = () => {
+    // If backend provided next batch number, use it
+    if (nextBatchNumberProp) return nextBatchNumberProp;
+    
+    // Otherwise scan visible batches
+    let highest = 0;
+    batches.forEach(batch => {
+      const match = batch.name?.match(/Batch #(\d+)/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > highest) highest = num;
+      }
+    });
+    
+    const totalBatches = dashboard?.total_batches || batches.length;
+    return Math.max(highest, totalBatches) + 1;
+  };
+  
+  const nextBatchNumber = calculateNextBatchNumber();
   const autoBatchName = `Batch #${String(nextBatchNumber).padStart(3, '0')}`;
   
   const [customBatchName, setCustomBatchName] = React.useState('');

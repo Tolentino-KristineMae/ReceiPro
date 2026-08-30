@@ -43,6 +43,19 @@ class BatchController extends Controller
         $allBatches = Batch::orderBy('created_at', 'desc')->get();
         $dashboard = $this->statsService->dashboardSummary($allBatches);
         
+        // Calculate the next batch number by finding highest "Batch #XXX" number
+        $highestBatchNumber = 0;
+        foreach ($allBatches as $batch) {
+            if (preg_match('/Batch #(\d+)/i', $batch->name, $matches)) {
+                $num = intval($matches[1]);
+                if ($num > $highestBatchNumber) {
+                    $highestBatchNumber = $num;
+                }
+            }
+        }
+        // Use the higher of: extracted batch number or total count
+        $nextBatchNumber = max($highestBatchNumber, $allBatches->count()) + 1;
+        
         // For the list, paginate and include receipts
         $batches = Batch::with(['receipts' => function ($query) {
             $query->orderBy('created_at', 'asc')->with('transaction');
@@ -55,6 +68,7 @@ class BatchController extends Controller
         return response()->json([
             'batches'   => $enriched,
             'dashboard' => $dashboard,
+            'next_batch_number' => $nextBatchNumber,
             'pagination' => [
                 'current_page' => $batches->currentPage(),
                 'per_page' => $batches->perPage(),

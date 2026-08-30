@@ -13,6 +13,7 @@ export default function BatchCheckerPage() {
   const navigate = useNavigate();
   const [batches, setBatches] = useState([]);
   const [dashboard, setDashboard] = useState(null);
+  const [nextBatchNumber, setNextBatchNumber] = useState(null);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingBatch, setLoadingBatch] = useState(false);
@@ -95,6 +96,7 @@ export default function BatchCheckerPage() {
       const data = await res.json();
       setBatches(Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []));
       if (data?.dashboard) setDashboard(data.dashboard);
+      if (data?.next_batch_number) setNextBatchNumber(data.next_batch_number);
       // Store pagination info if needed for "Load More" feature later
       if (data?.pagination) {
         console.log(`Loaded ${data.pagination.to} of ${data.pagination.total} batches`);
@@ -441,6 +443,7 @@ export default function BatchCheckerPage() {
         <BatchDashboard
           batches={batches}
           dashboard={dashboard}
+          nextBatchNumber={nextBatchNumber}
           fileCount={fileCount}
           setFileCount={setFileCount}
           fileInputRef={fileInputRef}
