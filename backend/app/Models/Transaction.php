@@ -37,6 +37,12 @@ class Transaction extends Model
         'transaction_date' => 'date',
     ];
 
+    protected $attributes = [
+        'opening_balance' => 0,
+        'running_balance' => 0,
+        'fee' => 0,
+    ];
+
     protected static function booted()
     {
         static::saving(function ($transaction) {
@@ -45,33 +51,35 @@ class Transaction extends Model
             $transaction->denominations = self::suggestDenominations($transaction->amount);
 
             // running_balance = opening_balance ± amount (credit adds, debit subtracts)
+            // Default opening_balance to 0 if null
+            $openingBalance = $transaction->opening_balance ?? 0;
             $signed = $transaction->entry_type === 'debit'
                 ? -abs($transaction->amount)
                 : abs($transaction->amount);
-            $transaction->running_balance = $transaction->opening_balance + $signed;
+            $transaction->running_balance = $openingBalance + $signed;
         });
     }
 
     public static function suggestDenominations($amount): array
     {
         $denominations = [];
-        $remaining = $amount;
+        $remaining = (float) ($amount ?? 0);
 
         if ($remaining >= 1000) {
             $count = floor($remaining / 1000);
-            $denominations['1000'] = $count;
+            $denominations['1000'] = (int) $count;
             $remaining -= $count * 1000;
         }
 
         if ($remaining >= 500) {
             $count = floor($remaining / 500);
-            $denominations['500'] = $count;
+            $denominations['500'] = (int) $count;
             $remaining -= $count * 500;
         }
 
         if ($remaining >= 100) {
             $count = floor($remaining / 100);
-            $denominations['100'] = $count;
+            $denominations['100'] = (int) $count;
         }
 
         return $denominations;

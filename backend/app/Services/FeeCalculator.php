@@ -9,6 +9,9 @@ class FeeCalculator
      */
     public static function calculate($amount): float
     {
+        // Handle null or invalid amounts
+        $amount = (float) ($amount ?? 0);
+        
         if ($amount < 500) {
             return 5.00;
         } elseif ($amount < 1500) {
