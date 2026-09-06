@@ -18,6 +18,17 @@ Route::get('/test-db', function () {
     }
 });
 
+// Run migrations (for deployment only - remove after first run)
+Route::get('/run-migrations', function () {
+    try {
+        \Artisan::call('migrate', ['--force' => true]);
+        $output = \Artisan::output();
+        return response()->json(['status' => 'success', 'output' => $output]);
+    } catch (\Exception $e) {
+        return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+    }
+});
+
 // Test env vars
 Route::get('/test-env', function () {
     return response()->json([
