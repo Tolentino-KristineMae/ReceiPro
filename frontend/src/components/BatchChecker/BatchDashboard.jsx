@@ -575,12 +575,14 @@ export default function BatchDashboard({
     }
   };
 
-  // Update custom name if it's empty or when batches change (if not manually editing)
+  // Update custom name to auto name only when it's truly empty and not being edited
+  // Once user starts editing, preserve their custom name
   React.useEffect(() => {
-    if (!customBatchName || !isEditingName) {
+    // Only auto-update if the field is empty AND user hasn't started editing
+    if (!customBatchName && !isEditingName) {
       setCustomBatchName(autoBatchName);
     }
-  }, [batches, autoBatchName]);
+  }, [autoBatchName, customBatchName, isEditingName]);
 
   const displayBatchName = customBatchName || autoBatchName;
 
