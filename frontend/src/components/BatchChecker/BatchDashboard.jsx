@@ -420,33 +420,45 @@ export default function BatchDashboard({
     setIsBulkDeleting(true);
     try {
       const idsArray = Array.from(selectedBatchIds);
+      
       const response = await fetch(getApiUrl('/api/batches/bulk-delete'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ batch_ids: idsArray })
       });
 
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.message || `Server returned ${response.status}`);
+      }
+
       const result = await response.json();
 
-      if (response.ok && result.success) {
-        // Optimistic local filter — no expensive server round-trip needed
+      if (result.success) {
+        // Optimistic local filter — remove deleted batches from state
         const removeSet = new Set(idsArray);
         if (typeof setBatches === 'function') {
           setBatches(prev => prev.filter(b => !removeSet.has(b.id)));
         } else {
+          // Fallback to full refresh if setBatches is not available
           await fetchBatches(true);
         }
         
+        // Clear selection and close modal
         setSelectedBatchIds(new Set());
         setShowBulkDeleteModal(false);
         
-        console.log(result.message);
+        console.log('✓', result.message);
       } else {
         throw new Error(result.message || 'Failed to delete batches');
       }
     } catch (error) {
       console.error('Bulk delete error:', error);
       alert(`Failed to delete batches: ${error.message}`);
+      // Optionally refetch to ensure UI is in sync
+      if (typeof fetchBatches === 'function') {
+        await fetchBatches(true);
+      }
     } finally {
       setIsBulkDeleting(false);
     }

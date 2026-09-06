@@ -92,15 +92,33 @@ export default function BatchDetail({
     setIsBulkDeleting(true);
     try {
       const ids = [...selectedIds];
+      
       if (handleBulkDeleteReceipts) {
+        // Use the provided bulk delete handler
         await handleBulkDeleteReceipts(ids);
+        setSelectedIds(new Set());
+        setShowBulkDeleteModal(false);
+        console.log('✓ Receipts deleted successfully');
+      } else if (handleDeleteReceipt) {
+        // Fallback: delete one by one
+        const results = await Promise.allSettled(
+          ids.map(id => handleDeleteReceipt(id))
+        );
+        
+        const failed = results.filter(r => r.status === 'rejected');
+        if (failed.length > 0) {
+          throw new Error(`${failed.length} receipt(s) could not be deleted`);
+        }
+        
+        setSelectedIds(new Set());
+        setShowBulkDeleteModal(false);
+        console.log('✓ All receipts deleted successfully');
       } else {
-        await Promise.all(ids.map(id => handleDeleteReceipt(id)));
+        throw new Error('No delete handler available');
       }
-      setSelectedIds(new Set());
-      setShowBulkDeleteModal(false);
-    } catch (e) {
-      alert('Some receipts could not be deleted.');
+    } catch (error) {
+      console.error('Bulk delete receipts error:', error);
+      alert(`Error: ${error.message}`);
     } finally {
       setIsBulkDeleting(false);
     }

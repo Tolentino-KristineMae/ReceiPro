@@ -249,22 +249,39 @@ export default function BatchCheckerPage() {
   const handleDeleteBatch = async (e, id, skipConfirm = false) => {
     e.stopPropagation();
     if (!skipConfirm && !window.confirm('Delete this batch?')) return;
+    
     try {
-      const response = await fetch(getApiUrl(`/api/batches/${id}`), { method: 'DELETE' });
+      const response = await fetch(getApiUrl(`/api/batches/${id}`), { 
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.message || `Server returned ${response.status}`);
+      }
+      
       const result = await response.json();
       
-      if (response.ok) {
+      if (result.success || response.ok) {
+        // Optimistically remove from state
         setBatches(prev => prev.filter(b => b.id !== id));
+        
+        // If viewing the deleted batch, redirect
         if (String(selectedBatch?.id) === String(id)) {
           navigate('/batch');
           setSelectedBatch(null);
         }
+        
+        console.log('✓ Batch deleted successfully');
       } else {
         throw new Error(result.message || 'Failed to delete batch');
       }
     } catch (error) {
       console.error('Delete batch error:', error);
       alert(`Failed to delete batch: ${error.message}`);
+      // Optionally refetch to ensure UI is in sync
+      await fetchBatches(true);
     }
   };
 

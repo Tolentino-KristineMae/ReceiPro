@@ -307,14 +307,56 @@ class BatchController extends Controller
 
     public function destroy(Batch $batch)
     {
-        // Delete all associated receipts first
-        $batch->receipts()->delete();
-        
-        $batch->delete();
+        try {
+            DB::beginTransaction();
 
-        $this->resequenceAllBatches();
+            // Get all receipts with their image paths before deletion
+            $receipts = $batch->receipts()->get();
+            
+            // Unlink any transactions associated with this batch
+            Transaction::where('batch_id', $batch->id)
+                ->update(['batch_id' => null, 'status' => 'pending']);
 
-        return response()->json(['message' => 'Deleted and batches re-sequenced']);
+            // Delete uploaded images from storage
+            foreach ($receipts as $receipt) {
+                if ($receipt->image) {
+                    Storage::disk('public')->delete($receipt->image);
+                }
+                if ($receipt->cropped_image) {
+                    Storage::disk('public')->delete($receipt->cropped_image);
+                }
+            }
+
+            // Delete all associated receipts
+            $batch->receipts()->delete();
+            
+            // Delete the batch itself
+            $batch->delete();
+
+            // Re-sequence remaining batches
+            $this->resequenceAllBatches();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Batch deleted successfully',
+                'success' => true
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Failed to delete batch', [
+                'batch_id' => $batch->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to delete batch',
+                'error' => $e->getMessage(),
+                'success' => false
+            ], 500);
+        }
     }
 
     /** Bulk delete batches - deletes multiple batches efficiently */
@@ -330,6 +372,7 @@ class BatchController extends Controller
         try {
             DB::beginTransaction();
 
+            // Verify all batches exist
             $foundCount = Batch::whereIn('id', $batchIds)->count();
             if ($foundCount !== count($batchIds)) {
                 DB::rollBack();
@@ -339,12 +382,30 @@ class BatchController extends Controller
                 ], 404);
             }
 
-            // Delete all receipts for all targeted batches in ONE query
+            // Get all receipts with image paths before deletion
+            $receipts = Receipt::whereIn('batch_id', $batchIds)->get();
+            
+            // Unlink any transactions associated with these batches
+            Transaction::whereIn('batch_id', $batchIds)
+                ->update(['batch_id' => null, 'status' => 'pending']);
+
+            // Delete uploaded images from storage
+            foreach ($receipts as $receipt) {
+                if ($receipt->image) {
+                    Storage::disk('public')->delete($receipt->image);
+                }
+                if ($receipt->cropped_image) {
+                    Storage::disk('public')->delete($receipt->cropped_image);
+                }
+            }
+
+            // Delete all receipts for all targeted batches
             Receipt::whereIn('batch_id', $batchIds)->delete();
 
-            // Delete all target batches in ONE query
+            // Delete all target batches
             $deletedCount = Batch::whereIn('id', $batchIds)->delete();
 
+            // Re-sequence remaining batches
             $this->resequenceAllBatches();
 
             DB::commit();
