@@ -17,13 +17,13 @@ services:
       - key: DB_CONNECTION
         value: pgsql
       - key: DB_HOST
-        value: aws-1-ap-southeast-2.pooler.supabase.com
+        value: aws-0-ap-southeast-1.pooler.supabase.com
       - key: DB_PORT
         value: 6543
       - key: DB_DATABASE
         value: postgres
       - key: DB_USERNAME
-        value: postgres.lwdtqukafwqkxexvmcnp
+        value: postgres.hncbkbunwokxrmqufylc
       - key: DB_PASSWORD
         sync: false
       - key: APP_KEY
