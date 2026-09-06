@@ -49,6 +49,7 @@ export default function BatchDetail({
   filteredReceipts, 
   handleDeleteBatch, 
   handleDeleteReceipt,
+  handleBulkDeleteReceipts,
   handleResetBatch,
   handleAddUpload,
   handleRunExtraction,
@@ -90,7 +91,12 @@ export default function BatchDetail({
   const handleBulkDelete = async () => {
     setIsBulkDeleting(true);
     try {
-      await Promise.all([...selectedIds].map(id => handleDeleteReceipt(id)));
+      const ids = [...selectedIds];
+      if (handleBulkDeleteReceipts) {
+        await handleBulkDeleteReceipts(ids);
+      } else {
+        await Promise.all(ids.map(id => handleDeleteReceipt(id)));
+      }
       setSelectedIds(new Set());
       setShowBulkDeleteModal(false);
     } catch (e) {

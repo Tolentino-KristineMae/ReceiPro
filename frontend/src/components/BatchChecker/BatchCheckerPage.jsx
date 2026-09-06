@@ -286,6 +286,32 @@ export default function BatchCheckerPage() {
     }
   };
 
+  const handleBulkDeleteReceipts = async (receiptIds) => {
+    if (!Array.isArray(receiptIds) || receiptIds.length === 0) return 0;
+    try {
+      const res = await fetch(getApiUrl('/api/receipts/bulk-delete'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: receiptIds })
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        const idSet = new Set(receiptIds);
+        setSelectedBatch(prev => {
+          if (!prev) return prev;
+          const updated = { ...prev, receipts: (prev.receipts || []).filter(r => !idSet.has(r.id)) };
+          setBatches(bs => bs.map(b => b.id === updated.id ? updated : b));
+          return updated;
+        });
+        return result.deleted_count ?? receiptIds.length;
+      }
+      throw new Error(result.message || 'Failed to bulk delete receipts');
+    } catch (e) {
+      console.error('Failed to bulk delete receipts:', e);
+      throw e;
+    }
+  };
+
   const handleResetBatch = async () => {
     if (!selectedBatch) return;
     if (!window.confirm('Reset this batch? This will unlink all claimed transactions, clear all receipt OCR data, and reset the batch back to its initial state. This cannot be undone.')) return;
@@ -463,6 +489,7 @@ export default function BatchCheckerPage() {
           filteredReceipts={filteredReceipts}
           handleDeleteBatch={handleDeleteBatch}
           handleDeleteReceipt={handleDeleteReceipt}
+          handleBulkDeleteReceipts={handleBulkDeleteReceipts}
           handleResetBatch={handleResetBatch}
           handleAddUpload={handleAddUpload}
           handleRunExtraction={handleRunExtraction}

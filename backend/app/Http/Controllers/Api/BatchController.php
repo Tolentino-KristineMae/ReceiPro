@@ -311,32 +311,7 @@ class BatchController extends Controller
         
         $batch->delete();
 
-        // 1. Re-sequence final_batch_number for all remaining finalized batches
-        $finalizedBatches = Batch::whereNotNull('final_batch_number')
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        foreach ($finalizedBatches as $index => $b) {
-            $newNumber = 'B-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT);
-            if ($b->final_batch_number !== $newNumber) {
-                $b->update(['final_batch_number' => $newNumber]);
-            }
-        }
-
-        // 2. Re-sequence display names for non-finalized batches that follow the "Batch #XXX" pattern
-        $openBatches = Batch::whereNull('final_batch_number')
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        foreach ($openBatches as $index => $b) {
-            // Only update if the name follows the "Batch #XXX" pattern
-            if (preg_match('/^Batch #\d+$/', $b->name)) {
-                $newName = 'Batch #' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
-                if ($b->name !== $newName) {
-                    $b->update(['name' => $newName]);
-                }
-            }
-        }
+        $this->resequenceAllBatches();
 
         return response()->json(['message' => 'Deleted and batches re-sequenced']);
     }
@@ -346,63 +321,30 @@ class BatchController extends Controller
     {
         $validated = $request->validate([
             'batch_ids' => 'required|array|min:1',
-            'batch_ids.*' => 'required|integer|exists:batches,id'
+            'batch_ids.*' => 'required|integer'
         ]);
 
-        $batchIds = $validated['batch_ids'];
+        $batchIds = array_values(array_unique($validated['batch_ids']));
 
         try {
             DB::beginTransaction();
 
-            // Get all batches to delete
-            $batches = Batch::whereIn('id', $batchIds)->get();
-            
-            if ($batches->isEmpty()) {
+            $foundCount = Batch::whereIn('id', $batchIds)->count();
+            if ($foundCount !== count($batchIds)) {
                 DB::rollBack();
                 return response()->json([
-                    'message' => 'No batches found',
+                    'message' => 'Some batch IDs do not exist',
                     'success' => false
                 ], 404);
             }
 
-            $deletedCount = 0;
+            // Delete all receipts for all targeted batches in ONE query
+            Receipt::whereIn('batch_id', $batchIds)->delete();
 
-            foreach ($batches as $batch) {
-                // Delete receipts for each batch
-                $receiptsDeleted = $batch->receipts()->delete();
-                
-                // Delete the batch
-                $batch->delete();
-                $deletedCount++;
+            // Delete all target batches in ONE query
+            $deletedCount = Batch::whereIn('id', $batchIds)->delete();
 
-                \Log::info("Deleted batch {$batch->id} with {$receiptsDeleted} receipts");
-            }
-
-            // Re-sequence final_batch_numbers for remaining finalized batches
-            $finalizedBatches = Batch::whereNotNull('final_batch_number')
-                ->orderBy('created_at', 'asc')
-                ->get();
-
-            foreach ($finalizedBatches as $index => $b) {
-                $newNumber = 'B-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT);
-                if ($b->final_batch_number !== $newNumber) {
-                    $b->update(['final_batch_number' => $newNumber]);
-                }
-            }
-
-            // Re-sequence display names for non-finalized batches
-            $openBatches = Batch::whereNull('final_batch_number')
-                ->orderBy('created_at', 'asc')
-                ->get();
-
-            foreach ($openBatches as $index => $b) {
-                if (preg_match('/^Batch #\d+$/', $b->name)) {
-                    $newName = 'Batch #' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
-                    if ($b->name !== $newName) {
-                        $b->update(['name' => $newName]);
-                    }
-                }
-            }
+            $this->resequenceAllBatches();
 
             DB::commit();
 
@@ -426,6 +368,39 @@ class BatchController extends Controller
                 'success' => false
             ], 500);
         }
+    }
+
+    /**
+     * Re-sequence finalized batch numbers and open batch display names
+     * using TWO single UPDATE queries (with window functions) instead of
+     * O(N) individual row updates.
+     */
+    private function resequenceAllBatches(): void
+    {
+        // 1. Finalized batches: set final_batch_number = B-XXXX by created_at order
+        DB::statement("
+            UPDATE batches AS t
+            JOIN (
+                SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS rn
+                FROM batches
+                WHERE final_batch_number IS NOT NULL
+            ) AS r ON t.id = r.id
+            SET t.final_batch_number = CONCAT('B-', LPAD(r.rn, 4, '0'))
+            WHERE t.final_batch_number <> CONCAT('B-', LPAD(r.rn, 4, '0'))
+        ");
+
+        // 2. Open batches matching "Batch #XXX": rename by created_at order
+        DB::statement("
+            UPDATE batches AS t
+            JOIN (
+                SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS rn
+                FROM batches
+                WHERE final_batch_number IS NULL
+                  AND name REGEXP '^Batch #[0-9]+$'
+            ) AS r ON t.id = r.id
+            SET t.name = CONCAT('Batch #', LPAD(r.rn, 3, '0'))
+            WHERE t.name <> CONCAT('Batch #', LPAD(r.rn, 3, '0'))
+        ");
     }
 
     /** Reset a batch — clears all checker progress, unlinking transactions and resetting receipt statuses */
@@ -472,16 +447,7 @@ class BatchController extends Controller
             ]);
         });
 
-        // Re-sequence final_batch_numbers for remaining finalized batches
-        $finalizedBatches = Batch::whereNotNull('final_batch_number')
-            ->orderBy('created_at', 'asc')
-            ->get();
-        foreach ($finalizedBatches as $index => $b) {
-            $newNumber = 'B-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT);
-            if ($b->final_batch_number !== $newNumber) {
-                $b->update(['final_batch_number' => $newNumber]);
-            }
-        }
+        $this->resequenceAllBatches();
 
         return response()->json([
             'message' => 'Batch reset successfully',

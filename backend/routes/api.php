@@ -65,6 +65,7 @@ Route::prefix('batches')->group(function () {
 Route::prefix('receipts')->group(function () {
     Route::post('/upload', [ReceiptController::class, 'upload']);
     Route::post('/bulk-update-category', [ReceiptController::class, 'bulkUpdateCategory']);
+    Route::post('/bulk-delete', [ReceiptController::class, 'bulkDestroy']);
     Route::get('/', [ReceiptController::class, 'index']);
     Route::get('/{receipt}/image', [ReceiptController::class, 'serveImage'])->name('receipts.image');
     Route::patch('/{receipt}', [ReceiptController::class, 'updateCategory'])->name('receipts.update-category');

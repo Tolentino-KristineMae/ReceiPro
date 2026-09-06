@@ -198,19 +198,26 @@ class TransactionController extends Controller
     {
         $validated = $request->validate([
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required|integer|exists:transactions,id'
+            'ids.*' => 'required|integer'
         ]);
 
-        $ids = $validated['ids'];
+        $ids = array_values(array_unique($validated['ids']));
 
         try {
             DB::beginTransaction();
 
             try {
-                // Delete all transactions with the given IDs
+                $foundIds = Transaction::whereIn('id', $ids)->pluck('id')->all();
+                if (count($foundIds) !== count($ids)) {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => 'Some transaction IDs do not exist',
+                        'success' => false
+                    ], 422);
+                }
+
                 $deletedCount = Transaction::whereIn('id', $ids)->delete();
                 
-                // Bust report cache
                 Cache::forget('transactions_report');
                 
                 DB::commit();

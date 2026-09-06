@@ -1407,32 +1407,39 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
 // the requested display order (asc or desc).
 const recomputeBalances = (txns, openingBal, sortOrder = 'desc') => {
   const ob = parseFloat(openingBal ?? 0);
-  // Walk oldest → newest to accumulate running balance
-  const asc = [...txns].sort((a, b) => {
-    const d = new Date(a.transaction_date) - new Date(b.transaction_date);
-    return d !== 0 ? d : (a.id ?? 0) - (b.id ?? 0);
+  const n = txns.length;
+  const indices = new Array(n);
+  for (let i = 0; i < n; i++) {
+    const t = txns[i];
+    indices[i] = {
+      idx: i,
+      ts: new Date(t.transaction_date).getTime(),
+      id: t.id ?? 0
+    };
+  }
+  indices.sort((a, b) => {
+    const d = a.ts - b.ts;
+    return d !== 0 ? d : a.id - b.id;
   });
+
   let running = ob;
   let totalCredit = 0;
-  let totalDebit  = 0;
-  const withBalances = asc.map(t => {
+  let totalDebit = 0;
+  const result = new Array(n);
+  for (let k = 0; k < n; k++) {
+    const src = indices[k];
+    const t = txns[src.idx];
     const amt = parseFloat(t.amount ?? 0);
     if (t.entry_type === 'credit') { running += amt; totalCredit += amt; }
     else                           { running -= amt; totalDebit  += amt; }
-    return { ...t, running_balance: running };
-  });
-  // Restore requested display order
-  let result;
-  if (sortOrder === 'asc') {
-    result = withBalances;
-  } else {
-    // Sort newest-first: by date desc, then by id desc as tiebreaker
-    result = [...withBalances].sort((a, b) => {
-      const dateDiff = new Date(b.transaction_date) - new Date(a.transaction_date);
-      if (dateDiff !== 0) return dateDiff;
-      return (b.id ?? 0) - (a.id ?? 0);
-    });
+    t.running_balance = running;
+    result[k] = t;
   }
+
+  if (sortOrder !== 'asc') {
+    result.reverse();
+  }
+
   const meta = {
     opening_balance: ob,
     total_credit:    totalCredit,

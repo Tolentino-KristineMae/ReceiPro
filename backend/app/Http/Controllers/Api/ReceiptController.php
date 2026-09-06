@@ -8,6 +8,7 @@ use App\Models\Batch;
 use App\Models\Transaction;
 use App\Jobs\ProcessReceiptOcr;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -89,6 +90,89 @@ class ReceiptController extends Controller
 
         $receipt->delete();
         return response()->json(['message' => 'Deleted']);
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer'
+        ]);
+
+        $ids = array_values(array_unique($validated['ids']));
+
+        try {
+            DB::beginTransaction();
+
+            try {
+                $receipts = Receipt::whereIn('id', $ids)->get([
+                    'id', 'file_path', 'cropped_image', 'transaction_id', 'batch_id'
+                ]);
+
+                if ($receipts->count() !== count($ids)) {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => 'Some receipt IDs do not exist',
+                        'success' => false
+                    ], 422);
+                }
+
+                $storagePaths = [];
+                $txUpdates = [];
+
+                foreach ($receipts as $r) {
+                    if ($r->cropped_image) $storagePaths[] = $r->cropped_image;
+                    if ($r->file_path)     $storagePaths[] = $r->file_path;
+                    if ($r->transaction_id) {
+                        $txUpdates[$r->transaction_id] = $r->batch_id;
+                    }
+                }
+
+                if (!empty($txUpdates)) {
+                    $txIds = array_keys($txUpdates);
+                    $batchIds = array_values($txUpdates);
+                    Transaction::whereIn('id', $txIds)
+                        ->where(function ($query) use ($batchIds) {
+                            $query->whereIn('batch_id', $batchIds)
+                                ->orWhereNull('batch_id');
+                        })
+                        ->update(['batch_id' => null, 'status' => 'pending']);
+                }
+
+                $deletedCount = Receipt::whereIn('id', $ids)->delete();
+
+                DB::commit();
+
+                if (!empty($storagePaths)) {
+                    Storage::disk('supabase')->delete($storagePaths);
+                }
+
+                return response()->json([
+                    'message' => "Successfully deleted {$deletedCount} receipt(s)",
+                    'success' => true,
+                    'deleted_count' => $deletedCount,
+                ], 200);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \Log::error('Failed to bulk delete receipts', [
+                    'ids' => $ids,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                return response()->json([
+                    'message' => 'Failed to delete receipts',
+                    'error' => $e->getMessage(),
+                    'success' => false,
+                ], 500);
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Invalid receipt IDs provided',
+                'errors' => $e->errors(),
+                'success' => false,
+            ], 422);
+        }
     }
 
     public function assignAccount(Request $request, Receipt $receipt)    {
