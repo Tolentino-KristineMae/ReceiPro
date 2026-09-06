@@ -353,6 +353,7 @@ function generateBillingSummaryHTML({ finalBatchNumber, batchNumber, grossAmount
 
 export default function BatchDashboard({ 
   batches, 
+  setBatches,
   dashboard,
   fileCount, 
   setFileCount, 
@@ -418,23 +419,27 @@ export default function BatchDashboard({
   const handleBulkDelete = async () => {
     setIsBulkDeleting(true);
     try {
+      const idsArray = Array.from(selectedBatchIds);
       const response = await fetch(getApiUrl('/api/batches/bulk-delete'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batch_ids: Array.from(selectedBatchIds) })
+        body: JSON.stringify({ batch_ids: idsArray })
       });
 
       const result = await response.json();
 
       if (response.ok && result.success) {
-        // Refresh batches list
-        await fetchBatches(true);
+        // Optimistic local filter — no expensive server round-trip needed
+        const removeSet = new Set(idsArray);
+        if (typeof setBatches === 'function') {
+          setBatches(prev => prev.filter(b => !removeSet.has(b.id)));
+        } else {
+          await fetchBatches(true);
+        }
         
-        // Clear selection
         setSelectedBatchIds(new Set());
         setShowBulkDeleteModal(false);
         
-        // Show success message
         console.log(result.message);
       } else {
         throw new Error(result.message || 'Failed to delete batches');

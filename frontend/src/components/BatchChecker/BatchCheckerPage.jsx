@@ -468,6 +468,7 @@ export default function BatchCheckerPage() {
       {!batchId ? (
         <BatchDashboard
           batches={batches}
+          setBatches={setBatches}
           dashboard={dashboard}
           nextBatchNumber={nextBatchNumber}
           fileCount={fileCount}

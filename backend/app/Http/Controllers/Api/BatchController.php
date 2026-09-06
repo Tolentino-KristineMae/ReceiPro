@@ -36,25 +36,26 @@ class BatchController extends Controller
     public function index(Request $request)
     {
         // Get pagination parameters
-        $perPage = $request->get('per_page', 20); // Default 20 batches per page
+        $perPage = (int) $request->get('per_page', 20); // Default 20 batches per page
         $page = $request->get('page', 1);
         
-        // For dashboard stats, we still need all batches (but without receipts)
-        $allBatches = Batch::orderBy('created_at', 'desc')->get();
-        $dashboard = $this->statsService->dashboardSummary($allBatches);
+        // Dashboard summary with aggregate COUNT queries → O(1) DB time, no full batch load
+        $totalBatches     = (int) Batch::count();
+        $completedBatches = (int) Batch::where('checker_status', 'billing_ready')->count();
+        $totalReceipts    = (int) DB::table('receipts')->count();
+        $dashboard = [
+            'total_batches'       => $totalBatches,
+            'completed_batches'   => $completedBatches,
+            'in_progress_batches' => max(0, $totalBatches - $completedBatches),
+            'total_receipts'      => $totalReceipts,
+        ];
         
-        // Calculate the next batch number by finding highest "Batch #XXX" number
-        $highestBatchNumber = 0;
-        foreach ($allBatches as $batch) {
-            if (preg_match('/Batch #(\d+)/i', $batch->name, $matches)) {
-                $num = intval($matches[1]);
-                if ($num > $highestBatchNumber) {
-                    $highestBatchNumber = $num;
-                }
-            }
-        }
-        // Use the higher of: extracted batch number or total count
-        $nextBatchNumber = max($highestBatchNumber, $allBatches->count()) + 1;
+        // Next batch number via SQL SUBSTRING_INDEX aggregate — no PHP loop/regex
+        $highestName = (int) DB::table('batches')
+            ->selectRaw("MAX(CAST(SUBSTRING_INDEX(name, '#', -1) AS UNSIGNED)) AS max_num")
+            ->whereRaw("name REGEXP '^Batch #[0-9]+$'")
+            ->value('max_num');
+        $nextBatchNumber = max($highestName, $totalBatches) + 1;
         
         // For the list, paginate and include receipts
         $batches = Batch::with(['receipts' => function ($query) {
