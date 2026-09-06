@@ -92,7 +92,21 @@ export default function BatchCheckerPage() {
       // Load first 20 batches (pagination)
       const res = await fetch(getApiUrl(`/api/batches?per_page=20&t=${Date.now()}`), { cache: 'no-store' });
       if (res.status === 429) return;
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      if (!res.ok) {
+        // Try to get error details from response
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || `HTTP ${res.status}`);
+        } else {
+          // Server returned HTML (likely an error page)
+          const htmlText = await res.text();
+          console.error('[BatchChecker] Server returned HTML error:', htmlText.substring(0, 500));
+          throw new Error(`Server error (${res.status}). Please check backend logs or database connection.`);
+        }
+      }
+      
       const data = await res.json();
       setBatches(Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []));
       if (data?.dashboard) setDashboard(data.dashboard);
@@ -102,7 +116,12 @@ export default function BatchCheckerPage() {
         console.log(`Loaded ${data.pagination.to} of ${data.pagination.total} batches`);
       }
     } catch (e) {
-      if (navigator.onLine) console.warn('[BatchChecker] fetchBatches:', e.message);
+      if (navigator.onLine) {
+        console.error('[BatchChecker] fetchBatches: Failed to fetch', e);
+        if (!silent) {
+          setError(`Failed to load batches: ${e.message}`);
+        }
+      }
     } finally {
       if (!silent) setLoading(false);
     }
