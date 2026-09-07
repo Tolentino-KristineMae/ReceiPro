@@ -50,12 +50,12 @@ class BatchController extends Controller
             'total_receipts'      => $totalReceipts,
         ];
         
-        // Next batch number via SQL SUBSTRING_INDEX aggregate — no PHP loop/regex
+        // Next batch number - PostgreSQL compatible
         $highestName = (int) DB::table('batches')
-            ->selectRaw("MAX(CAST(SUBSTRING_INDEX(name, '#', -1) AS UNSIGNED)) AS max_num")
-            ->whereRaw("name REGEXP '^Batch #[0-9]+$'")
+            ->selectRaw("MAX(CAST(NULLIF(REGEXP_REPLACE(name, '[^0-9]', '', 'g'), '') AS INTEGER)) AS max_num")
+            ->whereRaw("name ~ '^Batch #[0-9]+$'")
             ->value('max_num');
-        $nextBatchNumber = max($highestName, $totalBatches) + 1;
+        $nextBatchNumber = max($highestName ?? 0, $totalBatches) + 1;
         
         // For the list, paginate and include receipts
         $batches = Batch::with(['receipts' => function ($query) {
@@ -434,34 +434,37 @@ class BatchController extends Controller
 
     /**
      * Re-sequence finalized batch numbers and open batch display names
-     * using TWO single UPDATE queries (with window functions) instead of
-     * O(N) individual row updates.
+     * PostgreSQL compatible version using CTEs
      */
     private function resequenceAllBatches(): void
     {
         // 1. Finalized batches: set final_batch_number = B-XXXX by created_at order
         DB::statement("
-            UPDATE batches AS t
-            JOIN (
+            WITH ranked AS (
                 SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS rn
                 FROM batches
                 WHERE final_batch_number IS NOT NULL
-            ) AS r ON t.id = r.id
-            SET t.final_batch_number = CONCAT('B-', LPAD(r.rn, 4, '0'))
-            WHERE t.final_batch_number <> CONCAT('B-', LPAD(r.rn, 4, '0'))
+            )
+            UPDATE batches
+            SET final_batch_number = CONCAT('B-', LPAD(ranked.rn::TEXT, 4, '0'))
+            FROM ranked
+            WHERE batches.id = ranked.id
+              AND batches.final_batch_number <> CONCAT('B-', LPAD(ranked.rn::TEXT, 4, '0'))
         ");
 
         // 2. Open batches matching "Batch #XXX": rename by created_at order
         DB::statement("
-            UPDATE batches AS t
-            JOIN (
+            WITH ranked AS (
                 SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS rn
                 FROM batches
                 WHERE final_batch_number IS NULL
-                  AND name REGEXP '^Batch #[0-9]+$'
-            ) AS r ON t.id = r.id
-            SET t.name = CONCAT('Batch #', LPAD(r.rn, 3, '0'))
-            WHERE t.name <> CONCAT('Batch #', LPAD(r.rn, 3, '0'))
+                  AND name ~ '^Batch #[0-9]+$'
+            )
+            UPDATE batches
+            SET name = CONCAT('Batch #', LPAD(ranked.rn::TEXT, 3, '0'))
+            FROM ranked
+            WHERE batches.id = ranked.id
+              AND batches.name <> CONCAT('Batch #', LPAD(ranked.rn::TEXT, 3, '0'))
         ");
     }
 
