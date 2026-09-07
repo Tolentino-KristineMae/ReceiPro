@@ -47,33 +47,56 @@ class TransactionController extends Controller
 
     public function index(Request $request)
     {
-        $sortOrder = strtolower((string) $request->get('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
+        try {
+            $sortOrder = strtolower((string) $request->get('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
 
-        $query = $this->buildQuery($request);
+            $query = $this->buildQuery($request);
 
-        // Only eager-load batch (needed for batch_label/display_label).
-        // Receipts are NOT needed for the list view — loading them was a major bottleneck.
-        // Select only the columns we actually use instead of SELECT *.
-        $query->select(self::LIST_COLUMNS)
-              ->with(['batch:id,final_batch_number,name'])
-              ->orderBy('transaction_date', 'asc')
-              ->orderBy('id', 'asc');
+            // Only eager-load batch (needed for batch_label/display_label).
+            // Receipts are NOT needed for the list view — loading them was a major bottleneck.
+            // Select only the columns we actually use instead of SELECT *.
+            $query->select(self::LIST_COLUMNS)
+                  ->with(['batch:id,final_batch_number,name'])
+                  ->orderBy('transaction_date', 'asc')
+                  ->orderBy('id', 'asc');
 
-        $transactions = $query->get();
+            $transactions = $query->get();
 
-        // Compute running balances in ascending order, then re-sort if needed
-        $withBalances = collect($this->appendRunningBalances($transactions));
+            // Compute running balances in ascending order, then re-sort if needed
+            $withBalances = collect($this->appendRunningBalances($transactions));
 
-        if ($sortOrder === 'desc') {
-            $withBalances = $withBalances->sortByDesc(function ($row) {
-                return sprintf('%s-%010d', $row['transaction_date'], $row['id']);
-            })->values();
+            if ($sortOrder === 'desc') {
+                $withBalances = $withBalances->sortByDesc(function ($row) {
+                    return sprintf('%s-%010d', $row['transaction_date'], $row['id']);
+                })->values();
+            }
+
+            return response()->json([
+                'data' => $withBalances,
+                'meta' => $this->computeMeta($transactions),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch transactions in index()', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'request_params' => $request->all(),
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to fetch transactions',
+                'error' => config('app.debug') ? $e->getMessage() : 'An error occurred while fetching transactions',
+                'data' => [],
+                'meta' => [
+                    'opening_balance' => 0,
+                    'total_credit' => 0,
+                    'total_debit' => 0,
+                    'current_balance' => 0,
+                    'transaction_count' => 0,
+                ]
+            ], 500);
         }
-
-        return response()->json([
-            'data' => $withBalances,
-            'meta' => $this->computeMeta($transactions),
-        ]);
     }
 
     /** Full multi-account report data for printing */
