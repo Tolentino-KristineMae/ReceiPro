@@ -481,7 +481,8 @@ class BatchController extends Controller
     private function resequenceAllBatches(): void
     {
         try {
-            // 1. Finalized batches: set final_batch_number = B-XXX by created_at order (3 digits)
+            // 1. Finalized batches: set final_batch_number = B-XXX AND name = Batch #XXX by created_at order (3 digits)
+            //    This ensures the batch name always matches the final batch number
             DB::statement("
                 WITH ranked AS (
                     SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS rn
@@ -489,10 +490,12 @@ class BatchController extends Controller
                     WHERE final_batch_number IS NOT NULL
                 )
                 UPDATE batches
-                SET final_batch_number = CONCAT('B-', LPAD(ranked.rn::TEXT, 3, '0'))
+                SET final_batch_number = CONCAT('B-', LPAD(ranked.rn::TEXT, 3, '0')),
+                    name = CONCAT('Batch #', LPAD(ranked.rn::TEXT, 3, '0'))
                 FROM ranked
                 WHERE batches.id = ranked.id
-                  AND batches.final_batch_number <> CONCAT('B-', LPAD(ranked.rn::TEXT, 3, '0'))
+                  AND (batches.final_batch_number <> CONCAT('B-', LPAD(ranked.rn::TEXT, 3, '0'))
+                       OR batches.name <> CONCAT('Batch #', LPAD(ranked.rn::TEXT, 3, '0')))
             ");
 
             // 2. Open batches matching "Batch #XXX": rename by created_at order
