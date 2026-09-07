@@ -826,6 +826,10 @@ class BatchController extends Controller
                 $newOcrData['reference'] = $selectedTransaction->reference ?? $selectedTransaction->label ?? $newOcrData['reference'] ?? null;
                 $newOcrData['amount'] = $selectedTransaction->amount ?? $newOcrData['amount'] ?? 0;
                 $updateData['ocr_data'] = $newOcrData;
+                
+                // IMMEDIATELY assign batch_id to the transaction when verified
+                // This way it shows in Transaction History right after verification
+                $selectedTransaction->update(['batch_id' => $batch->id]);
             }
 
             $receipt->update($updateData);
