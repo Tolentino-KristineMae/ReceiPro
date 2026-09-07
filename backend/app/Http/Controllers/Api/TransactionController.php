@@ -326,16 +326,24 @@ class TransactionController extends Controller
     private function appendRunningBalances($transactions): array
     {
         $running = 0.0;
-        $first = $transactions->first();
-        if ($first) {
-            $running = (float) ($first->opening_balance ?? 0);
-        }
+        $isFirstTransaction = true;
 
-        return $transactions->map(function ($transaction) use (&$running) {
+        return $transactions->map(function ($transaction) use (&$running, &$isFirstTransaction) {
+            // If this transaction has an opening balance set, use it as the starting point
+            $transactionOpeningBalance = (float) ($transaction->opening_balance ?? 0);
+            
+            if ($transactionOpeningBalance > 0) {
+                // Opening balance is set - this becomes the new starting point
+                $running = $transactionOpeningBalance;
+            }
+            
+            // Add/subtract the transaction amount
             $amount  = (float) ($transaction->amount ?? 0);
             $running = $transaction->entry_type === 'credit'
                 ? $running + $amount
                 : $running - $amount;
+
+            $isFirstTransaction = false;
 
             // Build a plain array manually — avoids toArray() which serializes all loaded relations
             return [
