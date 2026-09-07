@@ -196,8 +196,20 @@ class BatchController extends Controller
 
         // On finalization: assign final batch number AND link matching transactions
         if ($request->checker_status === 'finalized' && !$batch->final_batch_number) {
-            $count = Batch::whereNotNull('final_batch_number')->count() + 1;
-            $data['final_batch_number'] = 'B-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+            // Extract number from batch name (e.g., "Batch #052" -> 52)
+            // If batch name doesn't have a number, fall back to sequential count
+            $batchNumber = null;
+            if (preg_match('/Batch #(\d+)/', $batch->name, $matches)) {
+                $batchNumber = (int) $matches[1];
+            }
+            
+            // If no number found in name, use sequential count
+            if (!$batchNumber) {
+                $batchNumber = Batch::whereNotNull('final_batch_number')->count() + 1;
+            }
+            
+            // B-052 format (3 digits, hundreds only)
+            $data['final_batch_number'] = 'B-' . str_pad($batchNumber, 3, '0', STR_PAD_LEFT);
 
             $batch->update($data);
 
@@ -469,7 +481,7 @@ class BatchController extends Controller
     private function resequenceAllBatches(): void
     {
         try {
-            // 1. Finalized batches: set final_batch_number = B-XXXX by created_at order
+            // 1. Finalized batches: set final_batch_number = B-XXX by created_at order (3 digits)
             DB::statement("
                 WITH ranked AS (
                     SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS rn
@@ -477,10 +489,10 @@ class BatchController extends Controller
                     WHERE final_batch_number IS NOT NULL
                 )
                 UPDATE batches
-                SET final_batch_number = CONCAT('B-', LPAD(ranked.rn::TEXT, 4, '0'))
+                SET final_batch_number = CONCAT('B-', LPAD(ranked.rn::TEXT, 3, '0'))
                 FROM ranked
                 WHERE batches.id = ranked.id
-                  AND batches.final_batch_number <> CONCAT('B-', LPAD(ranked.rn::TEXT, 4, '0'))
+                  AND batches.final_batch_number <> CONCAT('B-', LPAD(ranked.rn::TEXT, 3, '0'))
             ");
 
             // 2. Open batches matching "Batch #XXX": rename by created_at order
@@ -832,7 +844,7 @@ class BatchController extends Controller
                 $selectedTransaction->update(['batch_id' => $batch->id]);
             }
 
-            $receipt->update($updateData);
+            $receipt->update($updateData); 
 
             if ($oldTxId && (!$isVerified || $oldTxId !== $selectedTransaction->id)) {
                 Transaction::where('id', $oldTxId)
