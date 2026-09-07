@@ -35,50 +35,80 @@ class BatchController extends Controller
     /** List all batches with their receipts */
     public function index(Request $request)
     {
-        // Get pagination parameters
-        $perPage = (int) $request->get('per_page', 20); // Default 20 batches per page
-        $page = $request->get('page', 1);
-        
-        // Dashboard summary with aggregate COUNT queries → O(1) DB time, no full batch load
-        $totalBatches     = (int) Batch::count();
-        $completedBatches = (int) Batch::where('checker_status', 'billing_ready')->count();
-        $totalReceipts    = (int) DB::table('receipts')->count();
-        $dashboard = [
-            'total_batches'       => $totalBatches,
-            'completed_batches'   => $completedBatches,
-            'in_progress_batches' => max(0, $totalBatches - $completedBatches),
-            'total_receipts'      => $totalReceipts,
-        ];
-        
-        // Next batch number - PostgreSQL compatible
-        $highestName = (int) DB::table('batches')
-            ->selectRaw("MAX(CAST(NULLIF(REGEXP_REPLACE(name, '[^0-9]', '', 'g'), '') AS INTEGER)) AS max_num")
-            ->whereRaw("name ~ '^Batch #[0-9]+$'")
-            ->value('max_num');
-        $nextBatchNumber = max($highestName ?? 0, $totalBatches) + 1;
-        
-        // For the list, paginate and include receipts
-        $batches = Batch::with(['receipts' => function ($query) {
-            $query->orderBy('created_at', 'asc')->with('transaction');
-        }])
-        ->orderBy('created_at', 'desc')
-        ->paginate($perPage);
+        try {
+            // Get pagination parameters
+            $perPage = (int) $request->get('per_page', 20); // Default 20 batches per page
+            $page = $request->get('page', 1);
+            
+            // Dashboard summary with aggregate COUNT queries → O(1) DB time, no full batch load
+            $totalBatches     = (int) Batch::count();
+            $completedBatches = (int) Batch::where('checker_status', 'billing_ready')->count();
+            $totalReceipts    = (int) DB::table('receipts')->count();
+            $dashboard = [
+                'total_batches'       => $totalBatches,
+                'completed_batches'   => $completedBatches,
+                'in_progress_batches' => max(0, $totalBatches - $completedBatches),
+                'total_receipts'      => $totalReceipts,
+            ];
+            
+            // Next batch number - PostgreSQL compatible with fixed regex
+            $highestName = (int) DB::table('batches')
+                ->selectRaw("MAX(CAST(NULLIF(REGEXP_REPLACE(name, '[^0-9]', '', 'g'), '') AS INTEGER)) AS max_num")
+                ->whereRaw("name ~ '^Batch #[0-9]+$'")
+                ->value('max_num');
+            $nextBatchNumber = max($highestName ?? 0, $totalBatches) + 1;
+            
+            // For the list, paginate and include receipts
+            $batches = Batch::with(['receipts' => function ($query) {
+                $query->orderBy('created_at', 'asc')->with('transaction');
+            }])
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
 
-        $enriched = $batches->getCollection()->map(fn (Batch $batch) => $this->statsService->enrichBatch($batch));
+            $enriched = $batches->getCollection()->map(fn (Batch $batch) => $this->statsService->enrichBatch($batch));
 
-        return response()->json([
-            'batches'   => $enriched,
-            'dashboard' => $dashboard,
-            'next_batch_number' => $nextBatchNumber,
-            'pagination' => [
-                'current_page' => $batches->currentPage(),
-                'per_page' => $batches->perPage(),
-                'total' => $batches->total(),
-                'last_page' => $batches->lastPage(),
-                'from' => $batches->firstItem(),
-                'to' => $batches->lastItem(),
-            ]
-        ]);
+            return response()->json([
+                'batches'   => $enriched,
+                'dashboard' => $dashboard,
+                'next_batch_number' => $nextBatchNumber,
+                'pagination' => [
+                    'current_page' => $batches->currentPage(),
+                    'per_page' => $batches->perPage(),
+                    'total' => $batches->total(),
+                    'last_page' => $batches->lastPage(),
+                    'from' => $batches->firstItem(),
+                    'to' => $batches->lastItem(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to fetch batches in index()', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to fetch batches',
+                'error' => config('app.debug') ? $e->getMessage() : 'An error occurred while fetching batches',
+                'batches' => [],
+                'dashboard' => [
+                    'total_batches' => 0,
+                    'completed_batches' => 0,
+                    'in_progress_batches' => 0,
+                    'total_receipts' => 0,
+                ],
+                'next_batch_number' => 1,
+                'pagination' => [
+                    'current_page' => 1,
+                    'per_page' => 20,
+                    'total' => 0,
+                    'last_page' => 1,
+                    'from' => null,
+                    'to' => null,
+                ]
+            ], 500);
+        }
     }
 
     /** Create a named batch (before uploading receipts) */
@@ -438,34 +468,42 @@ class BatchController extends Controller
      */
     private function resequenceAllBatches(): void
     {
-        // 1. Finalized batches: set final_batch_number = B-XXXX by created_at order
-        DB::statement("
-            WITH ranked AS (
-                SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS rn
-                FROM batches
-                WHERE final_batch_number IS NOT NULL
-            )
-            UPDATE batches
-            SET final_batch_number = CONCAT('B-', LPAD(ranked.rn::TEXT, 4, '0'))
-            FROM ranked
-            WHERE batches.id = ranked.id
-              AND batches.final_batch_number <> CONCAT('B-', LPAD(ranked.rn::TEXT, 4, '0'))
-        ");
+        try {
+            // 1. Finalized batches: set final_batch_number = B-XXXX by created_at order
+            DB::statement("
+                WITH ranked AS (
+                    SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS rn
+                    FROM batches
+                    WHERE final_batch_number IS NOT NULL
+                )
+                UPDATE batches
+                SET final_batch_number = CONCAT('B-', LPAD(ranked.rn::TEXT, 4, '0'))
+                FROM ranked
+                WHERE batches.id = ranked.id
+                  AND batches.final_batch_number <> CONCAT('B-', LPAD(ranked.rn::TEXT, 4, '0'))
+            ");
 
-        // 2. Open batches matching "Batch #XXX": rename by created_at order
-        DB::statement("
-            WITH ranked AS (
-                SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS rn
-                FROM batches
-                WHERE final_batch_number IS NULL
-                  AND name ~ '^Batch #[0-9]+$'
-            )
-            UPDATE batches
-            SET name = CONCAT('Batch #', LPAD(ranked.rn::TEXT, 3, '0'))
-            FROM ranked
-            WHERE batches.id = ranked.id
-              AND batches.name <> CONCAT('Batch #', LPAD(ranked.rn::TEXT, 3, '0'))
-        ");
+            // 2. Open batches matching "Batch #XXX": rename by created_at order
+            DB::statement("
+                WITH ranked AS (
+                    SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS rn
+                    FROM batches
+                    WHERE final_batch_number IS NULL
+                      AND name ~ '^Batch #[0-9]+$'
+                )
+                UPDATE batches
+                SET name = CONCAT('Batch #', LPAD(ranked.rn::TEXT, 3, '0'))
+                FROM ranked
+                WHERE batches.id = ranked.id
+                  AND batches.name <> CONCAT('Batch #', LPAD(ranked.rn::TEXT, 3, '0'))
+            ");
+        } catch (\Exception $e) {
+            \Log::error('Failed to resequence batches', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Don't throw - allow the calling operation to complete even if resequencing fails
+        }
     }
 
     /** Reset a batch — clears all checker progress, unlinking transactions and resetting receipt statuses */
