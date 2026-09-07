@@ -16,21 +16,51 @@ class ReceiptController extends Controller
 {
     public function serveImage(Receipt $receipt, Request $request)
     {
-        $type = $request->query('type', 'original');
-        $filePath = ($type === 'crop' && $receipt->cropped_image)
-            ? $receipt->cropped_image
-            : $receipt->file_path;
+        try {
+            $type = $request->query('type', 'original');
+            $filePath = ($type === 'crop' && $receipt->cropped_image)
+                ? $receipt->cropped_image
+                : $receipt->file_path;
 
-        $supabaseUrl = config('filesystems.disks.supabase.url') ?: env('SUPABASE_URL');
-        $bucket      = config('filesystems.disks.supabase.bucket') ?: env('SUPABASE_BUCKET', 'receipts');
+            if (empty($filePath)) {
+                \Log::warning('Receipt image path is empty', [
+                    'receipt_id' => $receipt->id,
+                    'type' => $type,
+                    'file_path' => $receipt->file_path,
+                    'cropped_image' => $receipt->cropped_image
+                ]);
+                return response()->json(['error' => 'Image path not found'], 404);
+            }
 
-        if (empty($supabaseUrl) || empty($filePath)) {
-            return response()->json(['error' => 'Image not available'], 404);
+            $supabaseUrl = config('filesystems.disks.supabase.url') ?: env('SUPABASE_URL');
+            $bucket      = config('filesystems.disks.supabase.bucket') ?: env('SUPABASE_BUCKET', 'receipts');
+
+            if (empty($supabaseUrl)) {
+                \Log::error('Supabase URL not configured', [
+                    'receipt_id' => $receipt->id,
+                    'file_path' => $filePath
+                ]);
+                return response()->json(['error' => 'Storage configuration error'], 500);
+            }
+
+            $publicUrl = rtrim($supabaseUrl, '/') . '/storage/v1/object/public/' . $bucket . '/' . ltrim($filePath, '/');
+
+            \Log::info('Serving receipt image', [
+                'receipt_id' => $receipt->id,
+                'type' => $type,
+                'file_path' => $filePath,
+                'public_url' => $publicUrl
+            ]);
+
+            return redirect()->to($publicUrl);
+        } catch (\Exception $e) {
+            \Log::error('Failed to serve receipt image', [
+                'receipt_id' => $receipt->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'Failed to load image'], 500);
         }
-
-        $publicUrl = rtrim($supabaseUrl, '/') . '/storage/v1/object/public/' . $bucket . '/' . $filePath;
-
-        return redirect()->to($publicUrl);
     }
 
     public function upload(Request $request)
