@@ -19,15 +19,15 @@ const NAV = [
   { id: 'settings', path: '/settings', label: 'Settings', icon: Settings },
 ];
 
-const BRAND = '#4f46e5';
-const BRAND_LIGHT = '#eef2ff';
+const BRAND = '#ea580c';
+const BRAND_LIGHT = '#fff7ed';
 const SURFACE = '#ffffff';
-const SURFACE_HOVER = '#f8fafc';
-const BORDER = '#e2e8f0';
-const TEXT = '#0f172a';
-const TEXT_2 = '#334155';
-const TEXT_3 = '#64748b';
-const TEXT_4 = '#94a3b8';
+const SURFACE_HOVER = '#fef3c7';
+const BORDER = '#fed7aa';
+const TEXT = '#431407';
+const TEXT_2 = '#78350f';
+const TEXT_3 = '#92400e';
+const TEXT_4 = '#c2410c';
 
 export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -229,7 +229,7 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
                     e.currentTarget.style.color = TEXT_3;
                   }
                 }}
-                onFocus={e => { e.currentTarget.style.boxShadow = `0 0 0 3px rgba(99,102,241,0.25)`; }}
+                onFocus={e => { e.currentTarget.style.boxShadow = `0 0 0 3px rgba(234,88,12,0.25)`; }}
                 onBlur={e => { e.currentTarget.style.boxShadow = 'none'; }}
               >
                 {active && (
@@ -283,7 +283,7 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
                 width: '34px',
                 height: '34px',
                 borderRadius: '10px',
-                background: `linear-gradient(135deg, ${BRAND} 0%, #6366f1 100%)`,
+                background: `linear-gradient(135deg, ${BRAND} 0%, #c2410c 100%)`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -292,7 +292,7 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
                 color: '#ffffff',
                 flexShrink: 0,
                 position: 'relative',
-                boxShadow: '0 1px 3px rgba(79,70,229,0.3)',
+                boxShadow: '0 1px 3px rgba(234,88,12,0.3)',
               }}>
                 RC
                 <span style={{
@@ -335,14 +335,14 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
                   width: '36px',
                   height: '36px',
                   borderRadius: '10px',
-                  background: `linear-gradient(135deg, ${BRAND} 0%, #6366f1 100%)`,
+                  background: `linear-gradient(135deg, ${BRAND} 0%, #c2410c 100%)`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: '12px',
                   fontWeight: 700,
                   color: '#ffffff',
-                  boxShadow: '0 1px 3px rgba(79,70,229,0.3)',
+                  boxShadow: '0 1px 3px rgba(234,88,12,0.3)',
                 }}>
                   RC
                 </div>
