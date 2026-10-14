@@ -1,70 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  ArrowLeftRight,
+  ClipboardCheck,
+  Settings,
+  Menu,
+  X,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from 'lucide-react';
 import profLogo from '../../newprof.png';
 
 const NAV = [
-  {
-    id: 'dashboard',
-    path: '/',
-    label: 'Dashboard',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7" rx="1" />
-        <rect x="14" y="3" width="7" height="7" rx="1" />
-        <rect x="3" y="14" width="7" height="7" rx="1" />
-        <rect x="14" y="14" width="7" height="7" rx="1" />
-      </svg>
-    ),
-  },
-  {
-    id: 'transactions',
-    path: '/transactions',
-    label: 'Transactions',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-      </svg>
-    ),
-  },
-  {
-    id: 'batch',
-    path: '/batch',
-    label: 'Batch Checker',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-        <rect x="9" y="3" width="6" height="4" rx="1" />
-        <path d="m9 12 2 2 4-4" />
-      </svg>
-    ),
-  },
-  {
-    id: 'settings',
-    path: '/settings',
-    label: 'Settings',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-      </svg>
-    ),
-  },
+  { id: 'dashboard', path: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'transactions', path: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
+  { id: 'batch', path: '/batch', label: 'Batch Checker', icon: ClipboardCheck },
+  { id: 'settings', path: '/settings', label: 'Settings', icon: Settings },
 ];
 
-// Orange brand colours
-const ORANGE = '#f97316';
-const ORANGE_DARK = '#ea580c';
-const ACTIVE_BG = 'rgba(255,255,255,0.18)';
-const ACTIVE_BORDER = 'rgba(255,255,255,0.28)';
-const HOVER_BG = 'rgba(255,255,255,0.10)';
-const DIVIDER = 'rgba(255,255,255,0.12)';
+const BRAND = '#4f46e5';
+const BRAND_LIGHT = '#eef2ff';
+const SURFACE = '#ffffff';
+const SURFACE_HOVER = '#f8fafc';
+const BORDER = '#e2e8f0';
+const TEXT = '#0f172a';
+const TEXT_2 = '#334155';
+const TEXT_3 = '#64748b';
+const TEXT_4 = '#94a3b8';
 
 export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  
   const [isMobile, setIsMobile] = useState(false);
-  
+
   useEffect(() => {
     const checkIsMobile = () => setIsMobile(window.innerWidth < 768);
     checkIsMobile();
@@ -72,139 +41,155 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
+  const showLabels = (!isMobile && !collapsed) || (isMobile && isMobileMenuOpen);
+
   const handleNavClick = () => {
-    if (isMobile) {
-      onMobileToggle?.();
-    }
+    if (isMobile) onMobileToggle?.();
   };
 
   return (
     <>
-      {/* Mobile Hamburger Button */}
       {isMobile && (
         <button
           onClick={onMobileToggle}
+          aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
           style={{
             position: 'fixed',
-            top: '12px',
-            left: '12px',
-            zIndex: '1000',
-            width: '44px',
-            height: '44px',
+            top: '14px',
+            left: '14px',
+            zIndex: 1000,
+            width: '42px',
+            height: '42px',
             borderRadius: '12px',
-            background: `linear-gradient(160deg, ${ORANGE} 0%, ${ORANGE_DARK} 100%)`,
-            border: 'none',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            background: SURFACE,
+            border: `1px solid ${BORDER}`,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
+            color: TEXT_2,
+            transition: 'all 0.15s ease',
           }}
+          onMouseEnter={e => { e.currentTarget.style.background = SURFACE_HOVER; e.currentTarget.style.color = TEXT; }}
+          onMouseLeave={e => { e.currentTarget.style.background = SURFACE; e.currentTarget.style.color = TEXT_2; }}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-            {isMobileMenuOpen ? (
-              <>
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </>
-            ) : (
-              <>
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </>
-            )}
-          </svg>
+          {isMobileMenuOpen ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
         </button>
       )}
 
-      {/* Mobile Overlay */}
       {isMobile && isMobileMenuOpen && (
         <div
           onClick={onMobileToggle}
+          aria-hidden="true"
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.5)',
+            background: 'rgba(15, 23, 42, 0.45)',
+            backdropFilter: 'blur(2px)',
             zIndex: 49,
+            animation: 'sbOverlay 0.2s ease both',
           }}
         />
       )}
 
       <aside
         style={{
-          width: isMobile 
-            ? (isMobileMenuOpen ? '240px' : '0') 
-            : (collapsed ? '64px' : '220px'),
-          minWidth: isMobile 
-            ? '0' 
-            : (collapsed ? '64px' : '220px'),
+          width: isMobile ? (isMobileMenuOpen ? '260px' : '0') : (collapsed ? '72px' : '248px'),
+          minWidth: isMobile ? '0' : (collapsed ? '72px' : '248px'),
           height: '100vh',
-          background: `linear-gradient(160deg, ${ORANGE} 0%, ${ORANGE_DARK} 100%)`,
+          background: SURFACE,
           display: 'flex',
           flexDirection: 'column',
           flexShrink: 0,
-          position: isMobile 
-            ? 'fixed' 
-            : 'relative',
-          left: isMobile 
-            ? (isMobileMenuOpen ? 0 : '-240px') 
-            : 0,
+          position: isMobile ? 'fixed' : 'relative',
+          left: isMobile ? (isMobileMenuOpen ? 0 : '-260px') : 0,
           top: 0,
-          transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
+          transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1), left 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
           overflow: 'hidden',
-          borderRight: '1px solid rgba(0,0,0,0.08)',
+          borderRight: `1px solid ${BORDER}`,
+          boxShadow: isMobile ? '0 0 0 1px rgba(0,0,0,0.04), 12px 0 30px rgba(0,0,0,0.08)' : 'none',
           zIndex: 50,
         }}
       >
-        {/* ── Logo ── */}
+        {/* Logo */}
         <div style={{
-          height: '62px',
+          height: '68px',
           display: 'flex',
           alignItems: 'center',
-          padding: isMobile ? '0 18px' : (collapsed ? '0 16px' : '0 20px 0 20px'),
-          borderBottom: `1px solid ${DIVIDER}`,
-          gap: '10px',
+          padding: isMobile ? '0 18px' : (collapsed ? '0' : '0 20px'),
+          borderBottom: `1px solid ${BORDER}`,
+          gap: '12px',
           flexShrink: 0,
-          justifyContent: isMobile ? 'flex-start' : (collapsed ? 'center' : 'flex-start'),
+          justifyContent: collapsed && !isMobile ? 'center' : 'flex-start',
+          position: 'relative',
         }}>
           <img
             src={profLogo}
-            alt="ReceiPro logo"
+            alt="ReceiPro"
             style={{
-              width: collapsed && !isMobile ? '46px' : '190px',
-              height: collapsed && !isMobile ? '46px' : '58px',
+              width: collapsed && !isMobile ? '42px' : '150px',
+              height: collapsed && !isMobile ? '42px' : '46px',
               objectFit: 'contain',
               flexShrink: 0,
-              borderRadius: '8px',
             }}
           />
+
+          {!isMobile && (
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                right: collapsed ? '50%' : '10px',
+                transform: collapsed ? 'translate(50%, -50%)' : 'translateY(-50%)',
+                width: '28px',
+                height: '28px',
+                borderRadius: '8px',
+                background: 'transparent',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: TEXT_4,
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = SURFACE_HOVER; e.currentTarget.style.color = TEXT_2; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = TEXT_4; }}
+            >
+              {collapsed ? <PanelLeftOpen size={16} strokeWidth={2} /> : <PanelLeftClose size={16} strokeWidth={2} />}
+            </button>
+          )}
         </div>
 
-        {/* ── Nav ── */}
+        {/* Nav */}
         <nav style={{
           flex: 1,
-          padding: '10px 8px',
+          padding: '14px 12px',
           display: 'flex',
           flexDirection: 'column',
           gap: '2px',
           overflowY: 'auto',
           overflowX: 'hidden',
         }}>
-          {((!isMobile && !collapsed) || (isMobile && isMobileMenuOpen)) && (
+          {showLabels && (
             <div style={{
-              fontSize: '9px',
-              fontWeight: 800,
-              letterSpacing: '0.14em',
+              fontSize: '10px',
+              fontWeight: 700,
+              letterSpacing: '0.12em',
               textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.45)',
-              padding: '8px 10px 8px',
+              color: TEXT_4,
+              padding: '6px 12px 10px',
             }}>
               Menu
             </div>
           )}
 
           {NAV.map((item) => {
+            const Icon = item.icon;
             const active = location.pathname === item.path ||
               (item.path !== '/' && location.pathname.startsWith(item.path));
 
@@ -213,38 +198,40 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
                 key={item.id}
                 to={item.path}
                 onClick={handleNavClick}
-                title={((!isMobile && collapsed) ? item.label : undefined)}
+                title={collapsed && !isMobile ? item.label : undefined}
+                aria-current={active ? 'page' : undefined}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '10px',
-                  padding: isMobile 
-                    ? '12px 18px' 
-                    : (collapsed ? '10px 0' : '9px 10px'),
+                  gap: '12px',
+                  padding: isMobile ? '11px 14px' : (collapsed ? '11px 0' : '10px 14px'),
                   borderRadius: '10px',
                   textDecoration: 'none',
-                  justifyContent: isMobile 
-                    ? 'flex-start' 
-                    : (collapsed ? 'center' : 'flex-start'),
-                  background: active ? ACTIVE_BG : 'transparent',
-                  border: `1px solid ${active ? ACTIVE_BORDER : 'transparent'}`,
-                  transition: 'all 0.15s ease',
+                  justifyContent: collapsed && !isMobile ? 'center' : 'flex-start',
+                  background: active ? BRAND_LIGHT : 'transparent',
+                  color: active ? BRAND : TEXT_3,
+                  fontWeight: active ? 600 : 500,
+                  fontSize: '13.5px',
+                  letterSpacing: '-0.01em',
+                  transition: 'background 0.15s ease, color 0.15s ease',
                   position: 'relative',
+                  outline: 'none',
                 }}
                 onMouseEnter={e => {
                   if (!active) {
-                    e.currentTarget.style.background = HOVER_BG;
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+                    e.currentTarget.style.background = SURFACE_HOVER;
+                    e.currentTarget.style.color = TEXT;
                   }
                 }}
                 onMouseLeave={e => {
                   if (!active) {
                     e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.borderColor = 'transparent';
+                    e.currentTarget.style.color = TEXT_3;
                   }
                 }}
+                onFocus={e => { e.currentTarget.style.boxShadow = `0 0 0 3px rgba(99,102,241,0.25)`; }}
+                onBlur={e => { e.currentTarget.style.boxShadow = 'none'; }}
               >
-                {/* Active left indicator */}
                 {active && (
                   <span style={{
                     position: 'absolute',
@@ -253,101 +240,89 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
                     transform: 'translateY(-50%)',
                     width: '3px',
                     height: '18px',
-                    background: '#ffffff',
+                    background: BRAND,
                     borderRadius: '0 3px 3px 0',
-                    opacity: 0.9,
                   }} />
                 )}
 
-                {/* Icon */}
                 <span style={{
-                  color: active ? '#ffffff' : 'rgba(255,255,255,0.65)',
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
                   flexShrink: 0,
-                  transition: 'color 0.15s',
+                  color: active ? BRAND : 'inherit',
                 }}>
-                  {item.icon}
+                  <Icon size={18} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                 </span>
 
-                {/* Label */}
-                {((!isMobile && !collapsed) || (isMobile && isMobileMenuOpen)) && (
-                  <span style={{
-                    fontSize: '13px',
-                    fontWeight: active ? 700 : 500,
-                    color: active ? '#ffffff' : 'rgba(255,255,255,0.70)',
-                    letterSpacing: '-0.01em',
-                    transition: 'color 0.15s',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {item.label}
-                  </span>
+                {showLabels && (
+                  <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>
                 )}
               </Link>
             );
           })}
         </nav>
 
-        {/* ── Profile footer ── */}
+        {/* Profile footer */}
         <div style={{
-          padding: isMobile 
-            ? '12px 18px' 
-            : (collapsed ? '12px 8px' : '12px'),
-          borderTop: `1px solid ${DIVIDER}`,
+          padding: isMobile ? '14px' : (collapsed ? '14px 12px' : '14px'),
+          borderTop: `1px solid ${BORDER}`,
           flexShrink: 0,
         }}>
-          {((!isMobile && !collapsed) || (isMobile && isMobileMenuOpen)) ? (
+          {showLabels ? (
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
-              padding: '8px 10px',
-              borderRadius: '10px',
-              background: 'rgba(255,255,255,0.12)',
-              border: '1px solid rgba(255,255,255,0.18)',
+              gap: '11px',
+              padding: '10px',
+              borderRadius: '12px',
+              background: SURFACE_HOVER,
+              border: `1px solid ${BORDER}`,
             }}>
               <div style={{
-                width: '30px',
-                height: '30px',
-                borderRadius: '8px',
-                background: 'rgba(255,255,255,0.25)',
-                border: '1px solid rgba(255,255,255,0.3)',
+                width: '34px',
+                height: '34px',
+                borderRadius: '10px',
+                background: `linear-gradient(135deg, ${BRAND} 0%, #6366f1 100%)`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '11px',
-                fontWeight: 800,
-                color: 'white',
+                fontSize: '12px',
+                fontWeight: 700,
+                color: '#ffffff',
                 flexShrink: 0,
                 position: 'relative',
+                boxShadow: '0 1px 3px rgba(79,70,229,0.3)',
               }}>
                 RC
                 <span style={{
                   position: 'absolute',
                   bottom: '-2px',
                   right: '-2px',
-                  width: '8px',
-                  height: '8px',
+                  width: '9px',
+                  height: '9px',
                   background: '#22c55e',
                   borderRadius: '50%',
-                  border: `2px solid ${ORANGE_DARK}`,
+                  border: `2px solid ${SURFACE_HOVER}`,
                 }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  color: '#ffffff',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: TEXT,
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  lineHeight: '1.3',
                 }}>
                   Admin User
                 </div>
                 <div style={{
-                  fontSize: '10px',
-                  color: 'rgba(255,255,255,0.55)',
+                  fontSize: '11px',
+                  color: TEXT_3,
                   whiteSpace: 'nowrap',
+                  marginTop: '1px',
                 }}>
                   Administrator
                 </div>
@@ -357,17 +332,17 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
             !isMobile && (
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <div style={{
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '8px',
-                  background: 'rgba(255,255,255,0.2)',
-                  border: '1px solid rgba(255,255,255,0.25)',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: `linear-gradient(135deg, ${BRAND} 0%, #6366f1 100%)`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '10px',
-                  fontWeight: 800,
-                  color: 'white',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  boxShadow: '0 1px 3px rgba(79,70,229,0.3)',
                 }}>
                   RC
                 </div>
@@ -375,52 +350,14 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
             )
           )}
         </div>
-
-        {/* ── Toggle button (desktop only) ── */}
-        {!isMobile && (
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            style={{
-              position: 'absolute',
-              top: '18px',
-              right: '10px',
-              width: '26px',
-              height: '26px',
-              borderRadius: '8px',
-              background: 'rgba(255,255,255,0.20)',
-              border: '1px solid rgba(255,255,255,0.30)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: '#ffffff',
-              zIndex: 100,
-              boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-              transition: 'all 0.15s',
-              flexShrink: 0,
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.32)';
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.50)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.20)';
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.30)';
-            }}
-          >
-            <svg
-              width="14" height="14"
-              viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.5"
-              strokeLinecap="round" strokeLinejoin="round"
-              style={{ transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.25s ease' }}
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-        )}
       </aside>
+
+      <style>{`
+        @keyframes sbOverlay {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
     </>
   );
 }
