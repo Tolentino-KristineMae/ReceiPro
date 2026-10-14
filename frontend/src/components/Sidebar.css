@@ -25,24 +25,23 @@
   text-decoration: none;
   color: #24392e;
 }
-.brand-symbol {
-  width: 37px;
-  height: 39px;
-  border-radius: 11px;
-  background: #284f3c;
-  color: #fff;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
+.brand-logo {
+  display: block;
+  width: 145px;
+  height: 73px;
+  object-fit: contain;
 }
-.wordmark {
-  font-size: 23px;
-  font-weight: 750;
-  letter-spacing: -1px;
+.mobile-brand-logo {
+  display: block;
+  width: 110px;
+  height: 55px;
+  object-fit: contain;
 }
-.wordmark > span,
-.mobile-wordmark > span {
-  color: #66715f;
+@media (min-width: 768px) {
+  .is-collapsed .brand-logo {
+    width: 54px;
+    height: 35px;
+  }
 }
 .shell-icon-button {
   background: transparent;
@@ -268,9 +267,8 @@
     z-index: 45;
   }
   .mobile-wordmark {
-    font-size: 21px;
-    font-weight: 750;
-    color: #284f3c;
+    display: flex;
+    align-items: center;
     text-decoration: none;
   }
   .mobile-workspace {

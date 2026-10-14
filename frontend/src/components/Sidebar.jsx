@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Layers,
 } from "lucide-react";
+import profLogo from "../../newprof.png";
 import "./Sidebar.css";
 
 const navigation = [
@@ -82,7 +83,7 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
           <Menu size={20} />
         </button>
         <Link to="/" className="mobile-wordmark">
-          ReceiPro<span>.</span>
+          <img className="mobile-brand-logo" src={profLogo} alt="ReceiPro" />
         </Link>
         <span className="mobile-workspace">Workspace</span>
       </header>
@@ -107,12 +108,7 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
             aria-label="ReceiPro home"
             onClick={closeMobile}
           >
-            <span className="brand-symbol">
-              <ReceiptText size={23} strokeWidth={1.7} />
-            </span>
-            <span className="sidebar-label wordmark">
-              ReceiPro<span>.</span>
-            </span>
+            <img className="brand-logo" src={profLogo} alt="ReceiPro" />
           </Link>
           <button
             className="shell-icon-button sidebar-collapse"
