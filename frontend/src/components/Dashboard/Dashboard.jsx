@@ -61,25 +61,6 @@ function DashboardStats({ receipts, batches = [] }) {
   const total = currentMonthReceipts.length;
   const claimed = currentMonthReceipts.filter(r => r.match_status === 'verified' || r.match_status === 'matched').length;
   const unclaimed = total - claimed;
-  
-  // Filter to only finished batches (billing_ready) in current month
-  const currentMonthFinishedBatches = batches.filter(batch => {
-    if (batch.checker_status !== 'billing_ready') return false;
-    const batchDate = new Date(batch.created_at || batch.updated_at);
-    return batchDate.getMonth() === currentMonth && batchDate.getFullYear() === currentYear;
-  });
-  
-  // Sum service fees and cashout fees only from finished batches with summary_data
-  let totalServiceFee = 0;
-  let totalCashOutFee = 0;
-  
-  currentMonthFinishedBatches.forEach(batch => {
-    const summary = batch.summary_data;
-    if (summary) {
-      totalServiceFee += parseFloat(summary.service_fee) || 0;
-      totalCashOutFee += parseFloat(summary.cashout_fee) || 0;
-    }
-  });
 
   const stats = [
     {
@@ -112,26 +93,6 @@ function DashboardStats({ receipts, batches = [] }) {
       gradient: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
       bg: 'linear-gradient(135deg, rgba(245,158,11,0.05) 0%, rgba(251,191,36,0.05) 100%)'
     },
-    {
-      key: 'total_service_fee',
-      label: 'Service Fees',
-      value: `₱${totalServiceFee.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      sub: 'From finished batches',
-      tag: 'Service',
-      icon: Icon.Wallet,
-      gradient: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
-      bg: 'linear-gradient(135deg, rgba(59,130,246,0.05) 0%, rgba(96,165,250,0.05) 100%)'
-    },
-    {
-      key: 'total_cashout_fee',
-      label: 'Cashout Fees',
-      value: `₱${totalCashOutFee.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      sub: 'From finished batches',
-      tag: 'Cash Out',
-      icon: Icon.Download,
-      gradient: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
-      bg: 'linear-gradient(135deg, rgba(236,72,153,0.05) 0%, rgba(244,114,182,0.05) 100%)'
-    },
   ];
 
   const [isMobile, setIsMobile] = React.useState(false);
@@ -149,7 +110,7 @@ function DashboardStats({ receipts, batches = [] }) {
   const getGridColumns = () => {
     if (isMobile) return '1fr';
     if (isTablet) return 'repeat(2, 1fr)';
-    return 'repeat(5, 1fr)';
+    return 'repeat(3, 1fr)';
   };
 
   return (
