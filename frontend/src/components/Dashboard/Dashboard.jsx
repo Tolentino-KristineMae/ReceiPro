@@ -1,5 +1,5 @@
 import React from 'react';
-import unclaimedCardImg from '../../../../totalunclaimedcard-removebg-preview.png';
+import unclaimedCardImg from '../../totalunclaimedcard-removebg-preview.png';
 import claimedCardImg from '../../totalclaimedcard-removebg-preview.png';
 const Icon = {
   Receipt: ({ size = 18, className = "" }) => (
