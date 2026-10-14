@@ -257,16 +257,16 @@ function DashboardStats({ receipts, onNavigate }) {
   );
 }
 
-function RecentActivity({ receipts, onSelectReceipt, onNavigate }) {
-  const recentReceipts = [...receipts]
+function RecentBatches({ batches, onNavigate }) {
+  const recentBatches = [...batches]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .slice(0, 5);
 
   const statusColor = {
-    completed: { bg: 'rgba(16, 185, 129, 0.1)', color: '#059669', label: 'Completed' },
-    processing: { bg: 'rgba(245, 158, 11, 0.1)', color: '#d97706', label: 'Processing' },
-    pending: { bg: 'rgba(148, 163, 184, 0.1)', color: '#64748b', label: 'Pending' },
-    failed: { bg: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', label: 'Failed' },
+    draft: { bg: 'rgba(148, 163, 184, 0.1)', color: '#64748b', label: 'Draft' },
+    pending: { bg: 'rgba(245, 158, 11, 0.1)', color: '#d97706', label: 'Pending' },
+    approved: { bg: 'rgba(16, 185, 129, 0.1)', color: '#059669', label: 'Approved' },
+    rejected: { bg: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', label: 'Rejected' },
   };
 
   const [isMobile, setIsMobile] = React.useState(false);
@@ -297,10 +297,10 @@ function RecentActivity({ receipts, onSelectReceipt, onNavigate }) {
           color: '#0f172a',
           fontFamily: 'Inter, sans-serif'
         }}>
-          Recent Activity
+          Recent Batches
         </h2>
         <button 
-          onClick={() => onNavigate('/transactions')}
+          onClick={() => onNavigate('/batch')}
           style={{
             fontSize: '0.8125rem',
             fontWeight: '600',
@@ -325,23 +325,21 @@ function RecentActivity({ receipts, onSelectReceipt, onNavigate }) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        {recentReceipts.length > 0 ? recentReceipts.map(receipt => {
-          const amount = receipt.ocr_data?.amount
-            ? `₱${Number(receipt.ocr_data.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
-            : '₱0.00';
-          const date = new Date(receipt.created_at).toLocaleDateString('en-PH', {
+        {recentBatches.length > 0 ? recentBatches.map(batch => {
+          const date = new Date(batch.created_at).toLocaleDateString('en-PH', {
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
           });
 
-          const status = statusColor[receipt.ocr_status] || statusColor.pending;
+          const status = statusColor[batch.status] || statusColor.draft;
+          const receiptCount = batch.receipt_count || 0;
 
           return (
             <div
-              key={receipt.id}
-              onClick={() => onSelectReceipt(receipt)}
+              key={batch.id}
+              onClick={() => onNavigate(`/batch/${batch.id}`)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -373,7 +371,7 @@ function RecentActivity({ receipts, onSelectReceipt, onNavigate }) {
                 color: 'white',
                 flexShrink: 0
               }}>
-                <Icon.Receipt size={18} />
+                <Icon.Inbox size={18} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
@@ -383,14 +381,14 @@ function RecentActivity({ receipts, onSelectReceipt, onNavigate }) {
                   fontFamily: 'Inter, sans-serif',
                   marginBottom: '0.125rem'
                 }}>
-                  Receipt #{receipt.id}
+                  {batch.name || `Batch #${batch.id}`}
                 </div>
                 <div style={{
                   fontSize: '0.75rem',
                   color: '#64748b',
                   fontFamily: 'JetBrains Mono, monospace'
                 }}>
-                  {date} • {amount}
+                  {date} • {receiptCount} receipt{receiptCount !== 1 ? 's' : ''}
                 </div>
               </div>
               <div style={{
@@ -416,7 +414,7 @@ function RecentActivity({ receipts, onSelectReceipt, onNavigate }) {
             color: '#64748b',
             fontSize: '0.875rem'
           }}>
-            No recent activity
+            No recent batches
           </div>
         )}
       </div>
@@ -450,7 +448,7 @@ export default function Dashboard({
     }}>
       <DashboardStats receipts={receipts} batches={batches} onNavigate={onNavigate} />
       <div style={{ marginTop: '1rem' }}>
-        <RecentActivity receipts={receipts} onSelectReceipt={onSelectReceipt} onNavigate={onNavigate} />
+        <RecentBatches batches={batches} onNavigate={onNavigate} />
       </div>
     </div>
   );
