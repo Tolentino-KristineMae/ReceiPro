@@ -15,7 +15,7 @@ export default function SortingStage({
 }) {
   const [focusedColumn, setFocusedColumn] = useState(null); // null, 'gcash', or 'others'
   const [draggedReceipt, setDraggedReceipt] = useState(null);
-  
+
   const gcashCount  = receipts.length - checkedForOthers.size;
   const othersCount = checkedForOthers.size;
 
@@ -111,6 +111,11 @@ export default function SortingStage({
                 <div
                   key={r.id}
                   className={`ss-card${checked ? ' checked' : ''}`}
+                  role="checkbox"
+                  aria-checked={checked}
+                  aria-label={`Assign receipt ${r.id} to Others`}
+                  tabIndex={0}
+                  onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleReceipt(r.id); } }}
                   onClick={() => toggleReceipt(r.id)}
                 >
                   <div className="ss-checkbox">
@@ -175,11 +180,11 @@ export default function SortingStage({
                 padding: '8px 16px',
                 border: 'none',
                 background: focusedColumn === 'gcash' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                color: focusedColumn === 'gcash' ? '#3b82f6' : 'rgba(67, 20, 7, 0.6)',
+                color: focusedColumn === 'gcash' ? '#44636c' : 'rgba(67, 20, 7, 0.6)',
                 fontSize: '11px',
-                fontWeight: 900,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
+                fontWeight: 600,
+                textTransform: 'none',
+                letterSpacing: '0',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
                 fontFamily: "'Inter', sans-serif",
@@ -195,11 +200,11 @@ export default function SortingStage({
                 padding: '8px 16px',
                 border: 'none',
                 background: focusedColumn === 'others' ? 'rgba(245, 158, 11, 0.1)' : 'transparent',
-                color: focusedColumn === 'others' ? '#f59e0b' : 'rgba(67, 20, 7, 0.6)',
+                color: focusedColumn === 'others' ? '#815318' : 'rgba(67, 20, 7, 0.6)',
                 fontSize: '11px',
-                fontWeight: 900,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
+                fontWeight: 600,
+                textTransform: 'none',
+                letterSpacing: '0',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
                 fontFamily: "'Inter', sans-serif"
@@ -214,7 +219,7 @@ export default function SortingStage({
       {/* Columns */}
       <div className="ss-scroll">
         <div className="ss-columns" style={{
-          gridTemplateColumns: 
+          gridTemplateColumns:
             focusedColumn === 'gcash' ? '90% 10%' :
             focusedColumn === 'others' ? '10% 90%' :
             '1fr 1fr'
@@ -222,7 +227,7 @@ export default function SortingStage({
 
           {/* GCash */}
           {gcashReceipts.length > 0 && (
-            <div 
+            <div
               className="ss-col gcash"
               onDragOver={handleDragOver}
               onDrop={handleDropOnGcash}
@@ -233,9 +238,13 @@ export default function SortingStage({
               </div>
               <div className="ss-col-grid">
                 {gcashReceipts.map(r => (
-                  <div 
-                    key={r.id} 
+                  <div
+                    key={r.id}
                     className="ss-col-card gcash"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Edit receipt ${r.id}`}
+                    onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onReceiptClick?.(r); } }}
                     draggable
                     onDragStart={(e) => handleDragStart(e, r)}
                     onDragEnd={handleDragEnd}
@@ -261,7 +270,7 @@ export default function SortingStage({
 
           {/* Others */}
           {othersReceipts.length > 0 && (
-            <div 
+            <div
               className="ss-col others"
               onDragOver={handleDragOver}
               onDrop={handleDropOnOthers}
@@ -272,9 +281,13 @@ export default function SortingStage({
               </div>
               <div className="ss-col-grid">
                 {othersReceipts.map(r => (
-                  <div 
-                    key={r.id} 
+                  <div
+                    key={r.id}
                     className="ss-col-card others"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Edit receipt ${r.id}`}
+                    onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onReceiptClick?.(r); } }}
                     draggable
                     onDragStart={(e) => handleDragStart(e, r)}
                     onDragEnd={handleDragEnd}

@@ -390,6 +390,7 @@ export default function BatchDashboard({
   const nextBatchNumber = calculateNextBatchNumber();
   const autoBatchName = `Batch #${String(nextBatchNumber).padStart(3, "0")}`;
 
+  const [uploadNames, setUploadNames] = React.useState([]);
   const [customBatchName, setCustomBatchName] = React.useState(null);
   const [statusFilter, setStatusFilter] = React.useState("all");
   const [summaryBatch, setSummaryBatch] = React.useState(null);
@@ -739,7 +740,7 @@ export default function BatchDashboard({
           <span className="bc-icon-tile">
             <Icon.Plus size={19} />
           </span>
-          <span className="bc-eyebrow">LET’S GET STARTED</span>
+          <span className="bc-eyebrow">STAGE 1 OF 8 · UPLOAD</span>
         </div>
         <h2>Create a new batch</h2>
         <p className="bc-description">
@@ -783,7 +784,7 @@ export default function BatchDashboard({
               ref={fileInputRef}
               disabled={isCreating}
               aria-label="Upload receipt images"
-              onChange={(e) => setFileCount(e.target.files?.length || 0)}
+              onChange={(e) => { const files = Array.from(e.target.files || []); setFileCount(files.length); setUploadNames(files.map(file => file.name)); }}
             />
             <span className="bc-upload-icon">
               {fileCount ? <CheckCheck size={26} /> : <UploadCloud size={26} />}
@@ -804,6 +805,7 @@ export default function BatchDashboard({
             </span>
             <small>Receipt images · Select multiple files</small>
           </label>
+          {fileCount > 0 && <div className="bc-upload-queue" aria-label="Selected receipt files"><span>Ready to upload · {fileCount} file{fileCount === 1 ? "" : "s"}</span>{uploadNames.slice(0, 4).map((name, index) => <div key={`${name}-${index}`}><CheckCheck size={14} /><span>{name}</span></div>)}{fileCount > 4 && <small>+{fileCount - 4} more files</small>}</div>}
           <button
             className="bc-button bc-button-primary bc-create-button"
             type="submit"
@@ -821,12 +823,13 @@ export default function BatchDashboard({
           </button>
         </form>
         <div className="bc-workflow-guide">
-          <span className="bc-eyebrow">FROM UPLOAD TO VERIFIED</span>
+          <span className="bc-eyebrow">YOUR PROCESS, AT A GLANCE</span>
           <ol>
             {[
               ["Upload", "Add your receipt images"],
-              ["Prepare", "Sort, crop and extract details"],
-              ["Verify", "Check and finalize your batch"],
+              ["Sort & prepare", "Categorize, crop and extract details"],
+              ["Check & finalize", "Match receipts to transactions"],
+              ["Summary & billing", "Review deductions and prepare payment"],
             ].map(([title, text], index) => (
               <li key={title}>
                 <span>{String(index + 1).padStart(2, "0")}</span>

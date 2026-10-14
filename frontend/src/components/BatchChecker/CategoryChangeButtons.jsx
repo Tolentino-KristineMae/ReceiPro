@@ -1,10 +1,10 @@
 import React from 'react';
 
-export default function CategoryChangeButtons({ 
-  currentCategory, 
-  onChangeToGCash, 
+export default function CategoryChangeButtons({
+  currentCategory,
+  onChangeToGCash,
   onChangeToOthers,
-  disabled = false 
+  disabled = false
 }) {
   if (!currentCategory || currentCategory === 'unsorted') return null;
 
@@ -26,11 +26,11 @@ export default function CategoryChangeButtons({
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
-        fontSize: '10px',
-        fontWeight: 700,
+        fontSize: '11px',
+        fontWeight: 600,
         color: '#64748b',
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em'
+        textTransform: 'none',
+        letterSpacing: '0'
       }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M7 7h10v10" />
@@ -38,7 +38,7 @@ export default function CategoryChangeButtons({
         </svg>
         Wrong Category?
       </div>
-      
+
       {isGCash && (
         <button
           onClick={onChangeToOthers}
@@ -46,13 +46,13 @@ export default function CategoryChangeButtons({
           style={{
             padding: '8px 16px',
             borderRadius: '10px',
-            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%)',
+            background: 'var(--workspace-accent)',
             border: '1px solid rgba(245, 158, 11, 0.3)',
-            color: '#f59e0b',
-            fontSize: '10px',
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
+            color: '#815318',
+            fontSize: '11px',
+            fontWeight: 600,
+            textTransform: 'none',
+            letterSpacing: '0',
             cursor: disabled ? 'not-allowed' : 'pointer',
             opacity: disabled ? 0.5 : 1,
             transition: 'all 0.2s',
@@ -69,7 +69,7 @@ export default function CategoryChangeButtons({
           Change to Others
         </button>
       )}
-      
+
       {isOthers && (
         <button
           onClick={onChangeToGCash}
@@ -77,13 +77,13 @@ export default function CategoryChangeButtons({
           style={{
             padding: '8px 16px',
             borderRadius: '10px',
-            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%)',
+            background: 'var(--workspace-accent)',
             border: '1px solid rgba(59, 130, 246, 0.3)',
-            color: '#3b82f6',
-            fontSize: '10px',
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
+            color: '#44636c',
+            fontSize: '11px',
+            fontWeight: 600,
+            textTransform: 'none',
+            letterSpacing: '0',
             cursor: disabled ? 'not-allowed' : 'pointer',
             opacity: disabled ? 0.5 : 1,
             transition: 'all 0.2s',

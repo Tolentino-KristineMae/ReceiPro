@@ -1,22 +1,21 @@
 /* ─── Fonts ─────────────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
 /* ─── System-Matched Orange Light Theme Tokens ───────────────────────────────── */
-:root {
+.ss-root {
   --ss-bg-primary:    #ffffff;
-  --ss-bg-secondary:  #fffbf5;
+  --ss-bg-secondary:  var(--workspace-bg);
   --ss-bg-tertiary:   rgba(251, 146, 60, 0.05);
-  
-  --ss-accent:        #f97316;
+
+  --ss-accent:        var(--workspace-accent);
   --ss-accent-muted:  rgba(249, 115, 22, 0.6);
-  --ss-text-main:     #431407;
-  --ss-text-muted:    rgba(67, 20, 7, 0.6);
-  
+  --ss-text-main:     var(--workspace-text);
+  --ss-text-muted:    var(--workspace-muted);
+
   --ss-border:        rgba(251, 146, 60, 0.15);
   --ss-border-strong: rgba(251, 146, 60, 0.3);
 
-  --ss-gcash-color:   #3b82f6;
-  --ss-others-color:  #eab308;
+  --ss-gcash-color:   #44636c;
+  --ss-others-color:  #815318;
 
   --font-display: 'Inter', system-ui, sans-serif;
   --font-body:    'Inter', system-ui, sans-serif;
@@ -62,7 +61,7 @@
 .ss-title {
   font-family: var(--font-display);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: 600;
   color: var(--ss-text-main);
   letter-spacing: -0.02em;
   margin: 0 0 4px;
@@ -76,7 +75,7 @@
   margin: 0;
 }
 
-.ss-subtitle strong { font-weight: 800; }
+.ss-subtitle strong { font-weight: 600; }
 .ss-subtitle .gcash  { color: var(--ss-gcash-color); }
 .ss-subtitle .others { color: var(--ss-others-color); }
 
@@ -95,10 +94,10 @@
   gap: 6px;
   padding: 6px 12px;
   border-radius: var(--radius-badge);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
   border: 1px solid;
   transition: all 0.2s;
 }
@@ -147,7 +146,7 @@
   cursor: pointer;
   border: 1px solid var(--ss-border);
   background: var(--ss-bg-secondary);
-  box-shadow: 0 2px 8px rgba(67, 20, 7, 0.04);
+  box-shadow: 0 2px 8px var(--workspace-muted);
   transition: all 0.2s;
 }
 
@@ -188,7 +187,7 @@
   justify-content: center;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--ss-border-strong);
-  box-shadow: 0 2px 8px rgba(67, 20, 7, 0.1);
+  box-shadow: 0 2px 8px var(--workspace-muted);
   transition: all 0.2s;
 }
 
@@ -206,10 +205,10 @@
   z-index: 10;
   padding: 4px 10px;
   border-radius: 6px;
-  font-size: 9px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
   color: #000;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
@@ -225,10 +224,10 @@
   border-radius: var(--radius-btn);
   background: var(--ss-accent);
   color: #fff;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-transform: none;
+  letter-spacing: 0;
   border: none;
   cursor: pointer;
   transition: all 0.2s;
@@ -240,12 +239,12 @@
 }
 
 .ss-apply-btn:active:not(:disabled) {
-  background: #ea580c;
+  background: var(--workspace-accent-hover);
   transform: scale(0.98);
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.15);
 }
 
-.ss-apply-btn:disabled { 
+.ss-apply-btn:disabled {
   background: #fed7aa;
   cursor: not-allowed;
   box-shadow: none;
@@ -279,9 +278,9 @@
   border: 2px solid var(--ss-accent);
   color: var(--ss-accent);
   font-size: 13px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(249, 115, 22, 0.1);
@@ -316,7 +315,7 @@
   padding: 12px;
   border-radius: 16px;
   border: 1.5px solid var(--ss-border);
-  box-shadow: 0 2px 8px rgba(67, 20, 7, 0.03);
+  box-shadow: 0 2px 8px var(--workspace-muted);
   transition: all 0.3s ease;
   overflow: hidden;
   min-width: 0;
@@ -343,9 +342,9 @@
 
 .ss-col-label {
   font-size: 11px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .ss-col-label.gcash { color: var(--ss-gcash-color); }
@@ -353,8 +352,8 @@
 
 .ss-col-count {
   font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 600;
   padding: 4px 10px;
   border-radius: 8px;
   background: var(--ss-bg-tertiary);
@@ -391,9 +390,9 @@
   padding: 3px 8px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.9);
-  color: #431407;
-  font-size: 8px;
-  font-weight: 900;
+  color: var(--workspace-text);
+  font-size: 11px;
+  font-weight: 600;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
@@ -414,12 +413,12 @@
   margin-top: 16px;
   padding: 14px;
   border-radius: var(--radius-btn);
-  background: #10b981;
+  background: #47613b;
   color: #fff;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-transform: none;
+  letter-spacing: 0;
   border: none;
   cursor: pointer;
   transition: all 0.2s;
@@ -432,7 +431,7 @@
 
 .ss-proceed-btn:active {
   transform: scale(0.98);
-  background: #059669;
+  background: #47613b;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
 }
 
@@ -508,7 +507,7 @@
     width: auto;
     padding: 10px 24px;
     font-size: 11px;
-    letter-spacing: 0.12em;
+    letter-spacing: 0;
   }
 }
 
@@ -548,7 +547,7 @@
 
   .ss-badge {
     padding: 5px 10px;
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .ss-grid {
@@ -583,7 +582,7 @@
   }
 
   .ss-receipt-id {
-    font-size: 7px;
+    font-size: 11px;
     top: 5px;
     left: 5px;
     padding: 2px 6px;
@@ -612,6 +611,6 @@
 
   .ss-badge {
     padding: 4px 8px;
-    font-size: 8px;
+    font-size: 11px;
   }
 }

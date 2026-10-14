@@ -273,7 +273,7 @@ export default function CropStage({
               <div className="cs-form-row date-account">
                 <div className="cs-form-group">
                   <label className="cs-form-label">Date *</label>
-                  <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)}
+                  <input aria-label="Receipt date" type="date" value={manualDate} onChange={e => setManualDate(e.target.value)}
                     className={`cs-form-input ${errors.date ? 'error' : ''}`} />
                 </div>
                 <div className="cs-form-group">
@@ -286,7 +286,7 @@ export default function CropStage({
                     ))}
                   </div>
                   {errors.account && (
-                    <span style={{ fontSize: '9px', fontWeight: 700, color: '#dc2626', marginTop: '2px', display: 'block', fontFamily: 'var(--font-display)' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#dc2626', marginTop: '2px', display: 'block', fontFamily: 'var(--font-display)' }}>
                       ⚠ Select an account
                     </span>
                   )}
@@ -295,13 +295,13 @@ export default function CropStage({
               <div className="cs-form-row two-cols">
                 <div className="cs-form-group">
                   <label className="cs-form-label">Amount *</label>
-                  <input type="number" value={manualAmount} onChange={e => setManualAmount(e.target.value)}
+                  <input aria-label="Receipt amount" type="number" value={manualAmount} onChange={e => setManualAmount(e.target.value)}
                     className={`cs-form-input ${errors.amount ? 'error' : ''}`} placeholder="0.00" />
                 </div>
                 <div className="cs-form-group">
                   <label className="cs-form-label">Label *</label>
                   <div style={{ display: 'flex', gap: '4px' }}>
-                    <input type="text" value={manualReference} onChange={e => setManualReference(e.target.value)}
+                    <input aria-label="Receipt label" type="text" value={manualReference} onChange={e => setManualReference(e.target.value)}
                       className={`cs-form-input ${errors.reference ? 'error' : ''}`} placeholder="40315 or OTH" />
                     <button onClick={() => setManualReference('OTH')} className="cs-quick-fill-btn" type="button"
                       style={{ width: 'auto', padding: '0 10px', margin: 0, whiteSpace: 'nowrap', flexShrink: 0 }}>
