@@ -52,7 +52,7 @@ const Icon = {
   ),
 };
 
-function DashboardStats({ receipts }) {
+function DashboardStats({ receipts, onNavigate }) {
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   
@@ -159,17 +159,82 @@ function DashboardStats({ receipts }) {
           }}
         >
           {stat.image ? (
-            <img
-              src={stat.image}
-              alt={stat.label}
-              style={{
-                width: '100%',
-                height: '100%',
-                flex: 1,
-                objectFit: 'fill',
-                display: 'block',
-              }}
-            />
+            <>
+              <img
+                src={stat.image}
+                alt={stat.label}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  flex: 1,
+                  objectFit: 'fill',
+                  display: 'block',
+                }}
+              />
+              <div style={{
+                position: 'absolute',
+                left: '1.25rem',
+                bottom: '1.25rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.625rem',
+                zIndex: 2,
+              }}>
+                <div style={{
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: '2rem',
+                  fontWeight: '800',
+                  lineHeight: '1',
+                  color: '#1e293b',
+                  letterSpacing: '-0.03em',
+                }}>
+                  {stat.value}
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (stat.key === 'total_uploaded') onNavigate?.('/transactions');
+                    else if (stat.key === 'total_claimed') onNavigate?.('/transactions');
+                    else if (stat.key === 'total_unclaimed') onNavigate?.('/batch');
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    padding: '0.75rem 1.5rem',
+                    background: '#f97316',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '14px',
+                    fontSize: '0.95rem',
+                    fontWeight: '700',
+                    fontFamily: 'Inter, sans-serif',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
+                    transition: 'all 0.2s ease',
+                    whiteSpace: 'nowrap',
+                    alignSelf: 'flex-start',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#ea580c';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(249, 115, 22, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#f97316';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.3)';
+                  }}
+                >
+                  View Details
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </button>
+              </div>
+            </>
           ) : (
             <>
               <div style={{
@@ -455,7 +520,7 @@ export default function Dashboard({
       padding: isMobile ? '0.5rem 0 2rem' : '0 0 2rem',
       background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)'
     }}>
-      <DashboardStats receipts={receipts} batches={batches} />
+      <DashboardStats receipts={receipts} batches={batches} onNavigate={onNavigate} />
       <div style={{ marginTop: '1rem' }}>
         <RecentActivity receipts={receipts} onSelectReceipt={onSelectReceipt} onNavigate={onNavigate} />
       </div>
