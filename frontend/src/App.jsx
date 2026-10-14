@@ -115,7 +115,7 @@ function App() {
 
    return (
     <ThemeProvider>
-      <div className="flex h-screen overflow-hidden" style={{ background: '#f7f8f3' }}>
+      <div className="flex h-screen overflow-hidden" style={{ background: 'var(--workspace-bg)' }}>
           <Sidebar 
             onMobileToggle={toggleMobileMenu}
             isMobileMenuOpen={isMobileMenuOpen} 
@@ -125,7 +125,7 @@ function App() {
             className="flex-1 overflow-y-auto overflow-x-hidden min-w-0"
             inert={isMobile && isMobileMenuOpen}
             style={{ 
-              background: '#f7f8f3',
+              background: 'var(--workspace-bg)',
               paddingTop: isMobile ? '64px' : '0'
             }}
           >
