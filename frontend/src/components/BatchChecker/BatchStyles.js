@@ -2,40 +2,43 @@ export const BATCH_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
   :root {
-    --bg-primary:        #fffbf5;
+    --bg-primary:        #fffcf5;
     --bg-secondary:      #ffffff;
-    --bg-tertiary:       #fff7ed;
-    --bg-glass:          rgba(255, 255, 255, 0.7);
-    --bg-glass-hover:    rgba(251, 146, 60, 0.08);
+    --bg-tertiary:       #fef3c7;
+    --bg-glass:          rgba(255, 255, 255, 0.8);
+    --bg-glass-hover:    rgba(251, 146, 60, 0.05);
     
-    --border-subtle:     rgba(251, 146, 60, 0.15);
-    --border-strong:     rgba(251, 146, 60, 0.25);
-    --border-accent:     rgba(249, 115, 22, 0.2);
+    --border-subtle:     #fed7aa;
+    --border-strong:     #fdba74;
+    --border-accent:     rgba(234, 88, 12, 0.2);
     
-    --accent-primary:    #f97316;
-    --accent-secondary:  #fb923c;
-    --success-primary:   #22c55e;
+    --accent-primary:    #ea580c;
+    --accent-secondary:  #f97316;
+    --success-primary:   #15803d;
     --danger-primary:    #b91c1c;
-    --warning-primary:   #ea580c;
+    --warning-primary:   #d97706;
+    --blue-primary:      #1e40af;
+    --grey-primary:      #71717a;
     
-    --gradient-primary:  linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-    --gradient-accent:   linear-gradient(135deg, #fb923c 0%, #f97316 100%);
-    --gradient-success:  linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    --gradient-primary:  linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+    --gradient-accent:   linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    --gradient-success:  linear-gradient(135deg, #15803d 0%, #14532d 100%);
+    --gradient-cream:    linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%);
     
     --text-primary:      #431407;
-    --text-secondary:    #7c2d12;
-    --text-muted:        #9a3412;
-    --text-muted-alt:    #c2410c;
+    --text-secondary:    #78350f;
+    --text-muted:        #92400e;
+    --text-muted-alt:    #a16207;
     
-    --shadow-sm:         0 1px 2px 0 rgba(249, 115, 22, 0.05);
-    --shadow-md:         0 4px 6px -1px rgba(249, 115, 22, 0.1);
-    --shadow-lg:         0 10px 15px -3px rgba(249, 115, 22, 0.1);
-    --shadow-xl:         0 20px 25px -5px rgba(249, 115, 22, 0.15);
+    --shadow-sm:         0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md:         0 2px 4px 0 rgba(0, 0, 0, 0.08);
+    --shadow-lg:         0 4px 12px 0 rgba(0, 0, 0, 0.1);
+    --shadow-xl:         0 8px 24px 0 rgba(0, 0, 0, 0.12);
     
-    --radius-sm:         8px;
-    --radius-md:         12px;
-    --radius-lg:         16px;
-    --radius-xl:         24px;
+    --radius-sm:         6px;
+    --radius-md:         10px;
+    --radius-lg:         14px;
+    --radius-xl:         18px;
     
     --font-family:       'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     --font-mono:         'JetBrains Mono', 'SF Mono', Menlo, monospace;
@@ -64,15 +67,14 @@ export const BATCH_STYLES = `
   }
 
   .glass-card {
-    background: var(--bg-glass);
-    backdrop-filter: blur(40px);
+    background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-xl);
-    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
     position: relative;
     overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: var(--shadow-lg);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-sm);
     min-width: 0;
   }
 
@@ -82,9 +84,9 @@ export const BATCH_STYLES = `
     top: 0;
     left: 0;
     right: 0;
-    height: 1px;
-    background: var(--gradient-accent);
-    opacity: 0.4;
+    height: 2px;
+    background: var(--gradient-primary);
+    opacity: 0.3;
   }
 
   .glass-card.sticky {
@@ -194,31 +196,31 @@ export const BATCH_STYLES = `
 
   .btn-primary-modern {
     width: auto;
-    background: var(--gradient-accent);
+    background: var(--gradient-primary);
     border: none;
     border-radius: var(--radius-md);
-    padding: 10px 18px;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    padding: 11px 20px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     color: white;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-md);
     white-space: nowrap;
     flex-shrink: 0;
-    line-height: 1.2;
+    line-height: 1;
   }
 
   .btn-primary-modern:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-xl);
-    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+    filter: brightness(1.05);
   }
 
   .btn-primary-modern:disabled {
@@ -228,11 +230,11 @@ export const BATCH_STYLES = `
   }
 
   .btn-icon-modern {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-md);
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--border-subtle);
-    background: var(--bg-glass);
+    background: var(--bg-secondary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -243,14 +245,13 @@ export const BATCH_STYLES = `
 
   .btn-icon-modern:hover {
     border-color: var(--border-strong);
-    background: var(--bg-glass-hover);
-    color: var(--text-primary);
-    transform: translateY(-1px);
+    background: var(--bg-tertiary);
+    color: var(--accent-primary);
   }
 
   .btn-icon-modern.danger:hover {
     border-color: var(--danger-primary);
-    background: rgba(239,68,68,0.1);
+    background: rgba(185, 28, 28, 0.08);
     color: var(--danger-primary);
   }
 

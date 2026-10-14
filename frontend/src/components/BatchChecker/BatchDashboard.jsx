@@ -1345,28 +1345,26 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, dela
       className="glass-card"
       style={{ 
         animationDelay: `${delay}s`,
-        padding: '12px 16px',
+        padding: '16px 20px',
         cursor: 'pointer',
-        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.2s ease',
         display: 'flex',
         alignItems: 'center',
         gap: '1.5rem',
         border: `1px solid ${isSelected ? '#dc2626' : 'var(--border-subtle)'}`,
-        background: isSelected ? 'rgba(239,68,68,0.03)' : 'var(--bg-secondary)',
+        background: isSelected ? 'rgba(239,68,68,0.02)' : 'var(--bg-secondary)',
         borderRadius: 'var(--radius-lg)',
         boxShadow: 'var(--shadow-sm)'
       }}
       onClick={onClick}
       onMouseEnter={(e) => {
         if (!isSelected) {
-          e.currentTarget.style.transform = 'translateY(-2px)';
           e.currentTarget.style.borderColor = 'var(--accent-primary)';
           e.currentTarget.style.boxShadow = 'var(--shadow-md)';
         }
       }}
       onMouseLeave={(e) => {
         if (!isSelected) {
-          e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.borderColor = 'var(--border-subtle)';
           e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
         }
@@ -1376,7 +1374,7 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, dela
       <div
         onClick={onToggleSelect}
         style={{
-          width: '17px', height: '17px', borderRadius: '4px', flexShrink: 0,
+          width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
           border: `2px solid ${isSelected ? '#dc2626' : 'var(--border-strong)'}`,
           background: isSelected ? '#dc2626' : 'transparent',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1384,26 +1382,28 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, dela
         }}
       >
         {isSelected && (
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         )}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '220px', flexShrink: 0 }}>
+
+      {/* Icon & Name Section */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: '240px', flexShrink: 0 }}>
         <div style={{
-          width: '32px',
-          height: '32px',
-          borderRadius: '8px',
-          background: `linear-gradient(135deg, ${status.color}15 0%, ${status.color}05 100%)`,
-          border: `1px solid ${status.color}30`,
+          width: '40px',
+          height: '40px',
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--gradient-cream)',
+          border: `1px solid var(--border-subtle)`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0
         }}>
-          <Icon.Folder size={14} style={{ color: status.color }} />
+          <Icon.Folder size={18} style={{ color: 'var(--accent-primary)' }} />
         </div>
-        <div style={{ overflow: 'hidden' }}>
+        <div style={{ overflow: 'hidden', minWidth: 0 }}>
           {isEditing ? (
             <input
               type="text"
@@ -1431,14 +1431,15 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, dela
               onClick={(e) => e.stopPropagation()}
               style={{
                 fontSize: '14px',
-                fontWeight: 800,
+                fontWeight: 700,
                 color: 'var(--accent-primary)',
                 background: 'transparent',
                 border: 'none',
-                borderBottom: '1px solid var(--accent-primary)',
+                borderBottom: '2px solid var(--accent-primary)',
                 width: '100%',
                 outline: 'none',
-                padding: '0'
+                padding: '2px 0',
+                fontFamily: 'var(--font-family)'
               }}
             />
           ) : (
@@ -1450,111 +1451,197 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, dela
               style={{ 
                 fontSize: '14px', 
                 color: 'var(--text-primary)',
-                fontWeight: 800,
+                fontWeight: 700,
                 letterSpacing: '-0.01em',
-                marginBottom: '1px',
+                marginBottom: '3px',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '6px',
+                fontFamily: 'var(--font-family)'
               }}
             >
               {batch.name || 'Unnamed Batch'}
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.25, flexShrink: 0 }}>
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
             </div>
           )}
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Icon.Calendar size={10} />
-            {formattedDate} • {batch.final_batch_number ? `ID: ${batch.final_batch_number}` : 'Draft'}
+          <div style={{ 
+            fontSize: '10px', 
+            color: 'var(--text-muted)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '6px',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.02em'
+          }}>
+            <Icon.Calendar size={9} />
+            {formattedDate} {batch.final_batch_number && `• ${batch.final_batch_number}`}
           </div>
         </div>
       </div>
 
-      {/* Stats Row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem', flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
-          <div style={{ width: '45px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted-alt)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Items</div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>{total}</div>
+      {/* Stats Section */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flex: 1 }}>
+        <div style={{ minWidth: '55px' }}>
+          <div style={{ 
+            fontSize: '10px', 
+            fontWeight: 700, 
+            color: 'var(--text-muted)', 
+            textTransform: 'uppercase', 
+            letterSpacing: '0.05em', 
+            marginBottom: '4px'
+          }}>
+            Total
           </div>
-          <div style={{ width: '55px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted-alt)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Verified</div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: '#15803d', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>{verified}</div>
+          <div style={{ 
+            fontSize: '18px', 
+            fontWeight: 700, 
+            color: 'var(--text-primary)', 
+            fontFamily: 'var(--font-mono)', 
+            lineHeight: 1 
+          }}>
+            {total}
           </div>
-          {hasNetAmount && (
-            <div style={{ width: '100px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted-alt)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>Net Total</div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--accent-primary)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
-                ₱{fmt(netAmount)}
-              </div>
-            </div>
-          )}
         </div>
+        
+        <div style={{ minWidth: '65px' }}>
+          <div style={{ 
+            fontSize: '10px', 
+            fontWeight: 700, 
+            color: 'var(--text-muted)', 
+            textTransform: 'uppercase', 
+            letterSpacing: '0.05em', 
+            marginBottom: '4px'
+          }}>
+            Verified
+          </div>
+          <div style={{ 
+            fontSize: '18px', 
+            fontWeight: 700, 
+            color: 'var(--success-primary)', 
+            fontFamily: 'var(--font-mono)', 
+            lineHeight: 1 
+          }}>
+            {verified}
+          </div>
+        </div>
+        
+        {hasNetAmount && (
+          <div style={{ minWidth: '105px' }}>
+            <div style={{ 
+              fontSize: '10px', 
+              fontWeight: 700, 
+              color: 'var(--text-muted)', 
+              textTransform: 'uppercase', 
+              letterSpacing: '0.05em', 
+              marginBottom: '4px'
+            }}>
+              Net Total
+            </div>
+            <div style={{ 
+              fontSize: '15px', 
+              fontWeight: 700, 
+              color: 'var(--accent-primary)', 
+              fontFamily: 'var(--font-mono)', 
+              lineHeight: 1 
+            }}>
+              ₱{fmt(netAmount)}
+            </div>
+          </div>
+        )}
 
-        {/* Progress Mini */}
-        <div style={{ flex: 1, maxWidth: '160px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '6px' }}>
-            <span style={{ letterSpacing: '0.05em' }}>PROGRESS</span>
+        {/* Progress Bar */}
+        <div style={{ flex: 1, maxWidth: '180px', minWidth: '120px' }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'baseline', 
+            fontSize: '10px', 
+            fontWeight: 700, 
+            color: 'var(--text-muted)', 
+            marginBottom: '6px'
+          }}>
+            <span style={{ letterSpacing: '0.05em', textTransform: 'uppercase' }}>Progress</span>
             <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>{progress}%</span>
           </div>
-          <div style={{ height: '4px', background: 'rgba(0,0,0,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${progress}%`, background: status.color, borderRadius: '2px', transition: 'width 0.5s ease' }} />
+          <div style={{ 
+            height: '6px', 
+            background: '#fef3c7', 
+            borderRadius: '3px', 
+            overflow: 'hidden',
+            border: '1px solid var(--border-subtle)'
+          }}>
+            <div style={{ 
+              height: '100%', 
+              width: `${progress}%`, 
+              background: 'var(--gradient-primary)', 
+              borderRadius: '2px', 
+              transition: 'width 0.4s ease' 
+            }} />
           </div>
         </div>
       </div>
 
       {/* Status & Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '130px', justifyContent: 'flex-end', flexShrink: 0 }}>
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '10px', 
+        minWidth: '140px', 
+        justifyContent: 'flex-end', 
+        flexShrink: 0 
+      }}>
         {batch.checker_status === 'billing_ready' && (
           <button 
             onClick={onViewSummary}
             style={{ 
-              width: '28px', 
-              height: '28px', 
-              borderRadius: '6px',
-              background: 'rgba(34, 197, 94, 0.08)',
-              border: '1px solid rgba(34, 197, 94, 0.2)',
+              width: '32px', 
+              height: '32px', 
+              borderRadius: 'var(--radius-sm)',
+              background: 'rgba(21, 128, 61, 0.08)',
+              border: '1px solid rgba(21, 128, 61, 0.2)',
               color: 'var(--success-primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'all 0.2s',
-              flexShrink: 0
+              flexShrink: 0,
+              cursor: 'pointer'
             }}
             title="View Summary"
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(34, 197, 94, 0.15)';
-              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.background = 'rgba(21, 128, 61, 0.15)';
+              e.currentTarget.style.transform = 'scale(1.05)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(34, 197, 94, 0.08)';
+              e.currentTarget.style.background = 'rgba(21, 128, 61, 0.08)';
               e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
               <line x1="16" y1="13" x2="8" y2="13"/>
               <line x1="16" y1="17" x2="8" y2="17"/>
-              <polyline points="10 9 9 9 8 9"/>
             </svg>
           </button>
         )}
         
         <div style={{
-          padding: '4px 0',
-          width: '60px',
+          padding: '6px 12px',
+          minWidth: '68px',
           textAlign: 'center',
-          borderRadius: '6px',
+          borderRadius: 'var(--radius-sm)',
           background: status.bg,
           border: `1px solid ${status.border}`,
           color: status.color,
-          fontSize: '11px',
+          fontSize: '10px',
           fontWeight: 800,
           textTransform: 'uppercase',
           letterSpacing: '0.05em'
@@ -1568,9 +1655,9 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, dela
             onDelete(e);
           }}
           style={{ 
-            width: '28px', 
-            height: '28px', 
-            borderRadius: '6px',
+            width: '32px', 
+            height: '32px', 
+            borderRadius: 'var(--radius-sm)',
             background: 'transparent',
             border: '1px solid transparent',
             color: 'var(--text-muted)',
@@ -1578,12 +1665,26 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, dela
             alignItems: 'center',
             justifyContent: 'center',
             transition: 'all 0.2s',
-            flexShrink: 0
+            flexShrink: 0,
+            cursor: 'pointer'
           }}
+          title="Delete Batch"
           onMouseEnter={(e) => {
             e.currentTarget.style.background = 'rgba(185, 28, 28, 0.08)';
             e.currentTarget.style.color = 'var(--danger-primary)';
             e.currentTarget.style.borderColor = 'rgba(185, 28, 28, 0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--text-muted)';
+            e.currentTarget.style.borderColor = 'transparent';
+          }}
+        >
+          <Icon.Trash size={13} />
+        </button>
+      </div>
+    </div>
+  );
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'transparent';
