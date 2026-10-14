@@ -115,6 +115,11 @@ function DashboardStats({ receipts, onNavigate }) {
       {stats.map(stat => (
         <div
           key={stat.key}
+          onClick={() => {
+            if (stat.key === 'total_uploaded') onNavigate?.('/transactions');
+            else if (stat.key === 'total_claimed') onNavigate?.('/transactions');
+            else if (stat.key === 'total_unclaimed') onNavigate?.('/batch');
+          }}
           style={{ 
             background: 'transparent',
             border: 'none',
@@ -157,58 +162,6 @@ function DashboardStats({ receipts, onNavigate }) {
                   display: 'block',
                 }}
               />
-              <div style={{
-                position: 'absolute',
-                left: '2rem',
-                bottom: '5.75rem',
-                display: 'flex',
-                flexDirection: 'column',
-                zIndex: 2,
-              }}>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (stat.key === 'total_uploaded') onNavigate?.('/transactions');
-                    else if (stat.key === 'total_claimed') onNavigate?.('/transactions');
-                    else if (stat.key === 'total_unclaimed') onNavigate?.('/batch');
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.35rem',
-                    padding: '0.4rem 0.75rem',
-                    background: '#f97316',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '10px',
-                    fontSize: '0.85rem',
-                    fontWeight: '700',
-                    fontFamily: 'Inter, sans-serif',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(249, 115, 22, 0.25)',
-                    transition: 'all 0.2s ease',
-                    whiteSpace: 'nowrap',
-                    width: 'auto',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#ea580c';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(249, 115, 22, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#f97316';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.3)';
-                  }}
-                >
-                  View Details
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </button>
-              </div>
             </>
           ) : (
             <>
