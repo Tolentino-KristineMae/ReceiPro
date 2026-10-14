@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import profLogo from '../prof.png';
 
 const NAV = [
   {
@@ -167,34 +168,17 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
           flexShrink: 0,
           justifyContent: isMobile ? 'flex-start' : (collapsed ? 'center' : 'flex-start'),
         }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '9px',
-            background: 'rgba(255,255,255,0.22)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-          }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z" />
-              <path d="M16 8H8M16 12H8M13 16H8" />
-            </svg>
-          </div>
-          {(!isMobile && !collapsed) || (isMobile && isMobileMenuOpen) ? (
-            <span style={{
-              fontSize: '15px',
-              fontWeight: 800,
-              color: '#ffffff',
-              letterSpacing: '-0.03em',
-              whiteSpace: 'nowrap',
-            }}>
-              ReciePro
-            </span>
-          ) : null}
+          <img
+            src={profLogo}
+            alt="ReceiPro logo"
+            style={{
+              width: collapsed && !isMobile ? '34px' : '120px',
+              height: collapsed && !isMobile ? '34px' : '44px',
+              objectFit: 'contain',
+              flexShrink: 0,
+              borderRadius: '8px',
+            }}
+          />
         </div>
 
         {/* ── Nav ── */}
