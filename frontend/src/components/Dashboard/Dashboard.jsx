@@ -1,4 +1,5 @@
 import React from 'react';
+import unclaimedCardImg from '../../../../unclaimedcard.png';
 
 const Icon = {
   Receipt: ({ size = 18, className = "" }) => (
@@ -49,7 +50,7 @@ const Icon = {
   ),
 };
 
-function DashboardStats({ receipts, batches = [] }) {
+function DashboardStats({ receipts }) {
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   
@@ -91,7 +92,8 @@ function DashboardStats({ receipts, batches = [] }) {
       tag: 'Pending',
       icon: Icon.Clock,
       gradient: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
-      bg: 'linear-gradient(135deg, rgba(245,158,11,0.05) 0%, rgba(251,191,36,0.05) 100%)'
+      bg: 'linear-gradient(135deg, rgba(245,158,11,0.05) 0%, rgba(251,191,36,0.05) 100%)',
+      image: unclaimedCardImg
     },
   ];
 
@@ -146,90 +148,106 @@ function DashboardStats({ receipts, batches = [] }) {
             e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.7)';
           }}
         >
-          <div style={{
-            position: 'absolute',
-            top: '-20px',
-            right: '-20px',
-            width: '120px',
-            height: '120px',
-            borderRadius: '50%',
-            background: stat.gradient,
-            opacity: 0.06,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white'
-          }}>
-            <stat.icon size={56} />
-          </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', position: 'relative', zIndex: 1 }}>
-            <div style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '14px',
-              background: stat.gradient,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-            }}>
-              <stat.icon size={20} />
-            </div>
-            <div style={{
-              fontSize: '10px',
-              fontWeight: '700',
-              padding: '0.25rem 0.6rem',
-              borderRadius: '9999px',
-              background: 'white',
-              color: '#64748b',
-              textTransform: 'uppercase',
-              letterSpacing: '0.09em',
-              fontFamily: 'JetBrains Mono, monospace',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-            }}>
-              {stat.tag}
-            </div>
-          </div>
-          
-          <div style={{
-            fontSize: '11px',
-            fontWeight: '600',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            color: '#94a3b8',
-            marginBottom: '0.35rem',
-            position: 'relative',
-            zIndex: 1
-          }}>
-            {stat.label}
-          </div>
-          
-          <div style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: isMobile ? '1.75rem' : '2rem',
-            fontWeight: '800',
-            letterSpacing: '-0.03em',
-            lineHeight: '1.1',
-            color: '#1e293b',
-            marginBottom: '0.35rem',
-            position: 'relative',
-            zIndex: 1
-          }}>
-            {stat.value}
-          </div>
-          
-          <div style={{
-            fontSize: '12px',
-            color: '#64748b',
-            fontWeight: '500',
-            letterSpacing: '0.025em',
-            position: 'relative',
-            zIndex: 1
-          }}>
-            {stat.sub}
-          </div>
+          {stat.image ? (
+            <img
+              src={stat.image}
+              alt={stat.label}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                borderRadius: '12px',
+                display: 'block',
+              }}
+            />
+          ) : (
+            <>
+              <div style={{
+                position: 'absolute',
+                top: '-20px',
+                right: '-20px',
+                width: '120px',
+                height: '120px',
+                borderRadius: '50%',
+                background: stat.gradient,
+                opacity: 0.06,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white'
+              }}>
+                <stat.icon size={56} />
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', position: 'relative', zIndex: 1 }}>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '14px',
+                  background: stat.gradient,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                }}>
+                  <stat.icon size={20} />
+                </div>
+                <div style={{
+                  fontSize: '10px',
+                  fontWeight: '700',
+                  padding: '0.25rem 0.6rem',
+                  borderRadius: '9999px',
+                  background: 'white',
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.09em',
+                  fontFamily: 'JetBrains Mono, monospace',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                }}>
+                  {stat.tag}
+                </div>
+              </div>
+              
+              <div style={{
+                fontSize: '11px',
+                fontWeight: '600',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: '#94a3b8',
+                marginBottom: '0.35rem',
+                position: 'relative',
+                zIndex: 1
+              }}>
+                {stat.label}
+              </div>
+              
+              <div style={{
+                fontFamily: 'JetBrains Mono, monospace',
+                fontSize: isMobile ? '1.75rem' : '2rem',
+                fontWeight: '800',
+                letterSpacing: '-0.03em',
+                lineHeight: '1.1',
+                color: '#1e293b',
+                marginBottom: '0.35rem',
+                position: 'relative',
+                zIndex: 1
+              }}>
+                {stat.value}
+              </div>
+              
+              <div style={{
+                fontSize: '12px',
+                color: '#64748b',
+                fontWeight: '500',
+                letterSpacing: '0.025em',
+                position: 'relative',
+                zIndex: 1
+              }}>
+                {stat.sub}
+              </div>
+            </>
+          )}
         </div>
       ))}
     </div>
