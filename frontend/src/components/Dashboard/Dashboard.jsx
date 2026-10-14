@@ -130,16 +130,15 @@ function DashboardStats({ receipts }) {
         <div
           key={stat.key}
           style={{ 
-            background: stat.image ? 'transparent' : stat.bg,
-            backdropFilter: stat.image ? 'none' : 'blur(12px)',
-            border: stat.image ? 'none' : '1px solid rgba(255, 255, 255, 0.7)',
-            borderRadius: stat.image ? '0' : '16px',
-            padding: stat.image ? '0' : '1.25rem 1rem',
+            background: 'transparent',
+            border: 'none',
+            borderRadius: '0',
+            padding: '0',
             position: 'relative',
             overflow: 'hidden',
             transition: 'all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
             cursor: 'pointer',
-            boxShadow: stat.image ? 'none' : '0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05)',
+            boxShadow: 'none',
             minHeight: stat.image ? '240px' : 'auto',
             display: stat.image ? 'flex' : 'block',
             alignItems: stat.image ? 'stretch' : 'flex-start',
@@ -165,8 +164,9 @@ function DashboardStats({ receipts }) {
               alt={stat.label}
               style={{
                 width: '100%',
+                height: '100%',
                 flex: 1,
-                objectFit: 'cover',
+                objectFit: 'fill',
                 display: 'block',
               }}
             />
@@ -431,201 +431,6 @@ function RecentActivity({ receipts, onSelectReceipt, onNavigate }) {
   );
 }
 
-function FeeTiers() {
-  const tiers = [
-    { min: 0, max: 499, fee: 5 },
-    { min: 500, max: 1499, fee: 10 },
-    { min: 1500, max: 2499, fee: 20 },
-    { min: 2500, max: 3499, fee: 30 },
-    { min: 3500, max: 4499, fee: 40 },
-    { min: 4500, max: 5499, fee: 50 },
-  ];
-
-  const [isMobile, setIsMobile] = React.useState(false);
-  React.useEffect(() => {
-    const checkSize = () => setIsMobile(window.innerWidth < 640);
-    checkSize();
-    window.addEventListener('resize', checkSize);
-    return () => window.removeEventListener('resize', checkSize);
-  }, []);
-
-  return (
-    <div style={{
-      background: 'white',
-      borderRadius: '16px',
-      padding: isMobile ? '1.25rem 1rem' : '1.5rem',
-      boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05)',
-      border: '1px solid rgba(248, 250, 252, 1)'
-    }}>
-      <h2 style={{
-        fontSize: '1rem',
-        fontWeight: '700',
-        color: '#0f172a',
-        fontFamily: 'Inter, sans-serif',
-        marginBottom: '1rem'
-      }}>
-        Fee Tiers
-      </h2>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '0.75rem' }}>
-        {tiers.map((tier, idx) => (
-          <div key={idx} style={{
-            padding: '0.875rem 1rem',
-            borderRadius: '12px',
-            background: tier.max < 500 ? 'rgba(248, 250, 252)' : 'rgba(248, 113, 113, 0.05)',
-            border: '1px solid rgba(226, 232, 240, 1)',
-            transition: 'all 0.2s ease',
-          }} onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
-          }} onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = 'none';
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-              <div style={{
-                fontSize: '0.6875rem',
-                fontWeight: '700',
-                color: tier.max < 500 ? '#64748b' : '#c2410c',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                fontFamily: 'Inter, sans-serif'
-              }}>
-                {tier.max < 500 ? 'Under ₱500' : `₱${tier.min} - ₱${tier.max}`}
-              </div>
-              <div style={{
-                fontFamily: 'JetBrains Mono, monospace',
-                fontSize: '1.125rem',
-                fontWeight: '800',
-                color: tier.max < 500 ? '#1e293b' : '#f97316'
-              }}>
-                ₱{tier.fee}
-              </div>
-            </div>
-            <div style={{
-              fontSize: '0.75rem',
-              color: '#64748b',
-              fontFamily: 'Inter, sans-serif'
-            }}>
-              {tier.max < 500 ? 'Flat fee' : 'Flat fee for tier'}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function QuickActions({ onNavigate }) {
-  const actions = [
-    { 
-      label: 'Upload Receipts', 
-      icon: Icon.Plus, 
-      gradient: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-      path: '/batch'
-    },
-    { 
-      label: 'View Transactions', 
-      icon: Icon.Receipt, 
-      gradient: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
-      path: '/transactions'
-    },
-    { 
-      label: 'Check Batches', 
-      icon: Icon.Inbox, 
-      gradient: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
-      path: '/batch'
-    },
-    { 
-      label: 'Export Data', 
-      icon: Icon.Download, 
-      gradient: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
-      path: '/transactions'
-    },
-  ];
-
-  const [isMobile, setIsMobile] = React.useState(false);
-  React.useEffect(() => {
-    const checkSize = () => setIsMobile(window.innerWidth < 640);
-    checkSize();
-    window.addEventListener('resize', checkSize);
-    return () => window.removeEventListener('resize', checkSize);
-  }, []);
-
-  return (
-    <div style={{
-      background: 'white',
-      borderRadius: '16px',
-      padding: isMobile ? '1.25rem 1rem' : '1.5rem',
-      boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05)',
-      border: '1px solid rgba(248, 250, 252, 1)'
-    }}>
-      <h2 style={{
-        fontSize: '1rem',
-        fontWeight: '700',
-        color: '#0f172a',
-        fontFamily: 'Inter, sans-serif',
-        marginBottom: '1rem'
-      }}>
-        Quick Actions
-      </h2>
-
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
-        gap: '0.75rem'
-      }}>
-        {actions.map((action, index) => (
-          <button 
-            key={index} 
-            onClick={() => onNavigate(action.path)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.875rem',
-              padding: '0.875rem 1rem',
-              borderRadius: '14px',
-              background: 'transparent',
-              border: '1px solid rgba(226, 232, 240, 1)',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              fontFamily: 'Inter, sans-serif',
-              textAlign: 'left'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(99,102,241,0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 1)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          >
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '12px',
-              background: action.gradient,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              flexShrink: 0
-            }}>
-              <action.icon size={18} />
-            </div>
-            <span style={{
-              fontSize: '0.875rem',
-              fontWeight: '600',
-              color: '#0f172a'
-            }}>
-              {action.label}
-            </span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export default function Dashboard({
   receipts = [],
@@ -634,12 +439,10 @@ export default function Dashboard({
   onNavigate,
 }) {
   const [isMobile, setIsMobile] = React.useState(false);
-  const [isTablet, setIsTablet] = React.useState(false);
 
   React.useEffect(() => {
     const checkSize = () => {
       setIsMobile(window.innerWidth < 640);
-      setIsTablet(window.innerWidth < 1024);
     };
     checkSize();
     window.addEventListener('resize', checkSize);
@@ -653,16 +456,7 @@ export default function Dashboard({
       background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)'
     }}>
       <DashboardStats receipts={receipts} batches={batches} />
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: isMobile ? '1fr' : (isTablet ? '1fr' : '2fr 1.5fr'), 
-        gap: '1rem', 
-        marginTop: '1rem' 
-      }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <QuickActions onNavigate={onNavigate} />
-          <FeeTiers />
-        </div>
+      <div style={{ marginTop: '1rem' }}>
         <RecentActivity receipts={receipts} onSelectReceipt={onSelectReceipt} onNavigate={onNavigate} />
       </div>
     </div>
