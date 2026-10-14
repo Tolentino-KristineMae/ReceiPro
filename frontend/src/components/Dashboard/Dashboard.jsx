@@ -258,17 +258,20 @@ function DashboardStats({ receipts, onNavigate }) {
 }
 
 function RecentBatches({ batches, onNavigate }) {
+  const [selectedBatch, setSelectedBatch] = React.useState(null);
+  const [showSummaryModal, setShowSummaryModal] = React.useState(false);
+  
   const recentBatches = [...batches]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .slice(0, 5);
 
   const statusColor = {
-    open: { bg: 'rgba(148, 163, 184, 0.1)', color: '#64748b', label: 'Open' },
-    claiming: { bg: 'rgba(245, 158, 11, 0.1)', color: '#d97706', label: 'Claiming' },
-    verified: { bg: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', label: 'Verified' },
-    finalized: { bg: 'rgba(147, 51, 234, 0.1)', color: '#9333ea', label: 'Finalized' },
-    summarized: { bg: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', label: 'Summarized' },
-    billing_ready: { bg: 'rgba(16, 185, 129, 0.1)', color: '#059669', label: 'Billing Ready' },
+    open: { bg: 'rgba(161, 98, 7, 0.1)', color: '#92400e', label: 'Open' },
+    claiming: { bg: 'rgba(234, 179, 8, 0.1)', color: '#a16207', label: 'Claiming' },
+    verified: { bg: 'rgba(5, 150, 105, 0.1)', color: '#047857', label: 'Verified' },
+    finalized: { bg: 'rgba(120, 113, 108, 0.1)', color: '#57534e', label: 'Finalized' },
+    summarized: { bg: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', label: 'Summarized' },
+    billing_ready: { bg: 'rgba(34, 197, 94, 0.1)', color: '#15803d', label: 'Billing Ready' },
   };
 
   const [isMobile, setIsMobile] = React.useState(false);
@@ -282,6 +285,25 @@ function RecentBatches({ batches, onNavigate }) {
   const getGridColumns = () => {
     if (isMobile) return '1fr';
     return 'repeat(auto-fill, minmax(280px, 1fr))';
+  };
+
+  const handleViewSummary = (batch) => {
+    setSelectedBatch(batch);
+    setShowSummaryModal(true);
+  };
+
+  const getBatchDisplayNumber = (batch) => {
+    // Extract number from final_batch_number (e.g., "B-052" -> "52")
+    if (batch.final_batch_number) {
+      const match = batch.final_batch_number.match(/\d+/);
+      return match ? match[0] : batch.id;
+    }
+    // Extract number from name (e.g., "Batch #052" -> "52")
+    if (batch.name) {
+      const match = batch.name.match(/\d+/);
+      return match ? match[0] : batch.id;
+    }
+    return batch.id;
   };
 
   return (
@@ -305,7 +327,7 @@ function RecentBatches({ batches, onNavigate }) {
           style={{
             fontSize: '0.875rem',
             fontWeight: '600',
-            color: '#6366f1',
+            color: '#ea580c',
             background: 'transparent',
             padding: '0.5rem 1rem',
             borderRadius: '8px',
@@ -315,7 +337,7 @@ function RecentBatches({ batches, onNavigate }) {
             transition: 'all 0.2s ease'
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(99,102,241,0.1)';
+            e.currentTarget.style.background = 'rgba(234, 88, 12, 0.1)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'transparent';
@@ -335,6 +357,7 @@ function RecentBatches({ batches, onNavigate }) {
           const receiptCount = batch.stats?.total || batch.receipts?.length || 0;
           const verifiedCount = batch.stats?.verified || 0;
           const batchNumber = batch.final_batch_number || batch.name || `Batch #${batch.id}`;
+          const displayNumber = getBatchDisplayNumber(batch);
           
           const date = new Date(batch.created_at).toLocaleDateString('en-PH', {
             month: 'short',
@@ -346,29 +369,29 @@ function RecentBatches({ batches, onNavigate }) {
             <div
               key={batch.id}
               style={{
-                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                background: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
                 borderRadius: '20px',
                 padding: '1.75rem',
-                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05)',
-                border: '1px solid rgba(226, 232, 240, 0.8)',
+                boxShadow: '0 4px 6px -1px rgba(120,53,15,0.1), 0 2px 4px -2px rgba(120,53,15,0.05)',
+                border: '1px solid rgba(217, 119, 6, 0.2)',
                 transition: 'all 0.3s ease',
                 position: 'relative',
                 overflow: 'hidden'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 12px 24px -4px rgba(0,0,0,0.1), 0 8px 16px -8px rgba(0,0,0,0.1)';
+                e.currentTarget.style.boxShadow = '0 12px 24px -4px rgba(120,53,15,0.15), 0 8px 16px -8px rgba(120,53,15,0.1)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05)';
+                e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(120,53,15,0.1), 0 2px 4px -2px rgba(120,53,15,0.05)';
               }}
             >
-              {/* Download Icon - Top Right */}
+              {/* View Summary Icon - Top Right */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onNavigate(`/batch/${batch.id}`);
+                  handleViewSummary(batch);
                 }}
                 style={{
                   position: 'absolute',
@@ -377,24 +400,24 @@ function RecentBatches({ batches, onNavigate }) {
                   width: '36px',
                   height: '36px',
                   borderRadius: '10px',
-                  background: 'rgba(255,255,255,0.8)',
-                  border: '1px solid rgba(226,232,240,0.8)',
+                  background: 'rgba(255,251,235,0.9)',
+                  border: '1px solid rgba(217,119,6,0.3)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
-                  color: '#64748b'
+                  color: '#92400e'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#6366f1';
+                  e.currentTarget.style.background = '#ea580c';
                   e.currentTarget.style.color = 'white';
-                  e.currentTarget.style.borderColor = '#6366f1';
+                  e.currentTarget.style.borderColor = '#ea580c';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.8)';
-                  e.currentTarget.style.color = '#64748b';
-                  e.currentTarget.style.borderColor = 'rgba(226,232,240,0.8)';
+                  e.currentTarget.style.background = 'rgba(255,251,235,0.9)';
+                  e.currentTarget.style.color = '#92400e';
+                  e.currentTarget.style.borderColor = 'rgba(217,119,6,0.3)';
                 }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -408,13 +431,13 @@ function RecentBatches({ batches, onNavigate }) {
                 width: '80px',
                 height: '80px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 1rem',
-                boxShadow: '0 8px 16px rgba(99,102,241,0.3)',
-                border: '4px solid rgba(255,255,255,0.9)'
+                boxShadow: '0 8px 16px rgba(234,88,12,0.3)',
+                border: '4px solid rgba(255,251,235,0.95)'
               }}>
                 <span style={{
                   fontSize: '1.5rem',
@@ -422,7 +445,7 @@ function RecentBatches({ batches, onNavigate }) {
                   color: 'white',
                   fontFamily: 'JetBrains Mono, monospace'
                 }}>
-                  {batch.id}
+                  {displayNumber}
                 </span>
               </div>
 
@@ -527,7 +550,7 @@ function RecentBatches({ batches, onNavigate }) {
                   <div style={{
                     fontSize: '1.25rem',
                     fontWeight: '800',
-                    color: '#10b981',
+                    color: '#15803d',
                     fontFamily: 'JetBrains Mono, monospace',
                     letterSpacing: '-0.02em'
                   }}>
@@ -548,7 +571,7 @@ function RecentBatches({ batches, onNavigate }) {
                     flex: 1,
                     padding: '0.75rem 1.25rem',
                     borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
                     color: 'white',
                     border: 'none',
                     fontSize: '0.875rem',
@@ -556,15 +579,15 @@ function RecentBatches({ batches, onNavigate }) {
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                     fontFamily: 'Inter, sans-serif',
-                    boxShadow: '0 4px 12px rgba(99,102,241,0.3)'
+                    boxShadow: '0 4px 12px rgba(234,88,12,0.3)'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(99,102,241,0.4)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(234,88,12,0.4)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(99,102,241,0.3)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(234,88,12,0.3)';
                   }}
                 >
                   View Batch
@@ -579,24 +602,24 @@ function RecentBatches({ batches, onNavigate }) {
                     width: '44px',
                     height: '44px',
                     borderRadius: '12px',
-                    background: 'white',
-                    border: '1px solid rgba(226,232,240,0.8)',
+                    background: '#fffbeb',
+                    border: '1px solid rgba(217,119,6,0.3)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
-                    color: '#64748b'
+                    color: '#92400e'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = '#fef3c7';
-                    e.currentTarget.style.color = '#f59e0b';
-                    e.currentTarget.style.borderColor = '#fbbf24';
+                    e.currentTarget.style.color = '#92400e';
+                    e.currentTarget.style.borderColor = '#d97706';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'white';
-                    e.currentTarget.style.color = '#64748b';
-                    e.currentTarget.style.borderColor = 'rgba(226,232,240,0.8)';
+                    e.currentTarget.style.background = '#fffbeb';
+                    e.currentTarget.style.color = '#92400e';
+                    e.currentTarget.style.borderColor = 'rgba(217,119,6,0.3)';
                   }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -618,6 +641,252 @@ function RecentBatches({ batches, onNavigate }) {
             No recent batches
           </div>
         )}
+      </div>
+
+      {/* Batch Summary Modal */}
+      {showSummaryModal && selectedBatch && (
+        <BatchSummaryModal 
+          batch={selectedBatch} 
+          onClose={() => {
+            setShowSummaryModal(false);
+            setSelectedBatch(null);
+          }} 
+        />
+      )}
+    </div>
+  );
+}
+
+function BatchSummaryModal({ batch, onClose }) {
+  const summaryRef = React.useRef(null);
+  const receiptCount = batch.stats?.total || 0;
+  const verifiedCount = batch.stats?.verified || 0;
+  const summaryData = batch.summary_data || {};
+  const verifiedClaims = batch.verified_claims || [];
+
+  const copySummary = () => {
+    const text = summaryRef.current?.innerText || '';
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Summary copied to clipboard!');
+    });
+  };
+
+  const downloadSummary = () => {
+    const text = summaryRef.current?.innerText || '';
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${batch.final_batch_number || batch.name || `Batch-${batch.id}`}-summary.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        background: 'rgba(15,10,5,0.6)',
+        backdropFilter: 'blur(8px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'white',
+          borderRadius: '20px',
+          width: '100%',
+          maxWidth: '600px',
+          maxHeight: '80vh',
+          overflow: 'hidden',
+          boxShadow: '0 32px 64px -12px rgba(0,0,0,0.35)',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          padding: '1.5rem',
+          borderBottom: '1px solid #e5e7eb',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: '700',
+              color: '#0f172a',
+              fontFamily: 'Inter, sans-serif',
+              marginBottom: '0.25rem'
+            }}>
+              Batch Summary
+            </h3>
+            <p style={{
+              fontSize: '0.875rem',
+              color: '#64748b',
+              fontFamily: 'Inter, sans-serif'
+            }}>
+              {batch.final_batch_number || batch.name || `Batch #${batch.id}`}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              border: '1px solid #e5e7eb',
+              background: '#f8fafc',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#64748b',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#fee2e2';
+              e.currentTarget.style.borderColor = '#fca5a5';
+              e.currentTarget.style.color = '#dc2626';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#f8fafc';
+              e.currentTarget.style.borderColor = '#e5e7eb';
+              e.currentTarget.style.color = '#64748b';
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div style={{
+          padding: '1.5rem',
+          overflowY: 'auto',
+          flex: 1
+        }}>
+          <div ref={summaryRef} style={{ fontFamily: 'monospace', fontSize: '0.875rem', lineHeight: '1.6', color: '#1e293b' }}>
+            <div><strong>Batch Number:</strong> {batch.final_batch_number || batch.name || `Batch #${batch.id}`}</div>
+            <div><strong>Created:</strong> {new Date(batch.created_at).toLocaleString('en-PH')}</div>
+            <div><strong>Status:</strong> {batch.checker_status}</div>
+            <br />
+            <div><strong>═══ Statistics ═══</strong></div>
+            <div>Total Receipts: {receiptCount}</div>
+            <div>Verified: {verifiedCount}</div>
+            <div>Pending: {receiptCount - verifiedCount}</div>
+            <br />
+            {summaryData.gross_amount && (
+              <>
+                <div><strong>═══ Financial Summary ═══</strong></div>
+                <div>Gross Amount: ₱{Number(summaryData.gross_amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>
+                <div>Service Fee: ₱{Number(summaryData.service_fee || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>
+                <div>Net Amount: ₱{Number(summaryData.net_amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>
+                <br />
+              </>
+            )}
+            {verifiedClaims.length > 0 && (
+              <>
+                <div><strong>═══ Verified Claims ({verifiedClaims.length}) ═══</strong></div>
+                {verifiedClaims.map((claim, idx) => (
+                  <div key={idx}>
+                    {idx + 1}. {claim.account_holder || 'N/A'} - ₱{Number(claim.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })} ({claim.reference || 'N/A'})
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          padding: '1.5rem',
+          borderTop: '1px solid #e5e7eb',
+          display: 'flex',
+          gap: '0.75rem'
+        }}>
+          <button
+            onClick={copySummary}
+            style={{
+              flex: 1,
+              padding: '0.75rem 1.25rem',
+              borderRadius: '12px',
+              background: '#fef3c7',
+              border: '1px solid rgba(217,119,6,0.3)',
+              color: '#78350f',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              fontFamily: 'Inter, sans-serif',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#fde68a';
+              e.currentTarget.style.borderColor = '#d97706';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#fef3c7';
+              e.currentTarget.style.borderColor = 'rgba(217,119,6,0.3)';
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copy
+          </button>
+          <button
+            onClick={downloadSummary}
+            style={{
+              flex: 1,
+              padding: '0.75rem 1.25rem',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+              border: 'none',
+              color: 'white',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              fontFamily: 'Inter, sans-serif',
+              boxShadow: '0 4px 12px rgba(234,88,12,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(234,88,12,0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(234,88,12,0.3)';
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download
+          </button>
+        </div>
       </div>
     </div>
   );
