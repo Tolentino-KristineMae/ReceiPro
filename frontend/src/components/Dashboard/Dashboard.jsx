@@ -160,7 +160,7 @@ function DashboardStats({ receipts, onNavigate }) {
               <div style={{
                 position: 'absolute',
                 left: '1.25rem',
-                bottom: '2.5rem',
+                bottom: '12.5rem',
                 display: 'flex',
                 flexDirection: 'column',
                 zIndex: 2,
