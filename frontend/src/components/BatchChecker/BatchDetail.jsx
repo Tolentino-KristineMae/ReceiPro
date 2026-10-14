@@ -1,4 +1,5 @@
 import React from 'react';
+import './BatchDetail.css';
 import BillingSummaryModal from './BillingSummaryModal';
 import { getApiUrl } from '../../apiConfig';
 import { parseOCRData, defaultBatchStats } from './BatchUtils';
@@ -42,21 +43,21 @@ const Icon = {
   ),
 };
 
-export default function BatchDetail({ 
-  batch, 
-  filter, 
-  setFilter, 
-  filteredReceipts, 
-  handleDeleteBatch, 
+export default function BatchDetail({
+  batch,
+  filter,
+  setFilter,
+  filteredReceipts,
+  handleDeleteBatch,
   handleDeleteReceipt,
   handleBulkDeleteReceipts,
   handleResetBatch,
   handleAddUpload,
   handleRunExtraction,
-  handleRunFinalCheck, 
-  isRunningCheck, 
-  setShowProcessor, 
-  navigate 
+  handleRunFinalCheck,
+  isRunningCheck,
+  setShowProcessor,
+  navigate
 }) {
   const [receiptToDelete, setReceiptToDelete] = React.useState(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -92,7 +93,7 @@ export default function BatchDetail({
     setIsBulkDeleting(true);
     try {
       const ids = [...selectedIds];
-      
+
       if (handleBulkDeleteReceipts) {
         // Use the provided bulk delete handler
         await handleBulkDeleteReceipts(ids);
@@ -104,12 +105,12 @@ export default function BatchDetail({
         const results = await Promise.allSettled(
           ids.map(id => handleDeleteReceipt(id))
         );
-        
+
         const failed = results.filter(r => r.status === 'rejected');
         if (failed.length > 0) {
           throw new Error(`${failed.length} receipt(s) could not be deleted`);
         }
-        
+
         setSelectedIds(new Set());
         setShowBulkDeleteModal(false);
         console.log('✓ All receipts deleted successfully');
@@ -128,7 +129,7 @@ export default function BatchDetail({
     return (
       <div className="glass-card empty-box">
         <div className="spinner-modern" style={{ marginBottom: '1rem' }} />
-        <div style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Loading Batch...</div>
+        <div style={{ fontWeight: 600 }}>Loading Batch...</div>
       </div>
     );
   }
@@ -142,122 +143,83 @@ export default function BatchDetail({
   // Define stages logic based on user workflow
   const stages = [
     { id: 1, label: 'Uploading', status: 'done' },
-    { 
-      id: 2, 
-      label: 'Sorting', 
-      status: stats.unsorted === 0 ? 'done' : 'active' 
+    {
+      id: 2,
+      label: 'Sorting',
+      status: stats.unsorted === 0 ? 'done' : 'active'
     },
-    { 
-      id: 3, 
-      label: 'Crop & Input', 
-      status: stats.unsorted === 0 
-        ? (stats.needs_crop_input === 0 ? 'done' : 'active') 
-        : 'pending' 
+    {
+      id: 3,
+      label: 'Crop & Input',
+      status: stats.unsorted === 0
+        ? (stats.needs_crop_input === 0 ? 'done' : 'active')
+        : 'pending'
     },
-    { 
-      id: 4, 
-      label: 'Extraction', 
-      status: (stats.unsorted === 0 && stats.needs_crop_input === 0) 
-        ? (stats.ocr_finished === stats.total ? 'done' : 'active') 
-        : 'pending' 
+    {
+      id: 4,
+      label: 'Extraction',
+      status: (stats.unsorted === 0 && stats.needs_crop_input === 0)
+        ? (stats.ocr_finished === stats.total ? 'done' : 'active')
+        : 'pending'
     },
-    { 
-      id: 5, 
-      label: 'Run Check', 
+    {
+      id: 5,
+      label: 'Run Check',
       status: (batch.checker_status === 'verified' || batch.checker_status === 'finalized' || batch.checker_status === 'summarized' || batch.checker_status === 'billing_ready')
-        ? 'done' 
-        : (stats.ocr_finished === stats.total ? (stats.checked === stats.total && stats.total > 0 ? 'done' : 'active') : 'pending') 
+        ? 'done'
+        : (stats.ocr_finished === stats.total ? (stats.checked === stats.total && stats.total > 0 ? 'done' : 'active') : 'pending')
     },
-    { 
-      id: 6, 
-      label: 'Finalize', 
+    {
+      id: 6,
+      label: 'Finalize',
       status: (batch.checker_status === 'finalized' || batch.checker_status === 'summarized' || batch.checker_status === 'billing_ready')
-        ? 'done' 
+        ? 'done'
         : (batch.checker_status === 'verified' || (stats.checked === stats.total && stats.total > 0) ? 'active' : 'pending')
     },
-    { 
-      id: 7, 
-      label: 'Summary', 
+    {
+      id: 7,
+      label: 'Summary',
       status: (batch.checker_status === 'summarized' || batch.checker_status === 'billing_ready')
-        ? 'done' 
+        ? 'done'
         : (batch.checker_status === 'finalized' ? 'active' : 'pending')
     },
-    { 
-      id: 8, 
-      label: 'Billing', 
+    {
+      id: 8,
+      label: 'Billing',
       status: batch.checker_status === 'billing_ready'
-        ? 'done' 
+        ? 'done'
         : (batch.checker_status === 'summarized' ? 'active' : 'pending')
     },
   ];
 
-  const progress = batch.progress ?? 0;
+  const progress = Math.max(0, Math.min(100, Number(batch.progress) || 0));
+  const percent = (count) => stats.total > 0 ? Math.max(0, Math.min(100, Math.round(count / stats.total * 100))) : 0;
+  const metrics = [
+    { label: 'Sorting', count: stats.total - stats.unsorted },
+    { label: 'Crop & Input', count: stats.total - stats.needs_crop_input },
+    { label: 'OCR extraction', count: stats.ocr_finished },
+    { label: 'Run Check', count: stats.checked, note: `${stats.confirmed || 0} confirmed` },
+  ];
 
   const currentStageIndex = stages.findLastIndex(s => s.status === 'done' || s.status === 'active');
   const lineFillWidth = (currentStageIndex / (stages.length - 1)) * 100;
 
   return (
-    <div className="bc-detail" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      
+    <div className="bc-detail batch-detail-page">
+
       {/* Back Link */}
       <a href="#" className="back-link" onClick={(e) => { e.preventDefault(); navigate('/batch'); }}>
         <Icon.ArrowLeft />
         Back to Batches
       </a>
 
-      {/* Stage Progress */}
-      <div className="glass-card" style={{ padding: '1.5rem 2rem' }}>
-        {hasStatusWithoutClaims && (
-          <div style={{
-            marginBottom: '1rem', padding: '0.85rem 1rem', borderRadius: '12px',
-            background: 'rgba(234,88,12,0.08)', border: '1px solid rgba(234,88,12,0.25)',
-            color: '#ea580c', fontSize: '12px', fontWeight: 700, lineHeight: 1.5,
-          }}>
-            This batch is marked as {batch.checker_status.replace('_', ' ')} but has no verified claims linked to receipts.
-            Transaction ledger entries may not match. Use Reset to clear and re-process, or re-run verification to re-link claims.
-          </div>
-        )}
-        <div className="stages-wrap">
-          <div className="stages-line">
-            <div className="stages-line-fill" style={{ width: `${lineFillWidth}%` }} />
-          </div>
-          {stages.map((stage) => (
-            <button
-              type="button"
-              key={stage.id}
-              className={`stage-item ${stage.status}`}
-              disabled={stage.status === 'pending' || stage.id === 1}
-              aria-current={stage.status === 'active' ? 'step' : undefined}
-              onClick={() => {
-                // Allow jumping to any stage that is not pending
-                if (stage.status === 'pending') return;
-                
-                if (stage.id === 2) setShowProcessor('categorize');
-                if (stage.id === 3) setShowProcessor('crop');
-                if (stage.id === 4) setShowProcessor('ocr');
-                if (stage.id === 5) setShowProcessor('verify');
-                if (stage.id === 6) setShowProcessor('finalize');
-                if (stage.id === 7) setShowProcessor('summary');
-                if (stage.id === 8) setShowProcessor('billing');
-              }}
-              style={{ cursor: stage.status === 'pending' ? 'default' : 'pointer' }}
-              title={stage.status === 'pending' ? 'Complete previous stages first' : `Open ${stage.label}`}
-            >
-              <div className="stage-circle">
-                {stage.status === 'done' ? <Icon.Check size={14} /> : stage.id}
-              </div>
-              <span className="stage-label">{stage.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Header */}
-      <div className="batch-header">
+      <header className="batch-detail-heading">
         <div className="batch-header-top">
           <div className="batch-title-section">
-            <div className="section-label">Batch Details</div>
-            <h2 className="h2-modern batch-title">{batch.name}</h2>
+            <div className="section-label">Receipt workspace / Batch details</div>
+            <h1 className="h2-modern batch-title">{batch.name}<span className="batch-title-dot">.</span></h1>
+            <p className="batch-description">Track your receipts from upload to billing, all in one place.</p>
             {batch.final_batch_number && (
               <div className="batch-ledger-id">
                 Ledger ID: {batch.final_batch_number}
@@ -273,11 +235,12 @@ export default function BatchDetail({
               onChange={(e) => handleAddUpload(e.target.files)}
             />
             <button
-              className="btn-icon-modern"
+              className="btn-icon-modern batch-add-receipts"
               onClick={() => fileInputRef.current?.click()}
               title="Add More Receipts"
             >
               <Icon.Plus />
+              Add receipts
             </button>
 
             {/* Reset Batch — clear all checker progress */}
@@ -299,6 +262,7 @@ export default function BatchDetail({
               className="btn-icon-modern danger"
               onClick={(e) => handleDeleteBatch(e, batch.id)}
               title="Delete Batch"
+              aria-label="Delete batch"
             >
               <Icon.Trash />
             </button>
@@ -320,8 +284,8 @@ export default function BatchDetail({
                 View Summary
               </button>
             )}
-            
-            
+
+
             {/* Primary Action Button Based on Stage */}
             {(() => {
               const activeStage = stages.find(s => s.status === 'active');
@@ -338,7 +302,7 @@ export default function BatchDetail({
 
               if (activeStage.id === 3) {
                 return (
-                  <button className="btn-primary-modern" style={{ width: 'auto', background: 'var(--gradient-accent)' }} onClick={() => setShowProcessor('crop')}>
+                  <button className="btn-primary-modern" style={{ width: 'auto' }} onClick={() => setShowProcessor('crop')}>
                     <Icon.Crop />
                     Start Crop & Input ({stats.needs_crop_input})
                   </button>
@@ -348,9 +312,9 @@ export default function BatchDetail({
               if (activeStage.id === 4) {
                 const ocrRemaining = stats.total - stats.ocr_finished;
                 return (
-                  <button 
-                    className="btn-primary-modern" 
-                    style={{ width: 'auto', background: 'var(--gradient-success)' }}
+                  <button
+                    className="btn-primary-modern"
+                    style={{ width: 'auto' }}
                     onClick={handleRunExtraction}
                     disabled={isRunningCheck}
                   >
@@ -371,9 +335,9 @@ export default function BatchDetail({
 
               if (activeStage.id === 5) {
                 return (
-                  <button 
-                    className="btn-primary-modern" 
-                    style={{ width: 'auto', background: 'var(--gradient-primary)' }}
+                  <button
+                    className="btn-primary-modern"
+                    style={{ width: 'auto' }}
                     onClick={handleRunFinalCheck}
                     disabled={isRunningCheck}
                   >
@@ -394,9 +358,9 @@ export default function BatchDetail({
 
               if (activeStage.id === 6) {
                 return (
-                  <button 
-                    className="btn-primary-modern" 
-                    style={{ width: 'auto', background: 'var(--gradient-primary)' }}
+                  <button
+                    className="btn-primary-modern"
+                    style={{ width: 'auto' }}
                     onClick={async () => {
                       // Call the finalize API
                       try {
@@ -406,7 +370,7 @@ export default function BatchDetail({
                           body: JSON.stringify({ checker_status: 'finalized' }),
                         });
                         // Refresh batch details - assuming a refresh function exists or state update
-                        window.location.reload(); 
+                        window.location.reload();
                       } catch (e) { console.error(e); }
                     }}
                   >
@@ -418,9 +382,9 @@ export default function BatchDetail({
 
               if (activeStage.id === 7) {
                 return (
-                  <button 
-                    className="btn-primary-modern" 
-                    style={{ width: 'auto', background: 'var(--gradient-accent)' }}
+                  <button
+                    className="btn-primary-modern"
+                    style={{ width: 'auto' }}
                     onClick={async () => {
                       try {
                         await fetch(getApiUrl(`/api/batches/${batch.id}/status`), {
@@ -439,9 +403,9 @@ export default function BatchDetail({
 
               if (activeStage.id === 8) {
                 return (
-                  <button 
-                    className="btn-primary-modern" 
-                    style={{ width: 'auto', background: 'var(--gradient-success)' }}
+                  <button
+                    className="btn-primary-modern"
+                    style={{ width: 'auto' }}
                     onClick={async () => {
                       try {
                         await fetch(getApiUrl(`/api/batches/${batch.id}/status`), {
@@ -463,120 +427,79 @@ export default function BatchDetail({
           </div>
         </div>
 
-        <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
-          <div className="metric-card-sm">
-            <span className="metric-label-sm">Total</span>
-            <span className="metric-value-sm">{stats.total}</span>
-            <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden' }}>
-              <div style={{ width: '100%', height: '100%', background: 'var(--text-muted)' }} />
-            </div>
-          </div>
-          
-          {/* Stage 2: Sorting */}
-          <div className="metric-card-sm">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="metric-label-sm">Sorting</span>
-              <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)' }}>
-                {Math.round(((stats.total - stats.unsorted) / stats.total) * 100 || 0)}%
-              </span>
-            </div>
-            <span className={`metric-value-sm ${stats.unsorted > 0 ? 'warning' : ''}`}>
-              {stats.total - stats.unsorted}/{stats.total}
-            </span>
-            <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden' }}>
-              <div style={{ width: `${((stats.total - stats.unsorted) / stats.total) * 100 || 0}%`, height: '100%', background: 'var(--accent-yellow)' }} />
-            </div>
-          </div>
-
-          {/* Stage 3: Crop & Input */}
-          <div className="metric-card-sm">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="metric-label-sm">Crop & Input</span>
-              <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)' }}>
-                {Math.round(((stats.total - stats.needs_crop_input) / stats.total) * 100 || 0)}%
-              </span>
-            </div>
-            <span className={`metric-value-sm ${stats.needs_crop_input > 0 ? 'accent' : ''}`}>
-              {stats.total - stats.needs_crop_input}/{stats.total}
-            </span>
-            <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden' }}>
-              <div style={{ width: `${((stats.total - stats.needs_crop_input) / stats.total) * 100 || 0}%`, height: '100%', background: 'var(--accent-primary)' }} />
-            </div>
-          </div>
-
-          {/* Stage 4: OCR */}
-          <div className="metric-card-sm">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="metric-label-sm">OCR</span>
-              <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)' }}>
-                {Math.round((stats.ocr_finished / stats.total) * 100 || 0)}%
-              </span>
-            </div>
-            <span className={`metric-value-sm ${stats.ocr_finished > 0 ? 'success' : ''}`}>
-              {stats.ocr_finished}/{stats.total}
-            </span>
-            <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden' }}>
-              <div style={{ width: `${(stats.ocr_finished / stats.total) * 100 || 0}%`, height: '100%', background: 'var(--success-primary)' }} />
-            </div>
-          </div>
-
-          {/* Stage 5: Run Check */}
-          <div className="metric-card-sm">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="metric-label-sm">Run Check</span>
-              <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)' }}>
-                {Math.round((stats.checked / stats.total) * 100 || 0)}%
-              </span>
-            </div>
-            <span className="metric-value-sm success">
-              {stats.checked}/{stats.total}
-              {stats.confirmed > 0 && (
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginLeft: '6px' }}>
-                  ({stats.confirmed} confirmed)
-                </span>
-              )}
-            </span>
-            <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden' }}>
-              <div style={{ width: `${(stats.checked / stats.total) * 100 || 0}%`, height: '100%', background: 'var(--success-primary)' }} />
-            </div>
-          </div>
-
-          {/* Stage 6-8 Combined Status */}
-          <div className="metric-card-sm">
-            <span className="metric-label-sm">Post-Process</span>
-            <span className="metric-value-sm" style={{ fontSize: '12px' }}>
-              {batch.checker_status === 'billing_ready' ? 'READY' : 
-               batch.checker_status === 'summarized' ? 'SUMMARY' : 
-               batch.checker_status === 'finalized' ? 'FINAL' : 'WAITING'}
-            </span>
-            <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '0.8rem', overflow: 'hidden', display: 'flex', gap: '2px' }}>
-               <div style={{ flex: 1, background: (batch.checker_status === 'finalized' || batch.checker_status === 'summarized' || batch.checker_status === 'billing_ready') ? 'var(--success-primary)' : 'transparent' }} />
-               <div style={{ flex: 1, background: (batch.checker_status === 'summarized' || batch.checker_status === 'billing_ready') ? 'var(--success-primary)' : 'transparent' }} />
-               <div style={{ flex: 1, background: (batch.checker_status === 'billing_ready') ? 'var(--success-primary)' : 'transparent' }} />
-            </div>
-          </div>
-        </div>
-
-        {stats.total > 0 && (
-          <div style={{ marginTop: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>
-              <span>OVERALL COMPLETION</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="progress-bar-wrap">
-              <div 
-                className="progress-fill" 
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+      </header>
+      {/* Stage Progress */}
+      <section className="glass-card batch-workflow" aria-labelledby="batch-workflow-title">
+        <div className="batch-panel-heading"><div><h2 id="batch-workflow-title">Processing overview</h2><p>Follow each step or open a completed stage to review.</p></div><span className="batch-state">{batch.checker_status === 'billing_ready' ? 'Ready for billing' : 'In progress'}</span></div>
+        {hasStatusWithoutClaims && (
+          <div style={{
+            marginBottom: '1rem', padding: '0.85rem 1rem', borderRadius: '12px',
+            background: 'rgba(234,88,12,0.08)', border: '1px solid rgba(234,88,12,0.25)',
+            color: 'var(--workspace-accent-hover)', fontSize: '12px', fontWeight: 700, lineHeight: 1.5,
+          }}>
+            This batch is marked as {batch.checker_status.replace('_', ' ')} but has no verified claims linked to receipts.
+            Transaction ledger entries may not match. Use Reset to clear and re-process, or re-run verification to re-link claims.
           </div>
         )}
-      </div>
+        <div className="stages-wrap">
+          <div className="stages-line">
+            <div className="stages-line-fill" style={{ width: `${lineFillWidth}%` }} />
+          </div>
+          {stages.map((stage) => (
+            <button
+              type="button"
+              key={stage.id}
+              className={`stage-item ${stage.status}`}
+              disabled={stage.status === 'pending' || stage.id === 1}
+              aria-current={stage.status === 'active' ? 'step' : undefined}
+              onClick={() => {
+                // Allow jumping to any stage that is not pending
+                if (stage.status === 'pending') return;
+
+                if (stage.id === 2) setShowProcessor('categorize');
+                if (stage.id === 3) setShowProcessor('crop');
+                if (stage.id === 4) setShowProcessor('ocr');
+                if (stage.id === 5) setShowProcessor('verify');
+                if (stage.id === 6) setShowProcessor('finalize');
+                if (stage.id === 7) setShowProcessor('summary');
+                if (stage.id === 8) setShowProcessor('billing');
+              }}
+              style={{ cursor: stage.status === 'pending' ? 'default' : 'pointer' }}
+              title={stage.status === 'pending' ? 'Complete previous stages first' : `Open ${stage.label}`}
+            >
+              <div className="stage-circle">
+                {stage.status === 'done' ? <Icon.Check size={14} /> : stage.id}
+              </div>
+              <span className="stage-label">{stage.label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="glass-card batch-overview" aria-label="Batch progress statistics">
+        <div className="batch-metrics">
+          <div className="batch-metric batch-total"><span>Total receipts</span><strong>{stats.total}</strong><small>In this batch</small></div>
+          {metrics.map(metric => (
+            <div className="batch-metric" key={metric.label}>
+              <div className="batch-metric-label"><span>{metric.label}</span><small>{percent(metric.count)}%</small></div>
+              <strong>{metric.count}<span> / {stats.total}</span></strong>
+              <div className="batch-mini-progress" aria-hidden="true"><span style={{ width: `${percent(metric.count)}%` }} /></div>
+              {metric.note && <small>{metric.note}</small>}
+            </div>
+          ))}
+          <div className="batch-metric"><span>Post-process</span><strong className="batch-post-status">{batch.checker_status === 'billing_ready' ? 'Ready' : batch.checker_status === 'summarized' ? 'Summary' : batch.checker_status === 'finalized' ? 'Finalized' : 'Waiting'}</strong><small>Finalize · Summary · Billing</small></div>
+        </div>
+        <div className="batch-completion">
+          <div><span>Overall completion</span><strong>{progress}%</strong></div>
+          <div className="batch-completion-track" role="progressbar" aria-label="Overall completion" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{ width: `${progress}%` }} /></div>
+        </div>
+      </section>
 
       {/* Receipts List */}
-      <div className="glass-card">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-subtle)' }}>
-          <div className="filter-bar">
+      <section className="glass-card batch-receipts" aria-labelledby="batch-receipts-title">
+        <div className="batch-panel-heading"><div><h2 id="batch-receipts-title">Receipts</h2><p>Review receipt details and manage the files in this batch.</p></div><span className="batch-receipt-total">{stats.total} total</span></div>
+        <div className="batch-receipt-toolbar" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-subtle)' }}>
+          <div className="filter-bar" role="group" aria-label="Filter receipts">
             {[
               { key: 'all', label: `All (${stats.total})` },
               { key: 'pending', label: 'Pending' },
@@ -587,6 +510,7 @@ export default function BatchDetail({
               <button
                 key={key}
                 className={`filter-tab ${filter === key ? 'active' : ''}`}
+                aria-pressed={filter === key}
                 onClick={() => setFilter(key)}
               >
                 {label}
@@ -600,18 +524,21 @@ export default function BatchDetail({
                 <circle cx="11" cy="11" r="8"/>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
-              <input 
-                type="text" 
-                placeholder="Search receipts by reference, amount, account..." 
-                value={searchQuery} 
-                onChange={(e) => setSearchQuery(e.target.value)} 
+              <input
+                type="text"
+                aria-label="Search receipts"
+                placeholder="Search reference, amount or account…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="search-input"
               />
+              {searchQuery && <button type="button" className="batch-clear-search" aria-label="Clear search" onClick={() => setSearchQuery('')}>×</button>}
             </div>
-            <select 
-              value={sortBy} 
-              onChange={(e) => setSortBy(e.target.value)} 
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
               className="sort-select"
+              aria-label="Sort receipts"
             >
               <option value="status">Sort: Status First</option>
               <option value="amount-desc">Sort: Amount (High → Low)</option>
@@ -619,12 +546,12 @@ export default function BatchDetail({
               <option value="date-desc">Sort: Newest First</option>
               <option value="date-asc">Sort: Oldest First</option>
             </select>
-            <div className="results-count">
+            <div className="results-count" role="status">
               {(() => {
                 // Filter and sort logic
                 const filtered = filteredReceipts.filter(receipt => {
-                  if (!searchQuery) return true;
-                  const q = searchQuery.toLowerCase();
+                  if (!searchQuery.trim()) return true;
+                  const q = searchQuery.trim().toLowerCase();
                   const ocr = parseOCRData(receipt.ocr_data);
                   return (
                     (receipt.account_holder || '').toLowerCase().includes(q) ||
@@ -641,8 +568,8 @@ export default function BatchDetail({
         {(() => {
           // Filter and sort logic
           let processedReceipts = [...filteredReceipts].filter(receipt => {
-            if (!searchQuery) return true;
-            const q = searchQuery.toLowerCase();
+            if (!searchQuery.trim()) return true;
+            const q = searchQuery.trim().toLowerCase();
             const ocr = parseOCRData(receipt.ocr_data);
             return (
               (receipt.account_holder || '').toLowerCase().includes(q) ||
@@ -666,15 +593,16 @@ export default function BatchDetail({
               case 'date-asc':
                 return new Date(a.created_at) - new Date(b.created_at);
               case 'status':
-              default:
+              default: {
                 const statusA = a.match_status?.toLowerCase();
                 const statusB = b.match_status?.toLowerCase();
                 const isErrorA = statusA === 'flagged' || statusA === 'not_found';
                 const isErrorB = statusB === 'flagged' || statusB === 'not_found';
-                
+
                 if (isErrorA && !isErrorB) return -1;
                 if (!isErrorA && isErrorB) return 1;
                 return 0;
+              }
             }
           });
 
@@ -682,7 +610,7 @@ export default function BatchDetail({
             return (
               <div className="empty-box">
                 <div className="empty-icon-lg">🔍</div>
-                <div style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                <div style={{ fontWeight: 600 }}>
                   {searchQuery ? 'No matching receipts' : 'No receipts found'}
                 </div>
                 <div style={{ opacity: 0.7 }}>Try adjusting your filters or search</div>
@@ -696,7 +624,7 @@ export default function BatchDetail({
           return (
             <>
               {/* ── Select all bar ── */}
-              <div style={{
+              <div className="batch-selection-bar" style={{
                 display: 'flex', alignItems: 'center', gap: '10px',
                 padding: '8px 4px',
               }}>
@@ -706,22 +634,7 @@ export default function BatchDetail({
                   fontSize: '11px', fontWeight: 700,
                   color: 'var(--text-muted)',
                 }}>
-                  <div
-                    onClick={() => handleSelectAll(processedReceipts)}
-                    style={{
-                      width: '16px', height: '16px', borderRadius: '4px', flexShrink: 0,
-                      border: `2px solid ${allVisibleSelected ? 'var(--danger-primary)' : 'var(--border-strong)'}`,
-                      background: allVisibleSelected ? 'var(--danger-primary)' : 'transparent',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      cursor: 'pointer', transition: 'all 0.15s',
-                    }}
-                  >
-                    {allVisibleSelected && (
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </div>
+                  <input type="checkbox" checked={allVisibleSelected} onChange={() => handleSelectAll(processedReceipts)} />
                   {allVisibleSelected ? 'Deselect all' : `Select all (${processedReceipts.length})`}
                 </label>
 
@@ -738,7 +651,7 @@ export default function BatchDetail({
                         padding: '5px 12px', borderRadius: '7px', border: 'none',
                         background: '#dc2626', color: 'white',
                         fontSize: '11px', fontWeight: 700, cursor: 'pointer',
-                        textTransform: 'uppercase', letterSpacing: '0.05em',
+                        textTransform: 'none', letterSpacing: '0',
                         transition: 'all 0.15s',
                       }}
                       onMouseEnter={e => e.currentTarget.style.background = '#b91c1c'}
@@ -780,11 +693,11 @@ export default function BatchDetail({
             </>
           );
         })()}
-      </div>
+      </section>
 
       {/* Bulk Delete Confirmation Modal */}
       {showBulkDeleteModal && (
-        <div className="ort-overlay" style={{ zIndex: 2000 }}>
+        <BatchDetailDialog onClose={() => setShowBulkDeleteModal(false)} busy={isBulkDeleting}>
           <div className="glass-card" style={{ maxWidth: '420px', padding: '2.5rem', textAlign: 'center' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>🗑️</div>
             <h3 className="h2-modern" style={{ fontSize: '1.4rem', marginBottom: '0.75rem' }}>
@@ -816,12 +729,12 @@ export default function BatchDetail({
               </button>
             </div>
           </div>
-        </div>
+        </BatchDetailDialog>
       )}
 
       {/* Deletion Confirmation Modal */}
       {receiptToDelete && (
-        <div className="ort-overlay" style={{ zIndex: 2000 }}>
+        <BatchDetailDialog onClose={() => setReceiptToDelete(null)} busy={isDeleting}>
           <div className="glass-card" style={{ maxWidth: '400px', padding: '2.5rem', textAlign: 'center' }}>
             <div className="empty-icon-lg" style={{ color: 'var(--accent-red)', marginBottom: '1.5rem' }}>⚠️</div>
             <h3 className="h2-modern" style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Delete Receipt?</h3>
@@ -829,22 +742,22 @@ export default function BatchDetail({
               This will permanently remove this receipt and its extracted data. This action cannot be undone.
             </p>
             <div style={{ display: 'flex', gap: '1rem' }}>
-              <button 
-                className="btn-primary-modern" 
+              <button
+                className="btn-primary-modern"
                 style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}
                 onClick={() => setReceiptToDelete(null)}
                 disabled={isDeleting}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 className="btn-primary-modern danger"
                 onClick={async () => {
                   setIsDeleting(true);
                   try {
                     await handleDeleteReceipt(receiptToDelete.id);
                     setReceiptToDelete(null);
-                  } catch (e) {
+                  } catch {
                     alert('Failed to delete receipt');
                   } finally {
                     setIsDeleting(false);
@@ -856,7 +769,7 @@ export default function BatchDetail({
               </button>
             </div>
           </div>
-        </div>
+        </BatchDetailDialog>
       )}
 
       {/* Billing Summary Modal */}
@@ -870,9 +783,6 @@ export default function BatchDetail({
           // Fallback: reconstruct financials from receipts if summary_data wasn't saved
           const grossFallback = verifiedReceipts.reduce((s, r) => s + r.amount, 0);
           const feeFallback = Math.floor(grossFallback / 1000) * 10;
-          const deductionsFallback = sd.deductions || [];
-          const totalDeductionsFallback = deductionsFallback.reduce((s, d) => s + (Number(d.amount) || 0), 0);
-          const netFallback = grossFallback - feeFallback - totalDeductionsFallback;
 
           const grossAmount   = sd.gross_amount   ?? grossFallback;
           const serviceFee    = sd.service_fee    ?? feeFallback;
@@ -910,11 +820,23 @@ export default function BatchDetail({
   );
 }
 
+function BatchDetailDialog({ children, onClose, busy }) {
+  const dialogRef = React.useRef(null);
+  const titleId = React.useId();
+  React.useEffect(() => {
+    const dialog = dialogRef.current;
+    dialog.querySelector('h3')?.setAttribute('id', titleId);
+    dialog.showModal();
+    return () => dialog.close();
+  }, [titleId]);
+  return <dialog ref={dialogRef} className="batch-detail-dialog" aria-labelledby={titleId} onCancel={e => { e.preventDefault(); if (!busy) onClose(); }}>{children}</dialog>;
+}
+
 function ReceiptCard({ receipt, parseOCRData, onDelete, isBillingDone, isSelected, onToggleSelect }) {
   const getStatus = () => {
     const ocr = parseOCRData(receipt.ocr_data);
     const mStatus = receipt.match_status?.toLowerCase();
-    
+
     // Stage 5: Verified Status
     if (mStatus === 'verified' && receipt.transaction_id) {
       return { label: 'Checked', className: 'success' };
@@ -925,21 +847,21 @@ function ReceiptCard({ receipt, parseOCRData, onDelete, isBillingDone, isSelecte
     if (mStatus === 'flagged' || mStatus === 'not_found') {
       return { label: 'Not Found', className: 'danger' };
     }
-    
+
     // Stage 4: OCR Complete
     if (receipt.ocr_status === 'completed' || (ocr && ocr.raw_text)) {
       return { label: 'Extracted', className: 'success' };
     }
-    
+
     // Stage 3: Crop & Input Complete
     const hasCategory = receipt.category && receipt.category !== 'unsorted';
     const hasCropOrInput = (receipt.category === 'gcash' && receipt.cropped_image) || (receipt.category === 'others' && ocr?.manual);
-    
+
     if (hasCategory && hasCropOrInput) return { label: 'Crop & Input', className: 'pending' };
-    
+
     // Stage 2: Sorting Complete
     if (hasCategory) return { label: 'Sorted', className: 'pending' };
-    
+
     // Stage 1: Uploading Complete (but unsorted)
     return { label: 'Unsorted', className: 'warning' };
   };
@@ -952,86 +874,19 @@ function ReceiptCard({ receipt, parseOCRData, onDelete, isBillingDone, isSelecte
     : '₱0.00';
 
   return (
-    <div
-      className={`receipt-card ${status.className === 'danger' ? 'is-not-found' : ''}`}
-      style={{
-        ...(isBillingDone ? { outline: '2px solid rgba(16,185,129,0.4)', outlineOffset: '-2px' } : {}),
-        ...(isSelected ? { outline: '2px solid #dc2626', outlineOffset: '-2px' } : {}),
-      }}
-    >
-      {/* Checkbox — top left, always visible when selected, on hover otherwise */}
-      <div
-        onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}
-        style={{
-          position: 'absolute', top: '8px', left: '8px', zIndex: 20,
-          width: '20px', height: '20px', borderRadius: '5px',
-          border: `2px solid ${isSelected ? '#dc2626' : 'rgba(255,255,255,0.7)'}`,
-          background: isSelected ? '#dc2626' : 'rgba(0,0,0,0.35)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', transition: 'all 0.15s',
-          opacity: isSelected ? 1 : 0,
-        }}
-        className="receipt-checkbox"
-      >
-        {isSelected && (
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        )}
+    <article className={`receipt-card batch-receipt-card ${status.className === 'danger' ? 'is-not-found' : ''} ${isSelected ? 'is-selected' : ''}`}>
+      <div className="batch-receipt-image">
+        <img src={getApiUrl(`/api/receipts/${receipt.id}/image`)} alt={`Receipt ${receipt.id}`} className="receipt-img" loading="lazy" crossOrigin="anonymous" />
+        <label className="batch-receipt-checkbox"><input type="checkbox" checked={isSelected} onChange={onToggleSelect} aria-label={`Select receipt ${receipt.id}`} /></label>
+        <button className="receipt-delete-btn" onClick={onDelete} title="Delete receipt" aria-label={`Delete receipt ${receipt.id}`}><Icon.Trash size={14} /></button>
+        {isBillingDone && <span className="batch-completed-badge"><Icon.Check size={12} /> Completed</span>}
       </div>
-      <button 
-        className="receipt-delete-btn"
-        onClick={(e) => { e.stopPropagation(); onDelete(); }}
-        title="Delete Receipt"
-      >
-        <Icon.Trash size={14} />
-      </button>
-
-      {/* Completed overlay badge */}
-      {isBillingDone && (
-        <div style={{
-          position: 'absolute', top: '8px', left: '8px', zIndex: 10,
-          display: 'flex', alignItems: 'center', gap: '4px',
-          padding: '3px 8px', borderRadius: '8px',
-          background: 'rgba(16,185,129,0.85)',
-          backdropFilter: 'blur(4px)',
-          color: '#fff', fontSize: '9px', fontWeight: 900,
-          textTransform: 'uppercase', letterSpacing: '0.1em',
-          boxShadow: '0 2px 8px rgba(16,185,129,0.4)',
-        }}>
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          Completed
-        </div>
-      )}
-
-      <img 
-        src={getApiUrl(`/api/receipts/${receipt.id}/image`)}
-        alt=""
-        className="receipt-img"
-        loading="lazy"
-        crossOrigin="anonymous"
-      />
       <div className="receipt-info">
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
-          <div className={`status-pill ${status.className}`}>
-            {status.label}
-          </div>
-          {receipt.category && receipt.category !== 'unsorted' && (
-            <div className="status-pill" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>
-              {receipt.category.toUpperCase()}
-            </div>
-          )}
-        </div>
-        
+        <div className="batch-receipt-status-row"><span className={`status-pill ${status.className}`}>{status.label}</span><span className="batch-receipt-category">{receipt.category && receipt.category !== 'unsorted' ? receipt.category === 'gcash' ? 'GCash' : 'Others' : 'Unsorted'}</span></div>
         <div className="receipt-price">{amount}</div>
-        
-        <div className="receipt-meta">
-          {receipt.account_holder || (receipt.category === 'others' ? 'OTHERS' : 'Unassigned')}
-        </div>
+        <div className="receipt-meta">{receipt.account_holder || (receipt.category === 'others' ? 'Others' : 'Unassigned')}</div>
+        <div className="batch-receipt-reference"><span>Reference</span><strong>{ocr?.reference || `Receipt #${receipt.id}`}</strong></div>
       </div>
-    </div>
+    </article>
   );
 }
