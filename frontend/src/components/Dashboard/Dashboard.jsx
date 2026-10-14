@@ -166,25 +166,6 @@ function DashboardStats({ receipts, onNavigate }) {
                 gap: '0.5rem',
                 zIndex: 2,
               }}>
-                <div style={{
-                  fontSize: '1.25rem',
-                  fontWeight: '800',
-                  lineHeight: '1.1',
-                  color: '#1e293b',
-                  fontFamily: 'Inter, sans-serif',
-                }}>
-                  {stat.label}
-                </div>
-                <div style={{
-                  fontFamily: 'JetBrains Mono, monospace',
-                  fontSize: '2rem',
-                  fontWeight: '800',
-                  lineHeight: '1',
-                  color: '#1e293b',
-                  letterSpacing: '-0.03em',
-                }}>
-                  {stat.value}
-                </div>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
