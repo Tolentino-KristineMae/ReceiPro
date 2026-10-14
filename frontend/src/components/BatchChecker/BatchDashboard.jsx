@@ -1685,16 +1685,4 @@ function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, dela
       </div>
     </div>
   );
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = 'var(--text-muted)';
-            e.currentTarget.style.borderColor = 'transparent';
-          }}
-        >
-          <Icon.Trash size={14} />
-        </button>
-      </div>
-    </div>
-  );
 }
