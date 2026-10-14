@@ -159,8 +159,8 @@ function DashboardStats({ receipts, onNavigate }) {
               />
               <div style={{
                 position: 'absolute',
-                left: '1.75rem',
-                bottom: '5.5rem',
+                left: '2rem',
+                bottom: '5.75rem',
                 display: 'flex',
                 flexDirection: 'column',
                 zIndex: 2,
@@ -177,7 +177,7 @@ function DashboardStats({ receipts, onNavigate }) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '0.35rem',
-                    padding: '0.5rem 0.75rem',
+                    padding: '0.4rem 0.75rem',
                     background: '#f97316',
                     color: 'white',
                     border: 'none',
