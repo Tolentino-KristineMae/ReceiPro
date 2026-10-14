@@ -1,7 +1,7 @@
 import React from 'react';
 import unclaimedCardImg from '../../../../unclaimedcard.png';
 import claimedCardImg from '../../claimedcard.png';
-import totalRepCardImg from '../../totalrep.png';
+import totalRepCardImg from '../../newnew.png';
 
 const Icon = {
   Receipt: ({ size = 18, className = "" }) => (
