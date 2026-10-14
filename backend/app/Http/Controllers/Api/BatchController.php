@@ -37,8 +37,8 @@ class BatchController extends Controller
     {
         try {
             // Get pagination parameters
-            $perPage = (int) $request->get('per_page', 20); // Default 20 batches per page
-            $page = $request->get('page', 1);
+            $perPage = max(1, min(100, (int) $request->get('per_page', 20)));
+            $page = max(1, (int) $request->get('page', 1));
             
             // Dashboard summary with aggregate COUNT queries → O(1) DB time, no full batch load
             $totalBatches     = (int) Batch::count();
@@ -46,24 +46,32 @@ class BatchController extends Controller
             $totalReceipts    = (int) DB::table('receipts')->count();
             $dashboard = [
                 'total_batches'       => $totalBatches,
+                'active_batches'      => (int) Batch::whereIn('checker_status', ['open', 'claiming', 'verified'])->count(),
                 'completed_batches'   => $completedBatches,
                 'in_progress_batches' => max(0, $totalBatches - $completedBatches),
                 'total_receipts'      => $totalReceipts,
             ];
             
-            // Next batch number - PostgreSQL compatible with fixed regex
-            $highestName = (int) DB::table('batches')
-                ->selectRaw("MAX(CAST(NULLIF(REGEXP_REPLACE(name, '[^0-9]', '', 'g'), '') AS INTEGER)) AS max_num")
-                ->whereRaw("name ~ '^Batch #[0-9]+$'")
-                ->value('max_num');
+            // Use the database's native numeric extraction syntax.
+            $names = DB::table('batches');
+            $driver = DB::connection()->getDriverName();
+            $highestName = match ($driver) {
+                'pgsql' => (int) $names->whereRaw("name ~ '^Batch #[0-9]+$'")
+                    ->selectRaw("MAX(CAST(SUBSTRING(name FROM 8) AS BIGINT)) AS max_num")->value('max_num'),
+                'sqlite' => (int) $names->whereRaw("name GLOB 'Batch #[0-9]*' AND SUBSTR(name, 8) NOT GLOB '*[^0-9]*'")
+                    ->selectRaw('MAX(CAST(SUBSTR(name, 8) AS INTEGER)) AS max_num')->value('max_num'),
+                default => (int) $names->whereRaw("name REGEXP '^Batch #[0-9]+$'")
+                    ->selectRaw('MAX(CAST(SUBSTRING(name, 8) AS UNSIGNED)) AS max_num')->value('max_num'),
+            };
             $nextBatchNumber = max($highestName ?? 0, $totalBatches) + 1;
             
             // For the list, paginate and include receipts
-            $batches = Batch::with(['receipts' => function ($query) {
+            $batches = Batch::with(['transactions:id,batch_id,amount,reference,label,account_holder,status', 'receipts' => function ($query) {
                 $query->orderBy('created_at', 'asc')->with('transaction');
             }])
             ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
+            ->orderBy('id', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
 
             $enriched = $batches->getCollection()->map(fn (Batch $batch) => $this->statsService->enrichBatch($batch));
 

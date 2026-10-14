@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Receipt;
 use App\Models\Batch;
 use App\Models\Transaction;
-use App\Jobs\ProcessReceiptOcr;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -84,13 +83,13 @@ class ReceiptController extends Controller
         foreach ($request->file('receipts') as $file) {
             $path = $file->store('receipts', 'supabase');
 
-            $receipt = Receipt::create([
+            Receipt::create([
                 'file_path' => $path,
                 'category' => 'unsorted',
                 'batch_id' => $batch->id
             ]);
 
-            ProcessReceiptOcr::dispatch($receipt);
+            // OCR runs in the browser after categorization and cropping.
         }
 
         // Force reload batch with all receipts (no limit) and include linked transactions
@@ -269,7 +268,10 @@ class ReceiptController extends Controller
 
     public function index(Request $request)
     {
-        $query = Receipt::with(['batch', 'transaction']);
+        // Dashboard activity only needs dates and match status, not OCR text or relations.
+        $query = $request->query('view') === 'activity'
+            ? Receipt::select(['id', 'created_at', 'match_status'])
+            : Receipt::with(['batch', 'transaction']);
 
         if ($request->has('category')) {
             $query->where('category', $request->category);

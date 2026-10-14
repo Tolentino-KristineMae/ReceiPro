@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Batch;
 use App\Models\Receipt;
 use App\Models\Transaction;
+use Illuminate\Support\Facades\Cache;
 
 class BatchSyncService
 {
@@ -18,37 +19,28 @@ class BatchSyncService
             ? $batch->receipts
             : $batch->receipts()->get();
 
-        $verifiedTxIds = $receipts
-            ->filter(fn ($r) => strtolower((string) $r->match_status) === 'verified' && $r->transaction_id)
-            ->pluck('transaction_id')
-            ->filter()
-            ->unique()
-            ->values();
+        $invalidReceiptIds = $receipts
+            ->filter(fn ($r) => strtolower((string) $r->match_status) === 'verified' && !$r->transaction_id)
+            ->pluck('id');
+        $fixedReceipts = $invalidReceiptIds->isEmpty() ? 0 : Receipt::whereIn('id', $invalidReceiptIds)
+            ->whereNull('transaction_id')
+            ->whereRaw('LOWER(match_status) = ?', ['verified'])
+            ->update(['match_status' => 'matched']);
 
-        $fixedReceipts = 0;
-        foreach ($receipts as $receipt) {
-            if (strtolower((string) $receipt->match_status) === 'verified' && !$receipt->transaction_id) {
-                $receipt->update(['match_status' => 'matched']);
-                $fixedReceipts++;
-            }
-        }
+        // Check the current database state in the same UPDATE. Avoid a query and
+        // model write for every orphan, and preserve transactions with verified claims.
+        $unlinked = Transaction::where('batch_id', $batch->id)
+            ->whereNotExists(function ($query) {
+                $query->selectRaw('1')->from('receipts')
+                    ->whereColumn('receipts.transaction_id', 'transactions.id')
+                    ->whereColumn('receipts.batch_id', 'transactions.batch_id')
+                    ->whereRaw('LOWER(receipts.match_status) = ?', ['verified']);
+            })
+            ->update(['batch_id' => null, 'status' => 'pending']);
 
-        $orphaned = Transaction::where('batch_id', $batch->id)
-            ->when($verifiedTxIds->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $verifiedTxIds))
-            ->when($verifiedTxIds->isEmpty(), fn ($q) => $q)
-            ->get();
-
-        $unlinked = 0;
-        foreach ($orphaned as $transaction) {
-            $hasVerifiedReceipt = Receipt::where('batch_id', $batch->id)
-                ->where('transaction_id', $transaction->id)
-                ->where('match_status', 'verified')
-                ->exists();
-
-            if (!$hasVerifiedReceipt) {
-                $transaction->update(['batch_id' => null, 'status' => 'pending']);
-                $unlinked++;
-            }
+        if ($unlinked > 0) {
+            Cache::forget('transactions_report');
+            $batch->unsetRelation('transactions');
         }
 
         return [
@@ -91,10 +83,12 @@ class BatchSyncService
     /** Transactions linked to this batch in the ledger. */
     public function getLinkedTransactions(Batch $batch): array
     {
-        return Transaction::where('batch_id', $batch->id)
-            ->orderBy('amount', 'desc')
-            ->get(['id', 'amount', 'reference', 'label', 'account_holder', 'status'])
-            ->map(fn ($t) => [
+        $transactions = $batch->relationLoaded('transactions')
+            ? $batch->transactions->sortByDesc('amount')->values()
+            : Transaction::where('batch_id', $batch->id)->orderBy('amount', 'desc')
+                ->get(['id', 'amount', 'reference', 'label', 'account_holder', 'status']);
+
+        return $transactions->map(fn ($t) => [
                 'id'             => $t->id,
                 'amount'         => (float) $t->amount,
                 'reference'      => $t->reference,

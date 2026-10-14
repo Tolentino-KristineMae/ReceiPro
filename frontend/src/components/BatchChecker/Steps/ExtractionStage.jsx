@@ -1,4 +1,3 @@
-import React from 'react';
 import './ExtractionStage.css';
 
 export default function ExtractionStage({
@@ -9,6 +8,7 @@ export default function ExtractionStage({
   ocrProgress = 0,
   onReExtract,
 }) {
+  const hasIncompleteResults = ocrResults && ocrResults.length < receiptsCount;
   return (
     <div className="es-root">
 
@@ -56,14 +56,16 @@ export default function ExtractionStage({
               {isProcessingOcr
                 ? 'Extracting Data...'
                 : ocrResults
-                  ? 'Extraction Complete'
+                  ? (hasIncompleteResults ? 'Extraction needs attention' : 'Extraction Complete')
                   : 'Ready to Scan'}
             </h4>
             <p className="es-status-description">
               {isProcessingOcr
                 ? 'OCR engine is reading your cropped images. This may take a moment...'
                 : ocrResults
-                  ? 'Receipt data has been extracted and is ready for verification.'
+                  ? (hasIncompleteResults
+                    ? `${ocrResults.length} of ${receiptsCount} receipts extracted. Retry extraction or enter the missing details manually.`
+                    : 'Receipt data has been extracted and is ready for verification.')
                   : 'All receipts are sorted and cropped. Tap the button below to start extraction.'}
             </p>
           </div>

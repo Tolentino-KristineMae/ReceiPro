@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import CropWizard from './CropWizardModal';
 import BatchDashboard from './BatchDashboard';
 import BatchDetail from './BatchDetail';
 import { BATCH_STYLES } from './BatchStyles';
 import './BatchChecker.css';
 import { getApiUrl } from '../../apiConfig';
-import { parseOCRData } from './BatchUtils';
+import { requestJson } from '../../utils/requestJson';
+
+const CropWizard = lazy(() => import('./CropWizardModal'));
  
 // ─── Enhanced BatchCheckerPage ─────────────────────────────────────────────────
 export default function BatchCheckerPage() {
@@ -15,6 +16,8 @@ export default function BatchCheckerPage() {
   const [batches, setBatches] = useState([]);
   const [dashboard, setDashboard] = useState(null);
   const [nextBatchNumber, setNextBatchNumber] = useState(null);
+  const [pagination, setPagination] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingBatch, setLoadingBatch] = useState(false);
@@ -22,7 +25,7 @@ export default function BatchCheckerPage() {
   const [processorPhase, setProcessorPhase] = useState('categorize');
   const [isCreating, setIsCreating] = useState(false);
   const [filter, setFilter] = useState('all');
-  const [isRunningCheck, setIsRunningCheck] = useState(false);
+  const [isRunningCheck] = useState(false);
   const [fileCount, setFileCount] = useState(0);
   const [wizardReceipts, setWizardReceipts] = useState([]);
   const [error, setError] = useState(null);
@@ -40,7 +43,30 @@ export default function BatchCheckerPage() {
     };
   }, []);
 
-  useEffect(() => { fetchBatches(); }, []);
+  const fetchBatches = useCallback(async (silent = false, signal, page = 1) => {
+    try {
+      const data = await requestJson(getApiUrl(`/api/batches?per_page=20&page=${page}`), { cache: 'no-store', signal });
+      if (signal?.aborted) return;
+      if (!silent) setError(null);
+      const incoming = Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []);
+      setBatches(previous => page === 1 ? incoming : [...previous, ...incoming.filter(batch => !previous.some(existing => existing.id === batch.id))]);
+      if (data?.dashboard) setDashboard(data.dashboard);
+      if (data?.next_batch_number) setNextBatchNumber(data.next_batch_number);
+      setPagination(data?.pagination ?? null);
+    } catch (e) {
+      if (signal?.aborted) return;
+      console.error('[BatchChecker] fetchBatches: Failed to fetch', e);
+      if (!silent) setError(`Failed to load batches: ${e.message}`);
+    } finally {
+      if (!silent && !signal?.aborted) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchBatches(false, controller.signal);
+    return () => controller.abort();
+  }, [fetchBatches]);
 
   // Poll only while uploads/OCR/checks are actively running — not on every batch detail view.
   useEffect(() => {
@@ -56,20 +82,19 @@ export default function BatchCheckerPage() {
     const poll = async () => {
       if (pollInFlightRef.current) return;
       // Skip silently when offline — browser will resume when back online
-      if (!navigator.onLine) return;
+      if (!navigator.onLine || document.hidden) return;
       pollInFlightRef.current = true;
       try {
         if (batchId) {
-          const res = await fetch(getApiUrl(`/api/batches/${batchId}?t=${Date.now()}`), {
+          const batch = await requestJson(getApiUrl(`/api/batches/${batchId}`), {
             cache: 'no-store',
             signal: controller.signal,
           });
-          if (!res.ok || res.status === 429) return;
-          const batch = await res.json();
+          if (controller.signal.aborted) return;
           setBatches(prev => prev.map(b => b.id === batch.id ? batch : b));
           setSelectedBatch(batch);
         } else {
-          await fetchBatches(true);
+          await fetchBatches(true, controller.signal);
         }
       } catch (e) {
         // Ignore abort errors and network errors (offline) — they are expected
@@ -86,55 +111,11 @@ export default function BatchCheckerPage() {
       clearInterval(interval);
       controller.abort();
     };
-  }, [batchId, isRunningCheck, isCreating, batches]);
+  }, [batchId, isRunningCheck, isCreating, batches, fetchBatches]);
 
-  const fetchBatches = async (silent = false) => {
-    try {
-      // Load first 20 batches (pagination)
-      const res = await fetch(getApiUrl(`/api/batches?per_page=20&t=${Date.now()}`), { cache: 'no-store' });
-      if (res.status === 429) return;
-      
-      if (!res.ok) {
-        // Try to get error details from response
-        const contentType = res.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || `HTTP ${res.status}`);
-        } else {
-          // Server returned HTML (likely an error page)
-          const htmlText = await res.text();
-          console.error('[BatchChecker] Server returned HTML error:', htmlText.substring(0, 500));
-          throw new Error(`Server error (${res.status}). Please check backend logs or database connection.`);
-        }
-      }
-      
-      const data = await res.json();
-      if (!silent) setError(null);
-      setBatches(Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []));
-      if (data?.dashboard) setDashboard(data.dashboard);
-      if (data?.next_batch_number) setNextBatchNumber(data.next_batch_number);
-      // Store pagination info if needed for "Load More" feature later
-      if (data?.pagination) {
-        console.log(`Loaded ${data.pagination.to} of ${data.pagination.total} batches`);
-      }
-    } catch (e) {
-      if (navigator.onLine) {
-        console.error('[BatchChecker] fetchBatches: Failed to fetch', e);
-        if (!silent) {
-          setError(`Failed to load batches: ${e.message}`);
-        }
-      }
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  };
-
-  const fetchSelectedBatch = async (id, receiptFilter = filter) => {
+  const fetchSelectedBatch = async (id, receiptFilter = filter, signal) => {
     const query = receiptFilter && receiptFilter !== 'all' ? `?filter=${receiptFilter}&t=${Date.now()}` : `?t=${Date.now()}`;
-    const res = await fetch(getApiUrl(`/api/batches/${id}${query}`), { cache: 'no-store' });
-    if (res.status === 429) throw new Error('Too many requests — please wait a moment');
-    if (!res.ok) throw new Error(`Failed to fetch batch ${id}`);
-    return res.json();
+    return requestJson(getApiUrl(`/api/batches/${id}${query}`), { cache: 'no-store', signal });
   };
 
   // Only fetch the selected batch when batchId or filter changes — NOT on every
@@ -146,11 +127,15 @@ export default function BatchCheckerPage() {
       setLoadingBatch(false);
       return;
     }
+    const controller = new AbortController();
     setLoadingBatch(true);
-    fetchSelectedBatch(batchId, filter)
-      .then(setSelectedBatch)
-      .catch(console.error)
-      .finally(() => setLoadingBatch(false));
+    setSelectedBatch(null);
+    setError(null);
+    fetchSelectedBatch(batchId, filter, controller.signal)
+      .then(batch => { if (!controller.signal.aborted) setSelectedBatch(batch); })
+      .catch(e => { if (!controller.signal.aborted) setError(e.message); })
+      .finally(() => { if (!controller.signal.aborted) setLoadingBatch(false); });
+    return () => controller.abort();
   }, [batchId, filter]);
 
   const handleCreateAndUpload = async (e, batchName) => {
@@ -440,14 +425,14 @@ export default function BatchCheckerPage() {
   }
 
   // Handle batch not found case — only after fetch is complete
-  if (batchId && !loadingBatch && !selectedBatch && batches.length > 0) {
+  if (batchId && !loadingBatch && !selectedBatch) {
     return (
       <div className="bcp-root">
         <div className="glass-card empty-box">
           <div className="empty-icon-lg">⚠️</div>
-          <div style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Batch Not Found</div>
+          <div style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{error ? 'Unable to Load Batch' : 'Batch Not Found'}</div>
           <div style={{ opacity: 0.7, marginBottom: '1.5rem' }}>
-            The batch you are looking for does not exist or has been deleted.
+            {error || 'The batch you are looking for does not exist or has been deleted.'}
           </div>
           <button className="btn-primary-modern" style={{ width: 'auto' }} onClick={() => navigate('/batch')}>
             Return to Dashboard
@@ -505,6 +490,7 @@ export default function BatchCheckerPage() {
   return (
     <div className="bcp-root">
       {!batchId ? (
+        <>
         <BatchDashboard
           batches={batches}
           setBatches={setBatches}
@@ -521,6 +507,17 @@ export default function BatchCheckerPage() {
           navigate={navigate}
           fetchBatches={fetchBatches}
         />
+        {pagination && pagination.current_page < pagination.last_page && (
+          <button className="btn-primary-modern" style={{ width: 'auto', marginTop: '16px' }} disabled={loadingMore}
+            onClick={async () => {
+              setLoadingMore(true);
+              try { await fetchBatches(false, undefined, pagination.current_page + 1); }
+              finally { setLoadingMore(false); }
+            }}>
+            {loadingMore ? 'Loading batches…' : 'Load more batches'}
+          </button>
+        )}
+        </>
       ) : (
         <BatchDetail
           batch={selectedBatch}
@@ -541,6 +538,7 @@ export default function BatchCheckerPage() {
       )}
 
       {showProcessor && selectedBatch && (
+        <Suspense fallback={<p role="status">Loading receipt processor…</p>}>
         <CropWizard
           batchId={selectedBatch.id}
           initialPhase={processorPhase}
@@ -549,7 +547,7 @@ export default function BatchCheckerPage() {
             // Refresh the background batch data (for the detail page stats/display)
             // but do NOT replace wizardReceipts — the wizard was opened with a specific
             // filtered set (e.g. only new unsorted receipts) and must stay that way.
-            await fetchBatches(true);
+            await fetchBatches(true, controller.signal);
             if (batchId) {
               const batch = await fetchSelectedBatch(batchId, filter);
               setSelectedBatch(batch);
@@ -574,6 +572,7 @@ export default function BatchCheckerPage() {
             }
           }}
         />
+        </Suspense>
       )}
     </div>
   );

@@ -150,6 +150,7 @@ function BatchSummary({ batch, onClose }) {
 export default function Dashboard({
   receipts = [],
   batches = [],
+  activeBatchCount = null,
   batchesLoading = false,
   receiptsLoading = false,
   dataError = "",
@@ -169,7 +170,7 @@ export default function Dashboard({
   });
   const claimed = monthReceipts.filter(isClaimed).length;
   const unclaimed = monthReceipts.length - claimed;
-  const activeBatches = batches.filter((batch) =>
+  const activeBatches = activeBatchCount ?? batches.filter((batch) =>
     ["open", "claiming", "verified"].includes(batch.checker_status),
   ).length;
   const completion = monthReceipts.length

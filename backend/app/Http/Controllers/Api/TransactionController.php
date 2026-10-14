@@ -293,12 +293,13 @@ class TransactionController extends Controller
         }
         if ($request->filled('search')) {
             $search = trim((string) $request->search);
-            $query->where(function ($sub) use ($search) {
+            $textType = DB::connection()->getDriverName() === 'mysql' ? 'CHAR' : 'TEXT';
+            $query->where(function ($sub) use ($search, $textType) {
                 $sub->where('label', 'like', '%' . $search . '%')
                     ->orWhere('reference', 'like', '%' . $search . '%')
                     ->orWhere('entry_type', 'like', '%' . $search . '%')
-                    ->orWhere('transaction_date', 'like', '%' . $search . '%')
-                    ->orWhereRaw('CAST(amount AS CHAR) LIKE ?', ['%' . $search . '%']);
+                    ->orWhereRaw("CAST(transaction_date AS {$textType}) LIKE ?", ['%' . $search . '%'])
+                    ->orWhereRaw("CAST(amount AS {$textType}) LIKE ?", ['%' . $search . '%']);
             });
         }
 
