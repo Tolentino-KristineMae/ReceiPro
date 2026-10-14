@@ -1,5 +1,6 @@
 import React from 'react';
 import unclaimedCardImg from '../../../../unclaimedcard.png';
+import claimedCardImg from '../../claimedcard.png';
 
 const Icon = {
   Receipt: ({ size = 18, className = "" }) => (
@@ -82,7 +83,8 @@ function DashboardStats({ receipts }) {
       tag: 'Confirmed',
       icon: Icon.CheckCircle,
       gradient: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
-      bg: 'linear-gradient(135deg, rgba(16,185,129,0.05) 0%, rgba(52,211,153,0.05) 100%)'
+      bg: 'linear-gradient(135deg, rgba(16,185,129,0.05) 0%, rgba(52,211,153,0.05) 100%)',
+      image: claimedCardImg
     },
     {
       key: 'total_unclaimed',
@@ -130,12 +132,15 @@ function DashboardStats({ receipts }) {
             backdropFilter: 'blur(12px)',
             border: '1px solid rgba(255, 255, 255, 0.7)',
             borderRadius: '16px',
-            padding: '1.25rem 1rem',
+            padding: stat.image ? '0' : '1.25rem 1rem',
             position: 'relative',
             overflow: 'hidden',
             transition: 'all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
             cursor: 'pointer',
-            boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05)'
+            boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05)',
+            minHeight: stat.image ? '180px' : 'auto',
+            display: stat.image ? 'flex' : 'block',
+            alignItems: stat.image ? 'stretch' : 'flex-start',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-4px)';
@@ -154,9 +159,8 @@ function DashboardStats({ receipts }) {
               alt={stat.label}
               style={{
                 width: '100%',
-                height: '100%',
+                flex: 1,
                 objectFit: 'cover',
-                borderRadius: '12px',
                 display: 'block',
               }}
             />
