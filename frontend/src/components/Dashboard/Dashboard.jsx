@@ -177,9 +177,18 @@ function DashboardStats({ receipts, onNavigate }) {
                 bottom: '1.25rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.625rem',
+                gap: '0.5rem',
                 zIndex: 2,
               }}>
+                <div style={{
+                  fontSize: '1.25rem',
+                  fontWeight: '800',
+                  lineHeight: '1.1',
+                  color: '#1e293b',
+                  fontFamily: 'Inter, sans-serif',
+                }}>
+                  {stat.label}
+                </div>
                 <div style={{
                   fontFamily: 'JetBrains Mono, monospace',
                   fontSize: '2rem',
@@ -518,7 +527,7 @@ export default function Dashboard({
     <div style={{
       minHeight: '100vh',
       padding: isMobile ? '0.5rem 0 2rem' : '0 0 2rem',
-      background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)'
+      background: '#ffffff'
     }}>
       <DashboardStats receipts={receipts} batches={batches} onNavigate={onNavigate} />
       <div style={{ marginTop: '1rem' }}>
