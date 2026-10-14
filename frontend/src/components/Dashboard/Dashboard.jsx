@@ -65,17 +65,6 @@ function DashboardStats({ receipts, onNavigate }) {
 
   const stats = [
     {
-      key: 'total_uploaded',
-      label: 'Total Receipts',
-      value: total,
-      sub: 'This month',
-      tag: 'Monthly',
-      icon: Icon.Receipt,
-      gradient: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-      bg: 'linear-gradient(135deg, rgba(99,102,241,0.05) 0%, rgba(139,92,246,0.05) 100%)',
-      image: totalRepCardImg
-    },
-    {
       key: 'total_claimed',
       label: 'Total Claimed',
       value: claimed,
