@@ -54,15 +54,26 @@ function App() {
       .catch(() => {});
   }, []);
 
-  // Load batches on mount
+  // Load batches on mount and poll every 10 seconds
   useEffect(() => {
-    fetch(getApiUrl(`/api/batches?t=${Date.now()}`), { cache: 'no-store' })
-      .then(res => res.ok ? res.json() : [])
-      .then(data => {
-        const batchesData = Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []);
-        setBatches(batchesData);
-      })
-      .catch(() => {});
+    const fetchBatches = () => {
+      fetch(getApiUrl(`/api/batches?t=${Date.now()}`), { cache: 'no-store' })
+        .then(res => res.ok ? res.json() : [])
+        .then(data => {
+          const batchesData = Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []);
+          setBatches(batchesData);
+        })
+        .catch(() => {});
+    };
+
+    // Initial fetch
+    fetchBatches();
+
+    // Set up polling interval (every 10 seconds)
+    const intervalId = setInterval(fetchBatches, 10000);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   // Mark receipt as matched in local state after a transaction is created
