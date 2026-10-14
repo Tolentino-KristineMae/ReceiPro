@@ -62,35 +62,12 @@
 .sidebar-collapse {
   margin-left: auto;
 }
-.workspace-card {
-  border: 1px solid var(--workspace-border);
-  margin: 8px 19px 29px;
-  border-radius: 10px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  padding: 12px;
-  background: #fdf9f4;
-}
-.workspace-icon {
-  border: 1px solid var(--workspace-border);
-  width: 33px;
-  height: 33px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  color: var(--workspace-accent);
-  background: var(--workspace-accent-soft);
-  flex-shrink: 0;
-}
-.workspace-card strong,
 .profile-copy strong {
   display: block;
   font-size: 13px;
   color: var(--workspace-text);
   font-weight: 600;
 }
-.workspace-card small,
 .profile-copy small {
   display: block;
   font-size: 11px;
@@ -99,7 +76,7 @@
   white-space: nowrap;
 }
 .sidebar-navigation {
-  padding: 0 15px;
+  padding: 20px 15px 0;
 }
 .sidebar-section-label {
   font-size: 10px;
@@ -143,39 +120,6 @@
 .sidebar-bottom {
   margin-top: auto;
   padding: 26px 19px 17px;
-}
-.sidebar-tip {
-  border-radius: 12px;
-  padding: 17px;
-  background: var(--workspace-sand);
-  border: 1px solid var(--workspace-border);
-}
-.tip-icon {
-  color: var(--workspace-muted);
-  display: block;
-  margin-bottom: 13px;
-}
-.sidebar-tip h3 {
-  font-size: 15px;
-  font-weight: 600;
-  color: #60452f;
-  line-height: 1.5;
-  letter-spacing: -0.2px;
-}
-.sidebar-tip p {
-  font-size: 12px;
-  line-height: 1.7;
-  margin: 8px 0 16px;
-  color: var(--workspace-muted);
-}
-.sidebar-tip a {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--workspace-accent-hover);
-  font-size: 12px;
-  font-weight: 650;
-  text-decoration: none;
 }
 .sidebar-profile {
   display: flex;
@@ -221,11 +165,6 @@
 }
 .is-collapsed .sidebar-collapse {
   margin: 0;
-}
-.is-collapsed .workspace-card {
-  margin: 12px auto 24px;
-  padding: 0;
-  border: 0;
 }
 .is-collapsed .sidebar-navigation {
   padding: 0 12px;
@@ -297,11 +236,6 @@
   .app-sidebar.is-collapsed .sidebar-brand {
     flex-direction: row;
     padding: 0 23px;
-  }
-  .app-sidebar.is-collapsed .workspace-card {
-    margin: 8px 19px 29px;
-    padding: 12px;
-    border: 1px solid var(--workspace-border);
   }
   .app-sidebar.is-collapsed .sidebar-nav-link {
     justify-content: flex-start;

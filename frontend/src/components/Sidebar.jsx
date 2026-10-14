@@ -9,10 +9,7 @@ import {
   X,
   PanelLeftClose,
   PanelLeftOpen,
-  ReceiptText,
-  ArrowUpRight,
   ChevronRight,
-  Layers,
 } from "lucide-react";
 import profLogo from "../../newprof.png";
 import "./Sidebar.css";
@@ -130,15 +127,6 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
             <X size={20} />
           </button>
         </div>
-        <div className="workspace-card">
-          <span className="workspace-icon">
-            <Layers size={18} />
-          </span>
-          <div className="sidebar-label">
-            <strong>My workspace</strong>
-            <small>Receipt management</small>
-          </div>
-        </div>
         <nav className="sidebar-navigation" aria-label="Main navigation">
           <p className="sidebar-section-label sidebar-label">WORKSPACE</p>
           {navigation.map(({ path, label, icon: NavIcon }) => (
@@ -175,20 +163,6 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
           </NavLink>
         </nav>
         <div className="sidebar-bottom">
-          <div className="sidebar-tip sidebar-label">
-            <span className="tip-icon">
-              <ReceiptText size={19} />
-            </span>
-            <h3>
-              Less paperwork.
-              <br />
-              More peace of mind.
-            </h3>
-            <p>Keep every receipt organized, from upload to verification.</p>
-            <Link to="/batch" onClick={closeMobile}>
-              Start a batch <ArrowUpRight size={15} />
-            </Link>
-          </div>
           <Link
             to="/settings"
             onClick={closeMobile}
@@ -197,7 +171,7 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
           >
             <span className="profile-avatar">RP</span>
             <span className="sidebar-label profile-copy">
-              <strong>My workspace</strong>
+              <strong>Settings</strong>
               <small>Manage preferences</small>
             </span>
             <Settings className="sidebar-label" size={16} />
