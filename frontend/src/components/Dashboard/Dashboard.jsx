@@ -190,7 +190,7 @@ function DashboardStats({ receipts, onNavigate }) {
                     boxShadow: '0 2px 8px rgba(249, 115, 22, 0.25)',
                     transition: 'all 0.2s ease',
                     whiteSpace: 'nowrap',
-                    width: '100%',
+                    width: '10%',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = '#ea580c';
