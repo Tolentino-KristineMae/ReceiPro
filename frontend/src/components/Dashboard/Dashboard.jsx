@@ -279,22 +279,21 @@ function RecentBatches({ batches, onNavigate }) {
     return () => window.removeEventListener('resize', checkSize);
   }, []);
 
+  const getGridColumns = () => {
+    if (isMobile) return '1fr';
+    return 'repeat(auto-fill, minmax(280px, 1fr))';
+  };
+
   return (
-    <div style={{
-      background: 'white',
-      borderRadius: '16px',
-      padding: isMobile ? '1.25rem 1rem' : '1.5rem',
-      boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05)',
-      border: '1px solid rgba(248, 250, 252, 1)'
-    }}>
+    <div>
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '1rem'
+        marginBottom: '1.5rem'
       }}>
         <h2 style={{
-          fontSize: '1rem',
+          fontSize: '1.25rem',
           fontWeight: '700',
           color: '#0f172a',
           fontFamily: 'Inter, sans-serif'
@@ -304,12 +303,12 @@ function RecentBatches({ batches, onNavigate }) {
         <button 
           onClick={() => onNavigate('/batch')}
           style={{
-            fontSize: '0.8125rem',
+            fontSize: '0.875rem',
             fontWeight: '600',
             color: '#6366f1',
             background: 'transparent',
-            padding: '0.375rem 0.75rem',
-            borderRadius: '9999px',
+            padding: '0.5rem 1rem',
+            borderRadius: '8px',
             border: 'none',
             cursor: 'pointer',
             fontFamily: 'Inter, sans-serif',
@@ -326,96 +325,295 @@ function RecentBatches({ batches, onNavigate }) {
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <div style={{ 
+        display: 'grid',
+        gridTemplateColumns: getGridColumns(),
+        gap: '1.25rem'
+      }}>
         {recentBatches.length > 0 ? recentBatches.map(batch => {
-          const date = new Date(batch.created_at).toLocaleDateString('en-PH', {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-
           const status = statusColor[batch.checker_status] || statusColor.open;
           const receiptCount = batch.stats?.total || batch.receipts?.length || 0;
           const verifiedCount = batch.stats?.verified || 0;
+          const batchNumber = batch.final_batch_number || batch.name || `Batch #${batch.id}`;
+          
+          const date = new Date(batch.created_at).toLocaleDateString('en-PH', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          });
 
           return (
             <div
               key={batch.id}
-              onClick={() => onNavigate(`/batch/${batch.id}`)}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.875rem 0.875rem',
-                borderRadius: '12px',
-                background: 'transparent',
-                border: '1px solid transparent',
-                transition: 'all 0.2s ease',
-                cursor: 'pointer'
+                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                borderRadius: '20px',
+                padding: '1.75rem',
+                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05)',
+                border: '1px solid rgba(226, 232, 240, 0.8)',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                overflow: 'hidden'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(99,102,241,0.15)';
-                e.currentTarget.style.background = 'rgba(99,102,241,0.03)';
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 12px 24px -4px rgba(0,0,0,0.1), 0 8px 16px -8px rgba(0,0,0,0.1)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'transparent';
-                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05)';
               }}
             >
+              {/* Download Icon - Top Right */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate(`/batch/${batch.id}`);
+                }}
+                style={{
+                  position: 'absolute',
+                  top: '1.25rem',
+                  right: '1.25rem',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: 'rgba(255,255,255,0.8)',
+                  border: '1px solid rgba(226,232,240,0.8)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  color: '#64748b'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#6366f1';
+                  e.currentTarget.style.color = 'white';
+                  e.currentTarget.style.borderColor = '#6366f1';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.8)';
+                  e.currentTarget.style.color = '#64748b';
+                  e.currentTarget.style.borderColor = 'rgba(226,232,240,0.8)';
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+
+              {/* Batch Number Circle */}
               <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '12px',
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
                 background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'white',
-                flexShrink: 0
+                margin: '0 auto 1rem',
+                boxShadow: '0 8px 16px rgba(99,102,241,0.3)',
+                border: '4px solid rgba(255,255,255,0.9)'
               }}>
-                <Icon.Inbox size={18} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                  fontSize: '0.875rem',
-                  fontWeight: '600',
-                  color: '#0f172a',
-                  fontFamily: 'Inter, sans-serif',
-                  marginBottom: '0.125rem'
-                }}>
-                  {batch.name || `Batch #${batch.id}`}
-                </div>
-                <div style={{
-                  fontSize: '0.75rem',
-                  color: '#64748b',
+                <span style={{
+                  fontSize: '1.5rem',
+                  fontWeight: '800',
+                  color: 'white',
                   fontFamily: 'JetBrains Mono, monospace'
                 }}>
-                  {date} • {receiptCount} receipt{receiptCount !== 1 ? 's' : ''} {verifiedCount > 0 ? `• ${verifiedCount} verified` : ''}
+                  {batch.id}
+                </span>
+              </div>
+
+              {/* Batch Number */}
+              <div style={{
+                fontSize: '1.125rem',
+                fontWeight: '700',
+                color: '#0f172a',
+                textAlign: 'center',
+                marginBottom: '0.375rem',
+                fontFamily: 'Inter, sans-serif'
+              }}>
+                {batchNumber}
+              </div>
+
+              {/* Date */}
+              <div style={{
+                fontSize: '0.8125rem',
+                color: '#94a3b8',
+                textAlign: 'center',
+                marginBottom: '1.25rem',
+                fontFamily: 'Inter, sans-serif'
+              }}>
+                {date}
+              </div>
+
+              {/* Stats Row */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '1rem',
+                marginBottom: '1.25rem',
+                paddingBottom: '1.25rem',
+                borderBottom: '1px solid rgba(226,232,240,0.6)'
+              }}>
+                {/* Status */}
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    fontSize: '0.6875rem',
+                    fontWeight: '600',
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    marginBottom: '0.375rem',
+                    fontFamily: 'Inter, sans-serif'
+                  }}>
+                    Status
+                  </div>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    fontSize: '0.75rem',
+                    fontWeight: '700',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '6px',
+                    background: status.bg,
+                    color: status.color,
+                    fontFamily: 'Inter, sans-serif'
+                  }}>
+                    {status.label}
+                  </div>
+                </div>
+
+                {/* Receipts */}
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    fontSize: '0.6875rem',
+                    fontWeight: '600',
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    marginBottom: '0.375rem',
+                    fontFamily: 'Inter, sans-serif'
+                  }}>
+                    Receipts
+                  </div>
+                  <div style={{
+                    fontSize: '1.25rem',
+                    fontWeight: '800',
+                    color: '#0f172a',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    letterSpacing: '-0.02em'
+                  }}>
+                    {receiptCount}
+                  </div>
+                </div>
+
+                {/* Verified */}
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    fontSize: '0.6875rem',
+                    fontWeight: '600',
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    marginBottom: '0.375rem',
+                    fontFamily: 'Inter, sans-serif'
+                  }}>
+                    Verified
+                  </div>
+                  <div style={{
+                    fontSize: '1.25rem',
+                    fontWeight: '800',
+                    color: '#10b981',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    letterSpacing: '-0.02em'
+                  }}>
+                    {verifiedCount}
+                  </div>
                 </div>
               </div>
-              <div style={{
-                fontSize: '0.6875rem',
-                fontWeight: '700',
-                padding: '0.25rem 0.5rem',
-                borderRadius: '9999px',
-                background: status.bg,
-                color: status.color,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                fontFamily: 'JetBrains Mono, monospace',
-                flexShrink: 0
+
+              {/* Action Buttons */}
+              <div style={{ 
+                display: 'flex', 
+                gap: '0.75rem',
+                alignItems: 'center'
               }}>
-                {status.label}
+                <button
+                  onClick={() => onNavigate(`/batch/${batch.id}`)}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem 1.25rem',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    color: 'white',
+                    border: 'none',
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    fontFamily: 'Inter, sans-serif',
+                    boxShadow: '0 4px 12px rgba(99,102,241,0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(99,102,241,0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(99,102,241,0.3)';
+                  }}
+                >
+                  View Batch
+                </button>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Add bookmark functionality here
+                  }}
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '12px',
+                    background: 'white',
+                    border: '1px solid rgba(226,232,240,0.8)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    color: '#64748b'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#fef3c7';
+                    e.currentTarget.style.color = '#f59e0b';
+                    e.currentTarget.style.borderColor = '#fbbf24';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'white';
+                    e.currentTarget.style.color = '#64748b';
+                    e.currentTarget.style.borderColor = 'rgba(226,232,240,0.8)';
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </button>
               </div>
             </div>
           );
         }) : (
           <div style={{
-            padding: '2rem 1rem',
+            gridColumn: '1 / -1',
+            padding: '3rem 1rem',
             textAlign: 'center',
-            color: '#64748b',
-            fontSize: '0.875rem'
+            color: '#94a3b8',
+            fontSize: '0.9375rem',
+            fontFamily: 'Inter, sans-serif'
           }}>
             No recent batches
           </div>
