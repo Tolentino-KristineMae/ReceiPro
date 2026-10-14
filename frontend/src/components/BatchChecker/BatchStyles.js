@@ -1,15 +1,15 @@
 export const BATCH_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
-  :root {
-    --bg-primary:        #fffcf5;
+  .bcp-root {
+    --bg-primary:        #f8f9fb;
     --bg-secondary:      #ffffff;
-    --bg-tertiary:       #fef3c7;
+    --bg-tertiary:       #f5f5f7;
     --bg-glass:          rgba(255, 255, 255, 0.8);
     --bg-glass-hover:    rgba(251, 146, 60, 0.05);
     
-    --border-subtle:     #fed7aa;
-    --border-strong:     #fdba74;
+    --border-subtle:     #e6e6eb;
+    --border-strong:     #d6d6df;
     --border-accent:     rgba(234, 88, 12, 0.2);
     
     --accent-primary:    #ea580c;
@@ -20,15 +20,15 @@ export const BATCH_STYLES = `
     --blue-primary:      #1e40af;
     --grey-primary:      #71717a;
     
-    --gradient-primary:  linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+    --gradient-primary:  linear-gradient(135deg, #e96a32 0%, #e96a32 100%);
     --gradient-accent:   linear-gradient(135deg, #f97316 0%, #ea580c 100%);
     --gradient-success:  linear-gradient(135deg, #15803d 0%, #14532d 100%);
-    --gradient-cream:    linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%);
+    --gradient-cream:    linear-gradient(135deg, #f5f5f7 0%, #fffbeb 100%);
     
-    --text-primary:      #431407;
-    --text-secondary:    #78350f;
-    --text-muted:        #92400e;
-    --text-muted-alt:    #a16207;
+    --text-primary:      #30313b;
+    --text-secondary:    #60616e;
+    --text-muted:        #868793;
+    --text-muted-alt:    #92939d;
     
     --shadow-sm:         0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md:         0 2px 4px 0 rgba(0, 0, 0, 0.08);
@@ -46,7 +46,7 @@ export const BATCH_STYLES = `
 
   .bcp-root {
     min-height: 100vh;
-    padding: 2rem;
+    padding: 0;
     max-width: 1600px;
     margin: 0 auto;
     font-family: var(--font-family);
@@ -771,7 +771,7 @@ export const BATCH_STYLES = `
   }
 
   @media (max-width: 768px) {
-    .bcp-root { padding: 1rem; }
+    .bcp-root { padding: 0; }
     .receipt-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
     .glass-card { padding: 1.25rem 1rem; border-radius: var(--radius-lg); }
     .batch-header { padding: 1.25rem; }
@@ -805,7 +805,7 @@ export const BATCH_STYLES = `
     }
     .drop-zone { padding: 2rem 1rem; }
     .empty-box { padding: 3rem 1.5rem; }
-    .bcp-root { padding: 0.75rem; }
+    .bcp-root { padding: 0; }
     
     /* iPhone 13 specific fixes */
     .metric-grid {

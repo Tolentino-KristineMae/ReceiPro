@@ -197,7 +197,7 @@ export default function BatchDetail({
   const lineFillWidth = (currentStageIndex / (stages.length - 1)) * 100;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div className="bc-detail" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
       {/* Back Link */}
       <a href="#" className="back-link" onClick={(e) => { e.preventDefault(); navigate('/batch'); }}>
@@ -222,9 +222,12 @@ export default function BatchDetail({
             <div className="stages-line-fill" style={{ width: `${lineFillWidth}%` }} />
           </div>
           {stages.map((stage) => (
-            <div 
-              key={stage.id} 
+            <button
+              type="button"
+              key={stage.id}
               className={`stage-item ${stage.status}`}
+              disabled={stage.status === 'pending' || stage.id === 1}
+              aria-current={stage.status === 'active' ? 'step' : undefined}
               onClick={() => {
                 // Allow jumping to any stage that is not pending
                 if (stage.status === 'pending') return;
@@ -244,7 +247,7 @@ export default function BatchDetail({
                 {stage.status === 'done' ? <Icon.Check size={14} /> : stage.id}
               </div>
               <span className="stage-label">{stage.label}</span>
-            </div>
+            </button>
           ))}
         </div>
       </div>

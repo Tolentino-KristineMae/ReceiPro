@@ -119,7 +119,7 @@ function App() {
 
    return (
     <ThemeProvider>
-      <div className="flex h-screen overflow-hidden" style={{ background: '#fffbf5' }}>
+      <div className="flex h-screen overflow-hidden" style={{ background: location.pathname.startsWith('/batch') ? '#f8f9fb' : '#fffbf5' }}>
           <Sidebar 
             onMobileToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
             isMobileMenuOpen={isMobileMenuOpen} 
@@ -128,14 +128,14 @@ function App() {
           <main 
             className="flex-1 overflow-y-auto overflow-x-hidden min-w-0" 
             style={{ 
-              background: '#fffbf5',
+              background: location.pathname.startsWith('/batch') ? '#f8f9fb' : '#fffbf5',
               paddingTop: isMobile ? '70px' : '0' 
             }}
           >
             <div 
               className="mx-auto" 
               style={{ 
-                padding: isMobile ? '16px' : '32px 40px',
+                padding: isMobile ? '16px' : (location.pathname.startsWith('/batch') ? '28px 36px' : '32px 40px'),
                 maxWidth: '1600px',
                 minWidth: 0,
                 width: '100%',
