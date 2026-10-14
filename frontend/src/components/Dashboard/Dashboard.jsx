@@ -263,10 +263,12 @@ function RecentBatches({ batches, onNavigate }) {
     .slice(0, 5);
 
   const statusColor = {
-    draft: { bg: 'rgba(148, 163, 184, 0.1)', color: '#64748b', label: 'Draft' },
-    pending: { bg: 'rgba(245, 158, 11, 0.1)', color: '#d97706', label: 'Pending' },
-    approved: { bg: 'rgba(16, 185, 129, 0.1)', color: '#059669', label: 'Approved' },
-    rejected: { bg: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', label: 'Rejected' },
+    open: { bg: 'rgba(148, 163, 184, 0.1)', color: '#64748b', label: 'Open' },
+    claiming: { bg: 'rgba(245, 158, 11, 0.1)', color: '#d97706', label: 'Claiming' },
+    verified: { bg: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', label: 'Verified' },
+    finalized: { bg: 'rgba(147, 51, 234, 0.1)', color: '#9333ea', label: 'Finalized' },
+    summarized: { bg: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', label: 'Summarized' },
+    billing_ready: { bg: 'rgba(16, 185, 129, 0.1)', color: '#059669', label: 'Billing Ready' },
   };
 
   const [isMobile, setIsMobile] = React.useState(false);
@@ -333,8 +335,9 @@ function RecentBatches({ batches, onNavigate }) {
             minute: '2-digit'
           });
 
-          const status = statusColor[batch.status] || statusColor.draft;
-          const receiptCount = batch.receipt_count || 0;
+          const status = statusColor[batch.checker_status] || statusColor.open;
+          const receiptCount = batch.stats?.total || batch.receipts?.length || 0;
+          const verifiedCount = batch.stats?.verified || 0;
 
           return (
             <div
@@ -388,7 +391,7 @@ function RecentBatches({ batches, onNavigate }) {
                   color: '#64748b',
                   fontFamily: 'JetBrains Mono, monospace'
                 }}>
-                  {date} • {receiptCount} receipt{receiptCount !== 1 ? 's' : ''}
+                  {date} • {receiptCount} receipt{receiptCount !== 1 ? 's' : ''} {verifiedCount > 0 ? `• ${verifiedCount} verified` : ''}
                 </div>
               </div>
               <div style={{
