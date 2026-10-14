@@ -159,14 +159,12 @@ function DashboardStats({ receipts, onNavigate }) {
               />
               <div style={{
                 position: 'absolute',
-                left: '50%',
-                bottom: '1.5rem',
-                transform: 'translateX(-50%)',
+                left: '0',
+                right: '0',
+                bottom: '0',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.5rem',
                 zIndex: 2,
-                width: 'calc(100% - 3rem)',
               }}>
                 <button
                   onClick={(e) => {
@@ -180,16 +178,16 @@ function DashboardStats({ receipts, onNavigate }) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '0.5rem',
-                    padding: '0.875rem 1.5rem',
+                    padding: '1rem 1.5rem',
                     background: '#f97316',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '12px',
-                    fontSize: '0.95rem',
+                    borderRadius: '0 0 16px 16px',
+                    fontSize: '1rem',
                     fontWeight: '700',
                     fontFamily: 'Inter, sans-serif',
                     cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
+                    boxShadow: 'none',
                     transition: 'all 0.2s ease',
                     whiteSpace: 'nowrap',
                     width: '100%',
