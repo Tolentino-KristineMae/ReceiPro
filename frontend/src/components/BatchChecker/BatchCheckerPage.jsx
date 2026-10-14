@@ -547,7 +547,7 @@ export default function BatchCheckerPage() {
             // Refresh the background batch data (for the detail page stats/display)
             // but do NOT replace wizardReceipts — the wizard was opened with a specific
             // filtered set (e.g. only new unsorted receipts) and must stay that way.
-            await fetchBatches(true, controller.signal);
+            await fetchBatches(true);
             if (batchId) {
               const batch = await fetchSelectedBatch(batchId, filter);
               setSelectedBatch(batch);
