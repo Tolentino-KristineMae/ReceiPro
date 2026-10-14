@@ -57,8 +57,14 @@ function App() {
 
   // Load batches on mount and poll every 10 seconds
   useEffect(() => {
+    let isInitialLoad = true;
+    
     const fetchBatches = () => {
-      setBatchesLoading(true);
+      // Only show loading state on initial load, not on polling updates
+      if (isInitialLoad) {
+        setBatchesLoading(true);
+      }
+      
       fetch(getApiUrl(`/api/batches?t=${Date.now()}`), { cache: 'no-store' })
         .then(res => res.ok ? res.json() : [])
         .then(data => {
@@ -66,7 +72,12 @@ function App() {
           setBatches(batchesData);
         })
         .catch(() => {})
-        .finally(() => setBatchesLoading(false));
+        .finally(() => {
+          if (isInitialLoad) {
+            setBatchesLoading(false);
+            isInitialLoad = false;
+          }
+        });
     };
 
     // Initial fetch
