@@ -19,15 +19,15 @@ const NAV = [
   { id: 'settings', path: '/settings', label: 'Settings', icon: Settings },
 ];
 
-const BRAND = '#ea580c';
-const BRAND_LIGHT = '#fff7ed';
+const BRAND = '#b54a1d';
+const BRAND_LIGHT = '#fff1e8';
 const SURFACE = '#ffffff';
-const SURFACE_HOVER = '#fef3c7';
-const BORDER = '#fed7aa';
-const TEXT = '#431407';
-const TEXT_2 = '#78350f';
-const TEXT_3 = '#92400e';
-const TEXT_4 = '#c2410c';
+const SURFACE_HOVER = '#f7f7f9';
+const BORDER = '#ebebef';
+const TEXT = '#34353f';
+const TEXT_2 = '#656672';
+const TEXT_3 = '#6b6e7a';
+const TEXT_4 = '#6b6e7a';
 
 export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -53,6 +53,8 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
         <button
           onClick={onMobileToggle}
           aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={isMobileMenuOpen}
+          aria-controls="main-sidebar"
           style={{
             position: 'fixed',
             top: '14px',
@@ -94,6 +96,9 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
       )}
 
       <aside
+        id="main-sidebar"
+        aria-label="Main navigation"
+        inert={isMobile && !isMobileMenuOpen}
         style={{
           width: isMobile ? (isMobileMenuOpen ? '260px' : '0') : (collapsed ? '72px' : '248px'),
           minWidth: isMobile ? '0' : (collapsed ? '72px' : '248px'),
@@ -114,7 +119,7 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
       >
         {/* Logo */}
         <div style={{
-          height: '80px',
+          height: '88px',
           display: 'flex',
           alignItems: 'center',
           padding: isMobile ? '0 18px' : (collapsed ? '0' : '0 20px'),
@@ -128,7 +133,7 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
             src={profLogo}
             alt="ReceiPro"
             style={{
-              width: collapsed && !isMobile ? '48px' : '180px',
+              width: collapsed && !isMobile ? '40px' : '155px',
               height: collapsed && !isMobile ? '48px' : '56px',
               objectFit: 'contain',
               flexShrink: 0,
@@ -168,10 +173,10 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
         {/* Nav */}
         <nav style={{
           flex: 1,
-          padding: '14px 12px',
+          padding: '24px 14px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '2px',
+          gap: '6px',
           overflowY: 'auto',
           overflowX: 'hidden',
         }}>
@@ -184,7 +189,7 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
               color: TEXT_4,
               padding: '6px 12px 10px',
             }}>
-              Menu
+              Workspace
             </div>
           )}
 
@@ -283,7 +288,7 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
                 width: '34px',
                 height: '34px',
                 borderRadius: '10px',
-                background: `linear-gradient(135deg, ${BRAND} 0%, #c2410c 100%)`,
+                background: BRAND,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -335,7 +340,7 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
                   width: '36px',
                   height: '36px',
                   borderRadius: '10px',
-                  background: `linear-gradient(135deg, ${BRAND} 0%, #c2410c 100%)`,
+                  background: BRAND,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',

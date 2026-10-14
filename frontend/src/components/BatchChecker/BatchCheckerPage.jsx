@@ -4,6 +4,7 @@ import CropWizard from './CropWizardModal';
 import BatchDashboard from './BatchDashboard';
 import BatchDetail from './BatchDetail';
 import { BATCH_STYLES } from './BatchStyles';
+import './BatchChecker.css';
 import { getApiUrl } from '../../apiConfig';
 import { parseOCRData } from './BatchUtils';
  
@@ -108,6 +109,7 @@ export default function BatchCheckerPage() {
       }
       
       const data = await res.json();
+      if (!silent) setError(null);
       setBatches(Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []));
       if (data?.dashboard) setDashboard(data.dashboard);
       if (data?.next_batch_number) setNextBatchNumber(data.next_batch_number);
@@ -139,6 +141,7 @@ export default function BatchCheckerPage() {
   // batches update (that would overwrite optimistic upload state mid-flight).
   useEffect(() => {
     if (!batchId) {
+      setFileCount(0);
       setSelectedBatch(null);
       setLoadingBatch(false);
       return;

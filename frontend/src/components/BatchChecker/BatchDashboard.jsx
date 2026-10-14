@@ -1,27 +1,68 @@
-import React from 'react';
-import BillingSummaryModal from './BillingSummaryModal';
-import { getApiUrl } from '../../apiConfig';
+import React from "react";
+import {
+  UploadCloud,
+  Search,
+  SlidersHorizontal,
+  ArrowUpRight,
+  Layers,
+  CheckCheck,
+  Clock3,
+  FileText,
+  Pencil,
+  ChevronRight,
+  RefreshCw,
+  X,
+} from "lucide-react";
+import BillingSummaryModal from "./BillingSummaryModal";
+import { getApiUrl } from "../../apiConfig";
 
 const fmt = (n) =>
-  Number(n ?? 0).toLocaleString('en-PH', {
+  Number(n ?? 0).toLocaleString("en-PH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
 const Icon = {
   Plus: ({ size = 18 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   ),
   Trash: ({ size = 18 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" />
     </svg>
   ),
   CheckCircle: ({ size = 12 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
       <polyline points="22,4 12,14.01 9,11.01" />
     </svg>
@@ -32,53 +73,119 @@ const Icon = {
     </svg>
   ),
   Calendar: ({ size = 14 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-      <line x1="16" y1="2" x2="16" y2="6"/>
-      <line x1="8" y1="2" x2="8" y2="6"/>
-      <line x1="3" y1="10" x2="21" y2="10"/>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
     </svg>
   ),
   Receipt: ({ size = 14 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/>
-      <path d="M16 8h-6M16 12h-6M16 16h-6"/>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z" />
+      <path d="M16 8h-6M16 12h-6M16 16h-6" />
     </svg>
   ),
   TrendingUp: ({ size = 14 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-      <polyline points="17 6 23 6 23 12"/>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+      <polyline points="17 6 23 6 23 12" />
     </svg>
   ),
   ArrowRight: ({ size = 14 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="5" y1="12" x2="19" y2="12"/>
-      <polyline points="12 5 19 12 12 19"/>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <polyline points="12 5 19 12 12 19" />
     </svg>
   ),
   Folder: ({ size = 14 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
     </svg>
   ),
   Download: ({ size = 14 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-      <polyline points="7 10 12 15 17 10"/>
-      <line x1="12" y1="15" x2="12" y2="3"/>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
   ),
 };
 
 // Helper function to generate batch summary PNG and return base64 data (for ZIP)
-async function generateBatchSummaryPNG({ html2canvas, finalBatchNumber, batchNumber, grossAmount, serviceFee, deductions, netAmount, billingMethod, cashDenominations, bankTransferAmounts, totalPrepared, verifiedClaims }) {
+async function generateBatchSummaryPNG({
+  html2canvas,
+  batchNumber,
+  grossAmount,
+  serviceFee,
+  deductions,
+  netAmount,
+  billingMethod,
+  cashDenominations,
+  bankTransferAmounts,
+  verifiedClaims,
+}) {
   // Create a properly structured container with real DOM elements (not innerHTML)
-  const container = document.createElement('div');
-  container.style.cssText = 'position: absolute; left: -10000px; top: 0; width: 560px;';
-  
+  const container = document.createElement("div");
+  container.style.cssText =
+    "position: absolute; left: -10000px; top: 0; width: 560px;";
+
   // Create the card wrapper
-  const card = document.createElement('div');
+  const card = document.createElement("div");
   card.style.cssText = `
     width: 560px;
     background: #ffffff;
@@ -88,33 +195,41 @@ async function generateBatchSummaryPNG({ html2canvas, finalBatchNumber, batchNum
     font-family: 'Inter', -apple-system, sans-serif;
     box-shadow: 0 20px 60px rgba(14,58,110,0.14);
   `;
-  
+
   // Create header
-  const header = document.createElement('div');
+  const header = document.createElement("div");
   header.style.cssText = `
     padding: 24px 28px 20px;
     background: linear-gradient(135deg, #0f2448 0%, #0e3a6e 60%, #1e5fa8 100%);
   `;
-  
-  const headerTitle = document.createElement('div');
-  headerTitle.style.cssText = 'font-size: 11px; font-weight: 700; color: #7dd3fc; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 6px;';
-  headerTitle.textContent = 'Billing Summary';
-  
-  const headerBatch = document.createElement('div');
-  headerBatch.style.cssText = 'font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.03em; font-family: "DM Mono", monospace;';
+
+  const headerTitle = document.createElement("div");
+  headerTitle.style.cssText =
+    "font-size: 11px; font-weight: 700; color: #7dd3fc; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 6px;";
+  headerTitle.textContent = "Billing Summary";
+
+  const headerBatch = document.createElement("div");
+  headerBatch.style.cssText =
+    'font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.03em; font-family: "DM Mono", monospace;';
   headerBatch.textContent = batchNumber;
-  
-  const headerDate = document.createElement('div');
-  headerDate.style.cssText = 'font-size: 10px; color: #93c5fd; margin-top: 6px; font-weight: 500;';
-  headerDate.textContent = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
-  
+
+  const headerDate = document.createElement("div");
+  headerDate.style.cssText =
+    "font-size: 10px; color: #93c5fd; margin-top: 6px; font-weight: 500;";
+  headerDate.textContent = new Date().toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   header.appendChild(headerTitle);
   header.appendChild(headerBatch);
   header.appendChild(headerDate);
-  
+
   // Create financial summary section
-  const financialSection = document.createElement('div');
-  financialSection.style.cssText = 'padding: 18px 28px; border-bottom: 1px solid #dbeafe;';
+  const financialSection = document.createElement("div");
+  financialSection.style.cssText =
+    "padding: 18px 28px; border-bottom: 1px solid #dbeafe;";
   financialSection.innerHTML = `
     <div style="font-size: 11px; font-weight: 700; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 8px;">Financial Summary</div>
     <div style="display: flex; justify-content: space-between; padding: 9px 0;">
@@ -126,36 +241,55 @@ async function generateBatchSummaryPNG({ html2canvas, finalBatchNumber, batchNum
       <span style="font-size: 12px; font-weight: 500; color: #64748b;">Service Fee</span>
       <span style="font-size: 13px; font-weight: 700; color: #ef4444; font-family: 'DM Mono', monospace;">− ₱${fmt(serviceFee)}</span>
     </div>
-    ${deductions && deductions.length > 0 ? deductions.map(d => `
+    ${
+      deductions && deductions.length > 0
+        ? deductions
+            .map(
+              (d) => `
       <div style="display: flex; justify-content: space-between; padding: 9px 0;">
-        <span style="font-size: 12px; font-weight: 500; color: #64748b;">${d.type || 'Deduction'}</span>
+        <span style="font-size: 12px; font-weight: 500; color: #64748b;">${d.type || "Deduction"}</span>
         <span style="font-size: 13px; font-weight: 700; color: #f97316; font-family: 'DM Mono', monospace;">− ₱${fmt(d.amount)}</span>
       </div>
-    `).join('') : ''}
+    `,
+            )
+            .join("")
+        : ""
+    }
     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1.5px solid #bfdbfe;">
       <span style="font-size: 11px; font-weight: 700; color: #0f2448; text-transform: uppercase; letter-spacing: 0.1em;">Net Amount Due</span>
       <span style="font-size: 22px; font-weight: 800; color: #1c7a48; letter-spacing: -0.03em; font-family: 'DM Mono', monospace;">₱${fmt(netAmount)}</span>
     </div>
   `;
-  
+
   // Create billing section (simplified)
-  const billingSection = document.createElement('div');
-  billingSection.style.cssText = 'padding: 18px 28px; border-bottom: 1px solid #dbeafe;';
-  
-  let billingHTML = '<div style="font-size: 11px; font-weight: 700; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 14px;">Fund Allocation</div>';
-  
-  if (billingMethod !== 'bank' && cashDenominations && Object.keys(cashDenominations).length > 0) {
-    const cashTotal = Object.entries(cashDenominations).reduce((sum, [key, count]) => {
-      const val = key.startsWith('c') ? Number(key.slice(1)) : Number(key);
-      return sum + val * (count || 0);
-    }, 0);
+  const billingSection = document.createElement("div");
+  billingSection.style.cssText =
+    "padding: 18px 28px; border-bottom: 1px solid #dbeafe;";
+
+  let billingHTML =
+    '<div style="font-size: 11px; font-weight: 700; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 14px;">Fund Allocation</div>';
+
+  if (
+    billingMethod !== "bank" &&
+    cashDenominations &&
+    Object.keys(cashDenominations).length > 0
+  ) {
+    const cashTotal = Object.entries(cashDenominations).reduce(
+      (sum, [key, count]) => {
+        const val = key.startsWith("c") ? Number(key.slice(1)) : Number(key);
+        return sum + val * (count || 0);
+      },
+      0,
+    );
     billingHTML += `<div style="padding: 14px 18px; border-radius: 12px; background: #eff6ff; border: 1px solid #bfdbfe;">
       <div style="font-size: 11px; font-weight: 700; color: #1e5fa8; margin-bottom: 8px;">Cash: ₱${fmt(cashTotal)}</div>
     </div>`;
   }
-  
-  if (billingMethod !== 'cash') {
-    const bankTotal = Array.isArray(bankTransferAmounts) ? bankTransferAmounts.reduce((s, v) => s + Number(v || 0), 0) : Number(bankTransferAmounts || 0);
+
+  if (billingMethod !== "cash") {
+    const bankTotal = Array.isArray(bankTransferAmounts)
+      ? bankTransferAmounts.reduce((s, v) => s + Number(v || 0), 0)
+      : Number(bankTransferAmounts || 0);
     if (bankTotal > 0) {
       billingHTML += `<div style="padding: 14px 18px; border-radius: 12px; background: linear-gradient(135deg, #0f2448 0%, #0e3a6e 100%); border: 1px solid #1e5fa8; margin-top: 8px;">
         <div style="font-size: 11px; font-weight: 700; color: #7dd3fc; margin-bottom: 4px;">Bank Transfer</div>
@@ -163,22 +297,24 @@ async function generateBatchSummaryPNG({ html2canvas, finalBatchNumber, batchNum
       </div>`;
     }
   }
-  
+
   billingSection.innerHTML = billingHTML;
-  
+
   // Create claims section
-  const claimsSection = document.createElement('div');
-  claimsSection.style.cssText = 'padding: 14px 28px; border-bottom: 1px solid #dbeafe;';
+  const claimsSection = document.createElement("div");
+  claimsSection.style.cssText =
+    "padding: 14px 28px; border-bottom: 1px solid #dbeafe;";
   claimsSection.innerHTML = `
     <div style="font-size: 11px; font-weight: 700; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 6px;">Verified Claims</div>
-    <div style="font-size: 13px; font-weight: 800; color: #0f2448;">${verifiedClaims?.length || 0} ${(verifiedClaims?.length || 0) === 1 ? 'Claim' : 'Claims'}</div>
+    <div style="font-size: 13px; font-weight: 800; color: #0f2448;">${verifiedClaims?.length || 0} ${(verifiedClaims?.length || 0) === 1 ? "Claim" : "Claims"}</div>
   `;
-  
+
   // Create footer
-  const footer = document.createElement('div');
-  footer.style.cssText = 'padding: 12px 28px; background: #f0f9ff; font-size: 10px; font-weight: 600; color: #93c5fd; text-align: center;';
-  footer.textContent = `Generated ${new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}`;
-  
+  const footer = document.createElement("div");
+  footer.style.cssText =
+    "padding: 12px 28px; background: #f0f9ff; font-size: 10px; font-weight: 600; color: #93c5fd; text-align: center;";
+  footer.textContent = `Generated ${new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })}`;
+
   // Assemble the card
   card.appendChild(header);
   card.appendChild(financialSection);
@@ -190,11 +326,11 @@ async function generateBatchSummaryPNG({ html2canvas, finalBatchNumber, batchNum
 
   try {
     // Wait for DOM to render
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     // Capture with html2canvas
-    const canvas = await html2canvas(card, { 
-      backgroundColor: '#ffffff',
+    const canvas = await html2canvas(card, {
+      backgroundColor: "#ffffff",
       scale: 2,
       logging: false,
       useCORS: true,
@@ -202,11 +338,11 @@ async function generateBatchSummaryPNG({ html2canvas, finalBatchNumber, batchNum
       width: 560,
       height: card.scrollHeight,
     });
-    
+
     // Return the base64 data URL
-    return canvas.toDataURL('image/png', 0.92);
+    return canvas.toDataURL("image/png", 0.92);
   } catch (error) {
-    console.error('Error generating summary image:', error);
+    console.error("Error generating summary image:", error);
     throw error;
   } finally {
     // Clean up
@@ -216,184 +352,49 @@ async function generateBatchSummaryPNG({ html2canvas, finalBatchNumber, batchNum
   }
 }
 
-// Helper function to download a single batch summary (for individual downloads)
-async function downloadBatchSummary({ html2canvas, finalBatchNumber, batchNumber, grossAmount, serviceFee, deductions, netAmount, billingMethod, cashDenominations, bankTransferAmounts, totalPrepared, verifiedClaims }) {
-  try {
-    const pngData = await generateBatchSummaryPNG({
-      html2canvas,
-      finalBatchNumber,
-      batchNumber,
-      grossAmount,
-      serviceFee,
-      deductions,
-      netAmount,
-      billingMethod,
-      cashDenominations,
-      bankTransferAmounts,
-      totalPrepared,
-      verifiedClaims
-    });
-    
-    const a = document.createElement('a');
-    a.href = pngData;
-    a.download = `billing-${finalBatchNumber || batchNumber}-${Date.now()}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  } catch (error) {
-    console.error('Error downloading summary:', error);
-    throw error;
-  }
-}
-
-// Helper function to generate billing summary HTML
-function generateBillingSummaryHTML({ finalBatchNumber, batchNumber, grossAmount, serviceFee, deductions, netAmount, billingMethod, cashDenominations, bankTransferAmounts, totalPrepared, verifiedClaims }) {
-  const totalDeductions = deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0);
-  const bankTotal = Array.isArray(bankTransferAmounts) ? bankTransferAmounts.reduce((s, v) => s + Number(v || 0), 0) : Number(bankTransferAmounts || 0);
-  
-  return `
-    <div style="width: 520px; background: white; border-radius: 22px; box-shadow: 0 25px 50px rgba(0,0,0,0.15); overflow: hidden; font-family: 'Inter', -apple-system, sans-serif;">
-      <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 24px 28px;">
-        <div style="font-size: 12px; color: rgba(255,255,255,0.85); font-weight: 700; textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '6px';">
-          Billing Summary
-        </div>
-        <div style="font-size: 38px; color: white; font-weight: 800; font-family: 'JetBrains Mono', monospace; letter-spacing: '-0.03em';">
-          ${finalBatchNumber || batchNumber || 'DRAFT'}
-        </div>
-      </div>
-      
-      <div style="padding: 18px 28px; border-bottom: 1px solid #dbeafe;">
-        <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 3px;">
-          Financial Summary
-        </div>
-        
-        ${[
-          { label: 'Gross Amount', value: `₱${fmt(grossAmount)}`, color: '#1e293b' },
-          { label: 'Service Fee', value: `−₱${fmt(serviceFee)}`, color: '#ef4444' },
-          ...(totalDeductions > 0 ? [{ label: 'Total Deductions', value: `−₱${fmt(totalDeductions)}`, color: '#f97316' }] : []),
-        ].map(item => `
-          <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
-            <span style="font-size: 13px; color: #475569; font-weight: 600;">${item.label}</span>
-            <span style="font-size: 16px; font-weight: 700; color: ${item.color}; font-family: 'JetBrains Mono', monospace;">
-              ${item.value}
-            </span>
-          </div>
-        `).join('')}
-        
-        <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 16px 0; background: #f0f9ff; margin: 12px -28px 0; padding-left: 28px; padding-right: 28px; border-top: 2px solid #3b82f6;">
-          <span style="font-size: 13px; color: #1e40af; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;">Net Amount</span>
-          <span style="font-size: 24px; font-weight: 800; color: #1e40af; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;">
-            ₱${fmt(netAmount)}
-          </span>
-        </div>
-      </div>
-      
-      ${deductions.length > 0 ? `
-        <div style="padding: 18px 28px; border-bottom: 1px solid #dbeafe;">
-          <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 8px;">
-            Deduction Breakdown
-          </div>
-          ${deductions.map(d => `
-            <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0;">
-              <span style="font-size: 12px; color: #64748b; font-weight: 500;">${d.type || 'Deduction'}</span>
-              <span style="font-size: 13px; font-weight: 700; color: #f97316; font-family: 'JetBrains Mono', monospace;">
-                −₱${fmt(d.amount)}
-              </span>
-            </div>
-          `).join('')}
-        </div>
-      ` : ''}
-      
-      ${billingMethod !== 'bank' && Object.keys(cashDenominations || {}).length > 0 ? `
-        <div style="padding: 18px 28px; border-bottom: 1px solid #dbeafe;">
-          <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 8px;">
-            Cash Denominations
-          </div>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px;">
-            ${Object.entries(cashDenominations || {}).map(([denom, count]) => `
-              <div style="text-align: center; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-                <div style="font-size: 10px; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">₱${denom}</div>
-                <div style="font-size: 16px; font-weight: 800; color: #1e293b; font-family: 'JetBrains Mono', monospace;">×${count}</div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
-      
-      ${billingMethod !== 'cash' && bankTotal > 0 ? `
-        <div style="padding: 18px 28px; border-bottom: 1px solid #dbeafe;">
-          <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 8px;">
-            Bank Transfer
-          </div>
-          ${Array.isArray(bankTransferAmounts) && bankTransferAmounts.length > 1 ? 
-            bankTransferAmounts.map((amt, idx) => `
-              <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0;">
-                <span style="font-size: 12px; color: #64748b; font-weight: 500;">Transfer ${idx + 1}</span>
-                <span style="font-size: 14px; font-weight: 700; color: #059669; font-family: 'JetBrains Mono', monospace;">
-                  ₱${fmt(amt)}
-                </span>
-              </div>
-            `).join('') :
-            `<div style="font-size: 18px; font-weight: 800; color: #059669; font-family: 'JetBrains Mono', monospace; text-align: center; padding: 8px 0;">
-              ₱${fmt(bankTotal)}
-            </div>`
-          }
-        </div>
-      ` : ''}
-      
-      <div style="padding: 18px 28px; background: #f8fafc;">
-        <div style="font-size: 10px; color: #94a3b8; text-align: center; margin-bottom: 4px;">Generated on</div>
-        <div style="font-size: 11px; color: #64748b; font-weight: 600; text-align: center;">
-          ${new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-export default function BatchDashboard({ 
-  batches, 
+export default function BatchDashboard({
+  batches,
   setBatches,
   dashboard,
-  fileCount, 
-  setFileCount, 
-  fileInputRef, 
-  isCreating, 
-  handleCreateAndUpload, 
-  handleDeleteBatch, 
+  fileCount,
+  setFileCount,
+  fileInputRef,
+  isCreating,
+  handleCreateAndUpload,
+  handleDeleteBatch,
   handleUpdateBatchName,
   error,
   navigate,
   fetchBatches,
-  nextBatchNumber: nextBatchNumberProp
+  nextBatchNumber: nextBatchNumberProp,
 }) {
   // Use backend-calculated next batch number if available, otherwise calculate from visible batches
   const calculateNextBatchNumber = () => {
     // If backend provided next batch number, use it
     if (nextBatchNumberProp) return nextBatchNumberProp;
-    
+
     // Otherwise scan visible batches
     let highest = 0;
-    batches.forEach(batch => {
+    batches.forEach((batch) => {
       const match = batch.name?.match(/Batch #(\d+)/i);
       if (match) {
         const num = parseInt(match[1], 10);
         if (num > highest) highest = num;
       }
     });
-    
+
     const totalBatches = dashboard?.total_batches || batches.length;
     return Math.max(highest, totalBatches) + 1;
   };
-  
+
   const nextBatchNumber = calculateNextBatchNumber();
-  const autoBatchName = `Batch #${String(nextBatchNumber).padStart(3, '0')}`;
-  
-  const [customBatchName, setCustomBatchName] = React.useState('');
-  const [isEditingName, setIsEditingName] = React.useState(false);
+  const autoBatchName = `Batch #${String(nextBatchNumber).padStart(3, "0")}`;
+
+  const [customBatchName, setCustomBatchName] = React.useState(null);
+  const [statusFilter, setStatusFilter] = React.useState("all");
   const [summaryBatch, setSummaryBatch] = React.useState(null);
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [sortBy, setSortBy] = React.useState('date-desc');
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [sortBy, setSortBy] = React.useState("date-desc");
 
   // ── Multi-select state ──
   const [selectedBatchIds, setSelectedBatchIds] = React.useState(new Set());
@@ -403,7 +404,7 @@ export default function BatchDashboard({
 
   const toggleBatchSelect = (id, e) => {
     e.stopPropagation();
-    setSelectedBatchIds(prev => {
+    setSelectedBatchIds((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
@@ -411,8 +412,8 @@ export default function BatchDashboard({
   };
 
   const handleSelectAll = (visible) => {
-    const ids = visible.map(b => b.id);
-    const allSelected = ids.every(id => selectedBatchIds.has(id));
+    const ids = visible.map((b) => b.id);
+    const allSelected = ids.every((id) => selectedBatchIds.has(id));
     setSelectedBatchIds(allSelected ? new Set() : new Set(ids));
   };
 
@@ -420,11 +421,11 @@ export default function BatchDashboard({
     setIsBulkDeleting(true);
     try {
       const idsArray = Array.from(selectedBatchIds);
-      
-      const response = await fetch(getApiUrl('/api/batches/bulk-delete'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batch_ids: idsArray })
+
+      const response = await fetch(getApiUrl("/api/batches/bulk-delete"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ batch_ids: idsArray }),
       });
 
       if (!response.ok) {
@@ -437,26 +438,26 @@ export default function BatchDashboard({
       if (result.success) {
         // Optimistic local filter — remove deleted batches from state
         const removeSet = new Set(idsArray);
-        if (typeof setBatches === 'function') {
-          setBatches(prev => prev.filter(b => !removeSet.has(b.id)));
+        if (typeof setBatches === "function") {
+          setBatches((prev) => prev.filter((b) => !removeSet.has(b.id)));
         } else {
           // Fallback to full refresh if setBatches is not available
           await fetchBatches(true);
         }
-        
+
         // Clear selection and close modal
         setSelectedBatchIds(new Set());
         setShowBulkDeleteModal(false);
-        
-        console.log('✓', result.message);
+
+        console.log("✓", result.message);
       } else {
-        throw new Error(result.message || 'Failed to delete batches');
+        throw new Error(result.message || "Failed to delete batches");
       }
     } catch (error) {
-      console.error('Bulk delete error:', error);
+      console.error("Bulk delete error:", error);
       alert(`Failed to delete batches: ${error.message}`);
       // Optionally refetch to ensure UI is in sync
-      if (typeof fetchBatches === 'function') {
+      if (typeof fetchBatches === "function") {
         await fetchBatches(true);
       }
     } finally {
@@ -466,47 +467,57 @@ export default function BatchDashboard({
 
   const handleDownloadAllSummaries = async () => {
     if (selectedBatchIds.size === 0) return;
-    
+
     setIsDownloadingAll(true);
     try {
-      console.log('Starting bulk download for batch IDs:', Array.from(selectedBatchIds));
-      
-      // Call backend API to get batch summaries
-      const response = await fetch(getApiUrl('/api/batches/bulk-download-summaries'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batch_ids: Array.from(selectedBatchIds) })
-      });
+      console.log(
+        "Starting bulk download for batch IDs:",
+        Array.from(selectedBatchIds),
+      );
 
-      console.log('Response status:', response.status);
-      
+      // Call backend API to get batch summaries
+      const response = await fetch(
+        getApiUrl("/api/batches/bulk-download-summaries"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ batch_ids: Array.from(selectedBatchIds) }),
+        },
+      );
+
+      console.log("Response status:", response.status);
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error:', errorText);
+        console.error("API Error:", errorText);
         throw new Error(`API returned ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('API Result:', result);
+      console.log("API Result:", result);
 
       if (!result.success) {
-        alert(result.message || 'Failed to retrieve batch summaries');
+        alert(result.message || "Failed to retrieve batch summaries");
         setIsDownloadingAll(false);
         return;
       }
 
       if (!result.summaries || result.summaries.length === 0) {
-        alert('None of the selected batches have billing summaries ready to download.');
+        alert(
+          "None of the selected batches have billing summaries ready to download.",
+        );
         setIsDownloadingAll(false);
         return;
       }
 
-      console.log(`Generating ${result.summaries.length} summaries for ZIP file...`);
+      console.log(
+        `Generating ${result.summaries.length} summaries for ZIP file...`,
+      );
 
       // Import required libraries
-      const html2canvas = (await import('html2canvas')).default;
-      const JSZip = (await import('jszip')).default;
-      
+      const html2canvas = (await import("html2canvas")).default;
+      const JSZip = (await import("jszip")).default;
+
       // Create a new ZIP file
       const zip = new JSZip();
 
@@ -514,15 +525,20 @@ export default function BatchDashboard({
       let successCount = 0;
       for (let i = 0; i < result.summaries.length; i++) {
         const summary = result.summaries[i];
-        
-        console.log(`Processing ${i + 1}/${result.summaries.length}: ${summary.final_batch_number || summary.batch_number}`);
-        
+
+        console.log(
+          `Processing ${i + 1}/${result.summaries.length}: ${summary.final_batch_number || summary.batch_number}`,
+        );
+
         try {
           // Generate PNG data for this batch
           const pngData = await generateBatchSummaryPNG({
             html2canvas,
             finalBatchNumber: summary.final_batch_number,
-            batchNumber: summary.name || summary.final_batch_number || summary.batch_number,
+            batchNumber:
+              summary.name ||
+              summary.final_batch_number ||
+              summary.batch_number,
             grossAmount: summary.financial.gross_amount,
             serviceFee: summary.financial.service_fee,
             deductions: summary.financial.deductions,
@@ -531,42 +547,44 @@ export default function BatchDashboard({
             cashDenominations: summary.billing.cash_denominations,
             bankTransferAmounts: summary.billing.bank_transfer_amounts,
             totalPrepared: summary.billing.total_prepared,
-            verifiedClaims: summary.verified_claims
+            verifiedClaims: summary.verified_claims,
           });
 
           // Add to ZIP with a nice filename
-          const filename = `${summary.final_batch_number || summary.batch_number}_${summary.name || 'summary'}.png`;
-          zip.file(filename, pngData.split(',')[1], { base64: true });
+          const filename = `${summary.final_batch_number || summary.batch_number}_${summary.name || "summary"}.png`;
+          zip.file(filename, pngData.split(",")[1], { base64: true });
           successCount++;
-          
+
           // Small delay between batches to prevent overwhelming the browser
           if (i < result.summaries.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await new Promise((resolve) => setTimeout(resolve, 50));
           }
-          
         } catch (downloadError) {
-          console.error(`Failed to generate summary for batch ${summary.final_batch_number || summary.batch_number}:`, downloadError);
+          console.error(
+            `Failed to generate summary for batch ${summary.final_batch_number || summary.batch_number}:`,
+            downloadError,
+          );
           // Continue with next batch even if one fails
         }
       }
 
       if (successCount === 0) {
-        alert('Failed to generate any batch summaries. Please try again.');
+        alert("Failed to generate any batch summaries. Please try again.");
         setIsDownloadingAll(false);
         return;
       }
 
       // Generate the ZIP file
       console.log(`Creating ZIP file with ${successCount} summaries...`);
-      const zipBlob = await zip.generateAsync({ 
-        type: 'blob',
-        compression: 'DEFLATE',
-        compressionOptions: { level: 6 }
+      const zipBlob = await zip.generateAsync({
+        type: "blob",
+        compression: "DEFLATE",
+        compressionOptions: { level: 6 },
       });
 
       // Download the ZIP file
       const url = URL.createObjectURL(zipBlob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `batch-summaries-${Date.now()}.zip`;
       document.body.appendChild(a);
@@ -575,646 +593,371 @@ export default function BatchDashboard({
       URL.revokeObjectURL(url);
 
       if (successCount < result.summaries.length) {
-        alert(`Downloaded ${successCount} of ${result.summaries.length} batch summaries. Some summaries failed to generate.`);
+        alert(
+          `Downloaded ${successCount} of ${result.summaries.length} batch summaries. Some summaries failed to generate.`,
+        );
       } else {
-        alert(`Successfully downloaded ${successCount} batch summar${successCount === 1 ? 'y' : 'ies'} as ZIP file!`);
+        alert(
+          `Successfully downloaded ${successCount} batch summar${successCount === 1 ? "y" : "ies"} as ZIP file!`,
+        );
       }
     } catch (error) {
-      console.error('Error downloading summaries:', error);
-      alert('Failed to download summaries: ' + error.message);
+      console.error("Error downloading summaries:", error);
+      alert("Failed to download summaries: " + error.message);
     } finally {
       setIsDownloadingAll(false);
     }
   };
 
-  // Update custom name to auto name only when it's truly empty and not being edited
-  // Once user starts editing, preserve their custom name
-  React.useEffect(() => {
-    // Only auto-update if the field is empty AND user hasn't started editing
-    if (!customBatchName && !isEditingName) {
-      setCustomBatchName(autoBatchName);
-    }
-  }, [autoBatchName, customBatchName, isEditingName]);
-
-  const displayBatchName = customBatchName || autoBatchName;
+  const displayBatchName = customBatchName ?? autoBatchName;
 
   // Dashboard statistics from backend
   const totalBatches = dashboard?.total_batches ?? batches.length;
-  const completedBatches = dashboard?.completed_batches ?? 0;
-  const inProgressBatches = dashboard?.in_progress_batches ?? 0;
-  const totalReceipts = dashboard?.total_receipts ?? batches.reduce((sum, b) => sum + (b.receipts?.length || 0), 0);
+  const completedBatches =
+    dashboard?.completed_batches ??
+    batches.filter((b) => getBatchStatus(b).group === "complete").length;
+  const inProgressBatches =
+    dashboard?.in_progress_batches ??
+    batches.filter((b) => getBatchStatus(b).group === "active").length;
+  const totalReceipts =
+    dashboard?.total_receipts ??
+    batches.reduce(
+      (sum, b) => sum + (b.stats?.total ?? b.receipts?.length ?? 0),
+      0,
+    );
 
   // Filter and sort batches
-  const filteredBatches = batches.filter(batch => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      (batch.name || '').toLowerCase().includes(query) ||
-      (batch.final_batch_number || '').toLowerCase().includes(query) ||
-      String(batch.id).toLowerCase().includes(query)
-    );
-  }).sort((a, b) => {
-    switch (sortBy) {
-      case 'date-asc':
-        return new Date(a.created_at) - new Date(b.created_at);
-      case 'name-asc':
-        return (a.name || '').localeCompare(b.name || '');
-      case 'name-desc':
-        return (b.name || '').localeCompare(a.name || '');
-      case 'items-desc':
-        return (b.receipts?.length || 0) - (a.receipts?.length || 0);
-      case 'items-asc':
-        return (a.receipts?.length || 0) - (b.receipts?.length || 0);
-      case 'date-desc':
-      default:
-        return new Date(b.created_at) - new Date(a.created_at);
-    }
-  });
+  const filteredBatches = batches
+    .filter((batch) => {
+      if (
+        statusFilter !== "all" &&
+        getBatchStatus(batch).group !== statusFilter
+      )
+        return false;
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        (batch.name || "").toLowerCase().includes(query) ||
+        (batch.final_batch_number || "").toLowerCase().includes(query) ||
+        String(batch.id).toLowerCase().includes(query)
+      );
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "date-asc":
+          return new Date(a.created_at) - new Date(b.created_at);
+        case "name-asc":
+          return (a.name || "").localeCompare(b.name || "");
+        case "name-desc":
+          return (b.name || "").localeCompare(a.name || "");
+        case "items-desc":
+          return (
+            (b.stats?.total ?? b.receipts?.length ?? 0) -
+            (a.stats?.total ?? a.receipts?.length ?? 0)
+          );
+        case "items-asc":
+          return (
+            (a.stats?.total ?? a.receipts?.length ?? 0) -
+            (b.stats?.total ?? b.receipts?.length ?? 0)
+          );
+        case "date-desc":
+        default:
+          return new Date(b.created_at) - new Date(a.created_at);
+      }
+    });
+
+  const allSelected =
+    filteredBatches.length > 0 &&
+    filteredBatches.every((b) => selectedBatchIds.has(b.id));
 
   return (
-    <div className="bcp-layout">
-      {/* Compact Creation Panel */}
-      <div className="glass-card sticky">
-        {/* Compact Header */}
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '4px 10px',
-            borderRadius: '8px',
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            marginBottom: '10px'
-          }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="16"/>
-              <line x1="8" y1="12" x2="16" y2="12"/>
-            </svg>
-            <span style={{
-              fontSize: '11px',
-              fontWeight: 900,
-              color: 'var(--text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.12em',
-              fontFamily: "'Inter', sans-serif"
-            }}>New Batch</span>
+    <div className="bc-dashboard">
+      <header className="bc-page-header">
+        <div>
+          <div className="bc-breadcrumb">
+            Workspace <ChevronRight size={13} /> <span>Batch Checker</span>
           </div>
-          <h2 style={{
-            fontSize: '22px',
-            fontWeight: 900,
-            color: 'var(--text-primary)',
-            letterSpacing: '-0.02em',
-            fontFamily: "'Inter', sans-serif",
-            lineHeight: '1.2',
-            marginBottom: '4px'
-          }}>
-            Verification Workflow
-          </h2>
-          <p style={{
-            fontSize: '11px',
-            color: 'var(--text-muted)',
-            fontFamily: "'Inter', sans-serif",
-            lineHeight: '1.4'
-          }}>
-            Upload and process receipts
-          </p>
+          <h1>
+            Batch Checker<span className="bc-title-dot">.</span>
+          </h1>
+          <p>A clearer view of every receipt. A simpler way to verify.</p>
         </div>
+        <button
+          className="bc-button bc-button-primary"
+          onClick={() => document.getElementById("batch-name")?.focus()}
+        >
+          <Icon.Plus size={16} /> New batch
+        </button>
+      </header>
 
+      <div className="bc-overview" role="group" aria-label="Batch overview">
+        {[
+          {
+            label: "Total batches",
+            value: totalBatches,
+            icon: Layers,
+            note: "Your batch workspace",
+            tone: "orange",
+          },
+          {
+            label: "In progress",
+            value: inProgressBatches,
+            icon: Clock3,
+            note: "Moving through verification",
+            tone: "amber",
+          },
+          {
+            label: "Completed",
+            value: completedBatches,
+            icon: CheckCheck,
+            note: "Verification complete",
+            tone: "green",
+          },
+          {
+            label: "Total receipts",
+            value: totalReceipts,
+            icon: FileText,
+            note: "Across all batches",
+            tone: "blue",
+          },
+        ].map(({ label, value, icon: MetricIcon, note, tone }) => (
+          <div className="bc-stat" key={label}>
+            <div className="bc-stat-top">
+              <span>{label}</span>
+              <span className={`bc-stat-icon ${tone}`}>
+                <MetricIcon size={17} />
+              </span>
+            </div>
+            <strong>{value.toLocaleString()}</strong>
+            <span className="bc-stat-note">{note}</span>
+          </div>
+        ))}
+      </div>
+
+      <aside className="bc-create-panel">
+        <div className="bc-panel-heading">
+          <span className="bc-icon-tile">
+            <Icon.Plus size={19} />
+          </span>
+          <span className="bc-eyebrow">LET’S GET STARTED</span>
+        </div>
+        <h2>Create a new batch</h2>
+        <p className="bc-description">
+          Bring your receipts together.
+          <br />
+          We’ll help you take it from here.
+        </p>
         {error && (
-          <div style={{
-            marginBottom: '14px',
-            padding: '10px 14px',
-            borderRadius: '10px',
-            background: 'rgba(185, 28, 28, 0.05)',
-            border: '1px solid rgba(185, 28, 28, 0.2)',
-            color: 'var(--danger-primary)',
-            fontSize: '11px',
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontFamily: "'Inter', sans-serif",
-            animation: 'fadeIn 0.3s ease-out'
-          }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
+          <div className="bc-error" role="alert">
             {error}
+            <button
+              type="button"
+              className="bc-button"
+              onClick={() => fetchBatches()}
+            >
+              Try again
+            </button>
           </div>
         )}
-        
-        <form onSubmit={(e) => handleCreateAndUpload(e, displayBatchName)} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {/* Next Batch Info */}
-          <div style={{
-            padding: '16px',
-            borderRadius: '12px',
-            background: 'var(--bg-tertiary)',
-            border: '1px solid var(--border-subtle)',
-            position: 'relative'
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <div style={{ flex: 1 }}>
-                <div style={{
-                  fontSize: '11px',
-                  fontWeight: 900,
-                  color: 'var(--text-muted)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.12em',
-                  marginBottom: '6px',
-                  fontFamily: "'Inter', sans-serif"
-                }}>Next Batch Number</div>
-                
-                {isEditingName ? (
-                  <input
-                    type="text"
-                    value={customBatchName}
-                    onChange={(e) => setCustomBatchName(e.target.value)}
-                    onBlur={() => setIsEditingName(false)}
-                    onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)}
-                    autoFocus
-                    style={{
-                      fontSize: '24px',
-                      fontWeight: 900,
-                      color: 'var(--accent-primary)',
-                      letterSpacing: '-0.02em',
-                      fontFamily: "'JetBrains Mono', monospace",
-                      background: 'transparent',
-                      border: 'none',
-                      borderBottom: '2px solid var(--accent-primary)',
-                      width: '100%',
-                      outline: 'none',
-                      padding: '0'
-                    }}
-                  />
-                ) : (
-                  <div 
-                    onClick={() => setIsEditingName(true)}
-                    style={{
-                      fontSize: '28px',
-                      fontWeight: 900,
-                      color: 'var(--accent-primary)',
-                      letterSpacing: '-0.02em',
-                      fontFamily: "'JetBrains Mono', monospace",
-                      cursor: 'text',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    {displayBatchName}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '12px',
-                background: 'var(--bg-glass-hover)',
-                border: '1px solid var(--border-subtle)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <Icon.Folder size={24} style={{ color: 'var(--accent-primary)' }} />
-              </div>
-            </div>
-            <div style={{
-              marginTop: '10px',
-              padding: '6px 10px',
-              borderRadius: '8px',
-              background: 'rgba(251, 146, 60, 0.08)',
-              fontSize: '11px',
-              color: 'var(--text-muted)',
-              fontFamily: "'Inter', sans-serif",
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="16" x2="12" y2="12"/>
-                <line x1="12" y1="8" x2="12.01" y2="8"/>
-              </svg>
-              {isEditingName ? 'Manual override active' : 'Auto-generated by system'}
-            </div>
+        <form onSubmit={(e) => handleCreateAndUpload(e, displayBatchName)}>
+          <label className="bc-field-label" htmlFor="batch-name">
+            Batch name
+          </label>
+          <div className="bc-name-field">
+            <Icon.Folder size={17} />
+            <input
+              id="batch-name"
+              value={displayBatchName}
+              onChange={(e) => setCustomBatchName(e.target.value)}
+              disabled={isCreating}
+              required
+            />
+            <Pencil size={13} />
           </div>
-
-          {/* File Upload Zone */}
-          <div>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '11px',
-              fontWeight: 800,
-              color: 'var(--text-primary)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              marginBottom: '10px',
-              fontFamily: "'Inter', sans-serif"
-            }}>
-              <Icon.Receipt size={14} />
-              Receipt Images
-            </label>
-            <div style={{
-              position: 'relative',
-              borderRadius: '12px',
-              border: '2px dashed var(--border-strong)',
-              background: 'var(--bg-tertiary)',
-              padding: '28px 20px',
-              textAlign: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              overflow: 'hidden'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--accent-primary)';
-              e.currentTarget.style.background = 'rgba(251, 146, 60, 0.12)';
-              e.currentTarget.style.transform = 'scale(1.01)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--border-strong)';
-              e.currentTarget.style.background = 'var(--bg-tertiary)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-            onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                type="file"
-                multiple
-                ref={fileInputRef}
-                onChange={(e) => setFileCount(e.target.files?.length || 0)}
-                style={{ display: 'none' }}
-              />
-              
-              {fileCount > 0 ? (
-                <div style={{ animation: 'fadeIn 0.3s ease-in' }}>
-                  <div style={{
-                    width: '56px',
-                    height: '56px',
-                    margin: '0 auto 12px',
-                    borderRadius: '14px',
-                    background: 'rgba(22, 163, 74, 0.1)',
-                    border: '1px solid rgba(22, 163, 74, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  </div>
-                  <div style={{
-                    fontSize: '28px',
-                    fontWeight: 900,
-                    color: '#16a34a',
-                    marginBottom: '6px',
-                    fontFamily: "'JetBrains Mono', monospace"
-                  }}>
-                    {fileCount}
-                  </div>
-                  <div style={{
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    color: '#16a34a',
-                    marginBottom: '4px',
-                    fontFamily: "'Inter', sans-serif"
-                  }}>
-                    {fileCount === 1 ? 'File Selected' : 'Files Selected'}
-                  </div>
-                  <div style={{
-                    fontSize: '11px',
-                    color: 'var(--text-muted)',
-                    fontFamily: "'Inter', sans-serif"
-                  }}>
-                    Click to change selection
-                  </div>
-                </div>
+          <p className="bc-field-hint">Auto-named for you. Make it your own.</p>
+          <label className={`bc-upload ${fileCount ? "has-files" : ""}`}>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              ref={fileInputRef}
+              disabled={isCreating}
+              aria-label="Upload receipt images"
+              onChange={(e) => setFileCount(e.target.files?.length || 0)}
+            />
+            <span className="bc-upload-icon">
+              {fileCount ? <CheckCheck size={26} /> : <UploadCloud size={26} />}
+            </span>
+            <strong>
+              {fileCount
+                ? `${fileCount} receipt${fileCount === 1 ? "" : "s"} selected`
+                : "Your receipts start here"}
+            </strong>
+            <span>
+              {fileCount ? (
+                "Click to change your selection"
               ) : (
-                <div>
-                  <div style={{
-                    width: '56px',
-                    height: '56px',
-                    margin: '0 auto 12px',
-                    borderRadius: '14px',
-                    background: 'var(--bg-glass-hover)',
-                    border: '1px solid var(--border-subtle)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                      <polyline points="17 8 12 3 7 8"/>
-                      <line x1="12" y1="3" x2="12" y2="15"/>
-                    </svg>
-                  </div>
-                  <div style={{
-                    fontSize: '14px',
-                    fontWeight: 800,
-                    color: 'var(--text-primary)',
-                    marginBottom: '6px',
-                    fontFamily: "'Inter', sans-serif"
-                  }}>
-                    Drop files here
-                  </div>
-                  <div style={{
-                    fontSize: '12px',
-                    color: 'var(--text-muted)',
-                    marginBottom: '12px',
-                    fontFamily: "'Inter', sans-serif"
-                  }}>
-                    or click to browse from your computer
-                  </div>
-                  <div style={{
-                    display: 'inline-block',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    background: 'rgba(249, 115, 22, 0.08)',
-                    border: '1px solid var(--border-subtle)',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    color: 'var(--accent-primary)',
-                    fontFamily: "'Inter', sans-serif"
-                  }}>
-                    JPG, PNG, PDF supported
-                  </div>
-                </div>
+                <>
+                  <b>Click to upload</b> or drag and drop
+                </>
               )}
-            </div>
-          </div>
-
-          {/* Create Button */}
-          <button 
-            type="submit" 
-            disabled={isCreating || fileCount === 0}
-            style={{
-              width: '100%',
-              padding: '16px 20px',
-              borderRadius: '12px',
-              border: 'none',
-              background: fileCount === 0 ? 'rgba(100, 116, 139, 0.1)' : 'var(--gradient-primary)',
-              color: fileCount === 0 ? '#94a3b8' : '#fff',
-              fontSize: '12px',
-              fontWeight: 900,
-              textTransform: 'uppercase',
-              letterSpacing: '0.12em',
-              cursor: fileCount === 0 ? 'not-allowed' : 'pointer',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              fontFamily: "'Inter', sans-serif",
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '10px',
-              boxShadow: fileCount === 0 ? 'none' : 'var(--shadow-lg)',
-              opacity: fileCount === 0 ? 0.6 : 1
-            }}
-            onMouseEnter={(e) => {
-              if (fileCount > 0 && !isCreating) {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = 'var(--shadow-xl)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (fileCount > 0 && !isCreating) {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
-              }
-            }}
+            </span>
+            <small>Receipt images · Select multiple files</small>
+          </label>
+          <button
+            className="bc-button bc-button-primary bc-create-button"
+            type="submit"
+            disabled={isCreating || !fileCount}
           >
             {isCreating ? (
               <>
-                <div className="spinner-modern" />
-                Creating Batch...
+                <span className="spinner-modern" /> Creating batch…
               </>
             ) : (
               <>
-                <Icon.Plus size={16} />
-                Create Batch
+                Create batch <ArrowUpRight size={16} />
               </>
             )}
           </button>
         </form>
-      </div>
-
-      {/* Batches Grid */}
-      <div>
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column',
-          gap: '12px',
-          marginBottom: '1.5rem'
-        }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between'
-          }}>
-            <div>
-              <div style={{ 
-                fontSize: '11px', 
-                fontWeight: 600,
-                color: 'var(--text-muted)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}>
-                {filteredBatches.length} batch{filteredBatches.length !== 1 ? 'es' : ''} • Sorted by {sortBy}
-              </div>
-            </div>
-          </div>
-          
-          {/* Search & Sort Controls */}
-          <div className="search-sort-container" style={{ 
-            display: 'flex', 
-            gap: '10px',
-            alignItems: 'center'
-          }}>
-            {/* Search Input */}
-            <div style={{ flex: 1, position: 'relative' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ 
-                position: 'absolute', 
-                left: '12px', 
-                top: '50%', 
-                transform: 'translateY(-50%)',
-                color: 'var(--text-muted)',
-                opacity: 0.6
-              }}>
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <input 
-                type="text" 
-                placeholder="Search by name, ID or batch number..." 
-                value={searchQuery} 
-                onChange={(e) => setSearchQuery(e.target.value)} 
-                style={{
-                  width: '100%',
-                  padding: '10px 12px 10px 36px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--border-subtle)',
-                  background: 'var(--bg-secondary)',
-                  fontSize: '11px',
-                  color: 'var(--text-primary)',
-                  outline: 'none',
-                  fontFamily: "'Inter', sans-serif",
-                  transition: 'all 0.2s'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(249, 115, 22, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              />
-            </div>
-            
-            {/* Sort Select */}
-            <select 
-              className="sort-select"
-              value={sortBy} 
-              onChange={(e) => setSortBy(e.target.value)} 
-              style={{
-                padding: '10px 14px',
-                borderRadius: '10px',
-                border: '1px solid var(--border-subtle)',
-                background: 'var(--bg-secondary)',
-                fontSize: '11px',
-                color: 'var(--text-primary)',
-                outline: 'none',
-                fontFamily: "'Inter', sans-serif",
-                cursor: 'pointer',
-                minWidth: '160px',
-                transition: 'all 0.2s'
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                e.currentTarget.style.boxShadow = '0 0 0 4px rgba(249, 115, 22, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              <option value="date-desc">Date: Newest First</option>
-              <option value="date-asc">Date: Oldest First</option>
-              <option value="name-asc">Name: A-Z</option>
-              <option value="name-desc">Name: Z-A</option>
-              <option value="items-desc">Items: Most First</option>
-              <option value="items-asc">Items: Fewest First</option>
-            </select>
-          </div>
-        </div>
-        
-        {filteredBatches.length === 0 ? (
-          <div className="glass-card empty-box">
-            <div className="empty-icon-lg">📂</div>
-            <div style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{searchQuery ? 'No matching batches' : 'No batches yet'}</div>
-            <div style={{ opacity: 0.7 }}>
-              {searchQuery ? 'Try a different search term' : 'Create your first batch above to begin processing'}
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* ── Select-all + bulk delete bar ── */}
-            {(() => {
-              const allSelected = filteredBatches.length > 0 && filteredBatches.every(b => selectedBatchIds.has(b.id));
-              return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', minHeight: '26px' }}>
-                  <div
-                    onClick={() => handleSelectAll(filteredBatches)}
-                    style={{
-                      width: '16px', height: '16px', borderRadius: '4px', flexShrink: 0,
-                      border: `2px solid ${allSelected ? '#dc2626' : 'var(--border-strong)'}`,
-                      background: allSelected ? '#dc2626' : 'transparent',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      cursor: 'pointer', transition: 'all 0.15s',
-                    }}
-                  >
-                    {allSelected && (
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </div>
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', userSelect: 'none', cursor: 'pointer' }}
-                    onClick={() => handleSelectAll(filteredBatches)}>
-                    {allSelected ? 'Deselect all' : `Select all (${filteredBatches.length})`}
-                  </span>
-                  {selectedBatchIds.size > 0 && (
-                    <>
-                      <span style={{ color: 'var(--border-strong)' }}>•</span>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#dc2626' }}>{selectedBatchIds.size} selected</span>
-                      <button
-                        onClick={handleDownloadAllSummaries}
-                        disabled={isDownloadingAll}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '5px',
-                          padding: '5px 12px', borderRadius: '7px', border: 'none',
-                          background: isDownloadingAll ? '#94a3b8' : '#059669', color: 'white',
-                          fontSize: '11px', fontWeight: 700, cursor: isDownloadingAll ? 'not-allowed' : 'pointer',
-                          textTransform: 'uppercase', letterSpacing: '0.05em',
-                        }}
-                        onMouseEnter={e => !isDownloadingAll && (e.currentTarget.style.background = '#047857')}
-                        onMouseLeave={e => !isDownloadingAll && (e.currentTarget.style.background = '#059669')}
-                      >
-                        {isDownloadingAll ? (
-                          <>
-                            <div className="spinner-modern" style={{ width: '11px', height: '11px', borderWidth: '2px' }} />
-                            Downloading...
-                          </>
-                        ) : (
-                          <>
-                            <Icon.Download size={11} /> Download {selectedBatchIds.size}
-                          </>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setShowBulkDeleteModal(true)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '5px',
-                          padding: '5px 12px', borderRadius: '7px', border: 'none',
-                          background: '#dc2626', color: 'white',
-                          fontSize: '11px', fontWeight: 700, cursor: 'pointer',
-                          textTransform: 'uppercase', letterSpacing: '0.05em',
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#b91c1c'}
-                        onMouseLeave={e => e.currentTarget.style.background = '#dc2626'}
-                      >
-                        <Icon.Trash size={11} /> Delete {selectedBatchIds.size}
-                      </button>
-                      <button
-                        onClick={() => setSelectedBatchIds(new Set())}
-                        style={{
-                          padding: '5px 10px', borderRadius: '7px',
-                          border: '1px solid rgba(239,68,68,0.3)', background: 'transparent',
-                          color: '#dc2626', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                      >
-                        Clear
-                      </button>
-                    </>
-                  )}
+        <div className="bc-workflow-guide">
+          <span className="bc-eyebrow">FROM UPLOAD TO VERIFIED</span>
+          <ol>
+            {[
+              ["Upload", "Add your receipt images"],
+              ["Prepare", "Sort, crop and extract details"],
+              ["Verify", "Check and finalize your batch"],
+            ].map(([title, text], index) => (
+              <li key={title}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <div>
+                  <strong>{title}</strong>
+                  <p>{text}</p>
                 </div>
-              );
-            })()}
+              </li>
+            ))}
+          </ol>
+        </div>
+      </aside>
 
-            <div style={{ display: 'grid', gap: '1rem' }}>
-              {filteredBatches.map((batch, i) => (
+      <section className="bc-library" aria-labelledby="batch-library-title">
+        <div className="bc-library-heading">
+          <div>
+            <h2 id="batch-library-title">
+              Your batches <span>{batches.length}</span>
+            </h2>
+            <p>Organized, up to date, and ready for your next step.</p>
+          </div>
+          <button
+            className="bc-icon-button"
+            aria-label="Refresh batches"
+            title="Refresh batches"
+            onClick={() => fetchBatches()}
+          >
+            <RefreshCw size={16} />
+          </button>
+        </div>
+        <div
+          className="bc-tabs"
+          role="group"
+          aria-label="Filter batches by status"
+        >
+          {[
+            ["all", "All batches"],
+            ["active", "In progress"],
+            ["complete", "Completed"],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              className={statusFilter === key ? "active" : ""}
+              aria-pressed={statusFilter === key}
+              onClick={() => setStatusFilter(key)}
+            >
+              {label}
+              {key === "all" && <span>{batches.length}</span>}
+            </button>
+          ))}
+        </div>
+        <div className="bc-toolbar">
+          <label className="bc-search">
+            <Search size={16} />
+            <input
+              aria-label="Search batches"
+              placeholder="Search batches…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                className="bc-icon-button"
+                aria-label="Clear search"
+                onClick={() => setSearchQuery("")}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </label>
+          <label className="bc-sort">
+            <SlidersHorizontal size={15} />
+            <select
+              aria-label="Sort batches"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="date-desc">Newest first</option>
+              <option value="date-asc">Oldest first</option>
+              <option value="name-asc">Name: A–Z</option>
+              <option value="name-desc">Name: Z–A</option>
+              <option value="items-desc">Most receipts</option>
+              <option value="items-asc">Fewest receipts</option>
+            </select>
+          </label>
+        </div>
+        {selectedBatchIds.size > 0 && (
+          <div className="bc-selection-bar">
+            <strong>{selectedBatchIds.size} selected</strong>
+            <button
+              className="bc-button"
+              onClick={handleDownloadAllSummaries}
+              disabled={isDownloadingAll}
+            >
+              <Icon.Download size={14} />
+              {isDownloadingAll ? "Downloading…" : "Download"}
+            </button>
+            <button
+              className="bc-button bc-danger"
+              onClick={() => setShowBulkDeleteModal(true)}
+            >
+              <Icon.Trash size={14} /> Delete
+            </button>
+            <button
+              className="bc-icon-button"
+              aria-label="Clear selection"
+              onClick={() => setSelectedBatchIds(new Set())}
+            >
+              <X size={15} />
+            </button>
+          </div>
+        )}
+        {filteredBatches.length ? (
+          <>
+            <div className="bc-list-header">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={() => handleSelectAll(filteredBatches)}
+                  aria-label="Select all visible batches"
+                />{" "}
+                Batch details
+              </label>
+              <span>Receipts</span>
+              <span>Progress</span>
+              <span>Status</span>
+              <span />
+            </div>
+            <div className="bc-batch-list">
+              {filteredBatches.map((batch) => (
                 <BatchCard
                   key={batch.id}
                   batch={batch}
@@ -1223,466 +966,294 @@ export default function BatchDashboard({
                   onClick={() => navigate(`/batch/${batch.id}`)}
                   onDelete={(e) => handleDeleteBatch(e, batch.id)}
                   onUpdateName={handleUpdateBatchName}
-                  onViewSummary={(e) => { e.stopPropagation(); setSummaryBatch(batch); }}
-                  delay={i * 0.03}
+                  onViewSummary={(e) => {
+                    e.stopPropagation();
+                    setSummaryBatch(batch);
+                  }}
                 />
               ))}
             </div>
-
-            {/* Bulk delete confirmation modal */}
-            {showBulkDeleteModal && (
-              <div className="ort-overlay" style={{ zIndex: 2000 }}>
-                <div className="glass-card" style={{ maxWidth: '420px', padding: '2.5rem', textAlign: 'center' }}>
-                  <div style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>🗑️</div>
-                  <h3 className="h2-modern" style={{ fontSize: '1.4rem', marginBottom: '0.75rem' }}>
-                    Delete {selectedBatchIds.size} Batch{selectedBatchIds.size !== 1 ? 'es' : ''}?
-                  </h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '2rem', lineHeight: 1.6 }}>
-                    This will permanently remove {selectedBatchIds.size} selected batch{selectedBatchIds.size !== 1 ? 'es' : ''} and all their receipts. This cannot be undone.
-                  </p>
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button
-                      className="btn-primary-modern"
-                      style={{ flex: 1, background: 'rgba(0,0,0,0.05)', color: 'var(--text-primary)' }}
-                      onClick={() => setShowBulkDeleteModal(false)}
-                      disabled={isBulkDeleting}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="btn-primary-modern"
-                      style={{ flex: 1, background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' }}
-                      onClick={handleBulkDelete}
-                      disabled={isBulkDeleting}
-                    >
-                      {isBulkDeleting
-                        ? <><div className="spinner-modern" /> Deleting...</>
-                        : <><Icon.Trash size={14} /> Delete All</>
-                      }
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            <div className="bc-list-footer">
+              <span>
+                Showing {filteredBatches.length} of {batches.length} loaded
+                batches
+              </span>
+              <span>
+                <span className="bc-small-dot" /> All in one place
+              </span>
+            </div>
           </>
+        ) : (
+          <div className="bc-empty">
+            <span className="bc-empty-icon">
+              <Layers size={30} />
+            </span>
+            <h3>
+              {batches.length
+                ? "No matching batches"
+                : "A fresh start for your receipts"}
+            </h3>
+            <p>
+              {batches.length
+                ? "Try another search or status filter."
+                : "Create your first batch to start organizing and verifying your receipts."}
+            </p>
+            <button
+              className="bc-button"
+              onClick={() => {
+                if (batches.length) {
+                  setSearchQuery("");
+                  setStatusFilter("all");
+                } else document.getElementById("batch-name")?.focus();
+              }}
+            >
+              {batches.length ? "Clear filters" : "Create your first batch"}{" "}
+              <Icon.ArrowRight size={14} />
+            </button>
+          </div>
+        )}
+        {showBulkDeleteModal && (
+          <div
+            className="ort-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="bulk-delete-title"
+          >
+            <div className="glass-card bc-delete-dialog">
+              <span className="bc-empty-icon bc-danger">
+                <Icon.Trash size={25} />
+              </span>
+              <h3 id="bulk-delete-title">
+                Delete {selectedBatchIds.size} batches?
+              </h3>
+              <p>
+                This permanently removes the selected batches and all their
+                receipts. This cannot be undone.
+              </p>
+              <div>
+                <button
+                  className="bc-button"
+                  onClick={() => setShowBulkDeleteModal(false)}
+                  disabled={isBulkDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="bc-button bc-button-destructive"
+                  onClick={handleBulkDelete}
+                  disabled={isBulkDeleting}
+                >
+                  {isBulkDeleting ? "Deleting…" : "Delete batches"}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Billing Summary Modal */}
-        {summaryBatch && (() => {
-          const sd = summaryBatch.summary_data || {};
-          const bd = summaryBatch.billing_data || {};
+        {summaryBatch &&
+          (() => {
+            const sd = summaryBatch.summary_data || {};
+            const bd = summaryBatch.billing_data || {};
 
-          // Build verified receipts list from actual receipt data
-          const verifiedReceipts = summaryBatch.verified_claims || [];
+            // Build verified receipts list from actual receipt data
+            const verifiedReceipts = summaryBatch.verified_claims || [];
 
-          // Fallback: reconstruct financials from receipts if summary_data wasn't saved
-          const grossFallback = verifiedReceipts.reduce((s, r) => s + r.amount, 0);
-          const feeFallback = Math.floor(grossFallback / 1000) * 10;
-          const deductionsFallback = sd.deductions || [];
-          const totalDeductionsFallback = deductionsFallback.reduce((s, d) => s + (Number(d.amount) || 0), 0);
-          const netFallback = grossFallback - feeFallback - totalDeductionsFallback;
+            // Fallback: reconstruct financials from receipts if summary_data wasn't saved
+            const grossFallback = verifiedReceipts.reduce(
+              (s, r) => s + r.amount,
+              0,
+            );
+            const feeFallback = Math.floor(grossFallback / 1000) * 10;
 
-          const grossAmount   = sd.gross_amount   ?? grossFallback;
-          const serviceFee    = sd.service_fee    ?? feeFallback;
-          const deductions    = sd.deductions     || [];
-          const totalDeductions = deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0);
-          const netAmount     = sd.net_amount     ?? (grossAmount - serviceFee - totalDeductions);
+            const grossAmount = sd.gross_amount ?? grossFallback;
+            const serviceFee = sd.service_fee ?? feeFallback;
+            const deductions = sd.deductions || [];
+            const totalDeductions = deductions.reduce(
+              (s, d) => s + (Number(d.amount) || 0),
+              0,
+            );
+            const netAmount =
+              sd.net_amount ?? grossAmount - serviceFee - totalDeductions;
 
-          const billingMethod      = bd.method              || 'both';
-          const cashDenoms         = bd.cash_denominations  || {};
-          const bankAmt            = bd.bank_transfer_amount || 0;
-          const bankAmts           = Array.isArray(bd.bank_transfer_amount) ? bd.bank_transfer_amount : (bd.bank_transfer_amount ? [bd.bank_transfer_amount] : []);
-          const totalPrepared      = bd.total_prepared       || netAmount;
+            const billingMethod = bd.method || "both";
+            const cashDenoms = bd.cash_denominations || {};
+            const bankAmt = bd.bank_transfer_amount || 0;
+            const bankAmts = Array.isArray(bd.bank_transfer_amount)
+              ? bd.bank_transfer_amount
+              : bd.bank_transfer_amount
+                ? [bd.bank_transfer_amount]
+                : [];
+            const totalPrepared = bd.total_prepared || netAmount;
 
-          return (
-            <BillingSummaryModal
-              onClose={() => setSummaryBatch(null)}
-              batchNumber={summaryBatch.batch_number}
-              finalBatchNumber={summaryBatch.final_batch_number}
-              grossAmount={grossAmount}
-              serviceFee={serviceFee}
-              deductions={deductions}
-              netAmount={netAmount}
-              billingMethod={billingMethod}
-              cashDenominations={cashDenoms}
-              bankTransferAmount={Array.isArray(bankAmt) ? bankAmts.reduce((s,v)=>s+Number(v||0),0) : bankAmt}
-              bankTransferAmounts={bankAmts}
-              totalPrepared={totalPrepared}
-              verifiedClaims={verifiedReceipts}
-            />
-          );
-        })()}
-      </div>
+            return (
+              <BillingSummaryModal
+                onClose={() => setSummaryBatch(null)}
+                batchNumber={summaryBatch.batch_number}
+                finalBatchNumber={summaryBatch.final_batch_number}
+                grossAmount={grossAmount}
+                serviceFee={serviceFee}
+                deductions={deductions}
+                netAmount={netAmount}
+                billingMethod={billingMethod}
+                cashDenominations={cashDenoms}
+                bankTransferAmount={
+                  Array.isArray(bankAmt)
+                    ? bankAmts.reduce((s, v) => s + Number(v || 0), 0)
+                    : bankAmt
+                }
+                bankTransferAmounts={bankAmts}
+                totalPrepared={totalPrepared}
+                verifiedClaims={verifiedReceipts}
+              />
+            );
+          })()}
+      </section>
     </div>
   );
 }
 
-function BatchCard({ batch, onClick, onDelete, onUpdateName, onViewSummary, delay = 0, isSelected, onToggleSelect }) {
+function getBatchStatus(batch) {
+  if (batch.checker_status === "billing_ready")
+    return { label: "Completed", group: "complete", tone: "green" };
+  if (["summarized", "finalized"].includes(batch.checker_status))
+    return { label: "In review", group: "active", tone: "blue" };
+  if (
+    batch.checker_status === "processing" ||
+    batch.receipts?.some((r) =>
+      ["uploading", "processing"].includes(r.ocr_status),
+    )
+  )
+    return { label: "Processing", group: "active", tone: "amber" };
+  if ((batch.stats?.total ?? batch.receipts?.length ?? 0) > 0)
+    return { label: "In progress", group: "active", tone: "orange" };
+  return { label: "Draft", group: "active", tone: "neutral" };
+}
+
+function BatchCard({
+  batch,
+  onClick,
+  onDelete,
+  onUpdateName,
+  onViewSummary,
+  isSelected,
+  onToggleSelect,
+}) {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editName, setEditName] = React.useState("");
   const total = batch.stats?.total ?? batch.receipts?.length ?? 0;
   const verified = batch.stats?.ocr_finished ?? 0;
-  const progress = batch.progress ?? 0;
-  
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [editName, setEditName] = React.useState(batch.name || '');
-
-  const getStatus = () => {
-    if (batch.checker_status === 'billing_ready') return { label: 'Ready', color: '#15803d', bg: 'rgba(21, 128, 61, 0.08)', border: 'rgba(21, 128, 61, 0.2)' };
-    if (batch.checker_status === 'summarized' || batch.checker_status === 'finalized') return { label: 'Review', color: '#ea580c', bg: 'rgba(234, 88, 12, 0.08)', border: 'rgba(234, 88, 12, 0.2)' };
-    if (batch.receipts?.some(r => r.ocr_status === 'uploading')) return { label: 'Uploading', color: 'var(--accent-primary)', bg: 'rgba(251, 146, 60, 0.08)', border: 'rgba(251, 146, 60, 0.2)' };
-    if (total > 0) return { label: 'Active', color: '#f97316', bg: 'rgba(249, 115, 22, 0.08)', border: 'rgba(249, 115, 22, 0.2)' };
-    return { label: 'Draft', color: '#9a3412', bg: 'rgba(154, 52, 18, 0.08)', border: 'rgba(154, 52, 18, 0.2)' };
+  const progress = Math.min(100, Math.max(0, Number(batch.progress) || 0));
+  const status = getBatchStatus(batch);
+  const date = new Date(batch.created_at).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const saveName = () => {
+    setIsEditing(false);
+    if (editName.trim() && editName.trim() !== batch.name)
+      onUpdateName(batch.id, editName.trim());
   };
-  
-  const status = getStatus();
-  const netAmount = batch.summary_data?.net_amount || null;
-  const hasNetAmount = netAmount !== null && netAmount !== undefined;
-  
-  const createdDate = new Date(batch.created_at);
-  const formattedDate = createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
   return (
-    <div 
-      className="glass-card"
-      style={{ 
-        animationDelay: `${delay}s`,
-        padding: '16px 20px',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '1.5rem',
-        border: `1px solid ${isSelected ? '#dc2626' : 'var(--border-subtle)'}`,
-        background: isSelected ? 'rgba(239,68,68,0.02)' : 'var(--bg-secondary)',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: 'var(--shadow-sm)'
-      }}
-      onClick={onClick}
-      onMouseEnter={(e) => {
-        if (!isSelected) {
-          e.currentTarget.style.borderColor = 'var(--accent-primary)';
-          e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isSelected) {
-          e.currentTarget.style.borderColor = 'var(--border-subtle)';
-          e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-        }
-      }}
-    >
-      {/* Checkbox */}
-      <div
-        onClick={onToggleSelect}
-        style={{
-          width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
-          border: `2px solid ${isSelected ? '#dc2626' : 'var(--border-strong)'}`,
-          background: isSelected ? '#dc2626' : 'transparent',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', transition: 'all 0.15s',
-        }}
-      >
-        {isSelected && (
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        )}
-      </div>
-
-      {/* Icon & Name Section */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: '240px', flexShrink: 0 }}>
-        <div style={{
-          width: '40px',
-          height: '40px',
-          borderRadius: 'var(--radius-md)',
-          background: 'var(--gradient-cream)',
-          border: `1px solid var(--border-subtle)`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0
-        }}>
-          <Icon.Folder size={18} style={{ color: 'var(--accent-primary)' }} />
-        </div>
-        <div style={{ overflow: 'hidden', minWidth: 0 }}>
+    <article className={`bc-batch-row ${isSelected ? "selected" : ""}`}>
+      <div className="bc-batch-identity">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={onToggleSelect}
+          aria-label={`Select ${batch.name || "unnamed batch"}`}
+        />
+        <span className={`bc-folder-icon ${status.tone}`}>
+          <Icon.Folder size={20} />
+        </span>
+        <div className="bc-batch-name">
           {isEditing ? (
             <input
-              type="text"
+              className="bc-inline-name"
+              aria-label="Rename batch"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              onBlur={() => {
-                setIsEditing(false);
-                if (editName !== batch.name) {
-                  onUpdateName(batch.id, editName);
-                }
-              }}
+              onBlur={saveName}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setIsEditing(false);
-                  if (editName !== batch.name) {
-                    onUpdateName(batch.id, editName);
-                  }
-                }
-                if (e.key === 'Escape') {
-                  setEditName(batch.name);
-                  setIsEditing(false);
-                }
+                if (e.key === "Enter") e.currentTarget.blur();
+                if (e.key === "Escape") setIsEditing(false);
               }}
               autoFocus
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                fontSize: '14px',
-                fontWeight: 700,
-                color: 'var(--accent-primary)',
-                background: 'transparent',
-                border: 'none',
-                borderBottom: '2px solid var(--accent-primary)',
-                width: '100%',
-                outline: 'none',
-                padding: '2px 0',
-                fontFamily: 'var(--font-family)'
-              }}
             />
           ) : (
-            <div 
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsEditing(true);
-              }}
-              style={{ 
-                fontSize: '14px', 
-                color: 'var(--text-primary)',
-                fontWeight: 700,
-                letterSpacing: '-0.01em',
-                marginBottom: '3px',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontFamily: 'var(--font-family)'
-              }}
-            >
-              {batch.name || 'Unnamed Batch'}
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.25, flexShrink: 0 }}>
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
+            <div>
+              <button className="bc-open-batch" onClick={onClick}>
+                {batch.name || "Unnamed batch"}
+              </button>
+              <button
+                className="bc-rename"
+                aria-label={`Rename ${batch.name || "batch"}`}
+                onClick={() => {
+                  setEditName(batch.name || "");
+                  setIsEditing(true);
+                }}
+              >
+                <Pencil size={12} />
+              </button>
             </div>
           )}
-          <div style={{ 
-            fontSize: '10px', 
-            color: 'var(--text-muted)', 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '6px',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.02em'
-          }}>
-            <Icon.Calendar size={9} />
-            {formattedDate} {batch.final_batch_number && `• ${batch.final_batch_number}`}
-          </div>
+          <span>
+            {date}
+            {batch.final_batch_number && ` · ${batch.final_batch_number}`}
+          </span>
+          {batch.summary_data?.net_amount != null && (
+            <small>₱{fmt(batch.summary_data.net_amount)} net total</small>
+          )}
         </div>
       </div>
-
-      {/* Stats Section */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flex: 1 }}>
-        <div style={{ minWidth: '55px' }}>
-          <div style={{ 
-            fontSize: '10px', 
-            fontWeight: 700, 
-            color: 'var(--text-muted)', 
-            textTransform: 'uppercase', 
-            letterSpacing: '0.05em', 
-            marginBottom: '4px'
-          }}>
-            Total
-          </div>
-          <div style={{ 
-            fontSize: '18px', 
-            fontWeight: 700, 
-            color: 'var(--text-primary)', 
-            fontFamily: 'var(--font-mono)', 
-            lineHeight: 1 
-          }}>
-            {total}
-          </div>
-        </div>
-        
-        <div style={{ minWidth: '65px' }}>
-          <div style={{ 
-            fontSize: '10px', 
-            fontWeight: 700, 
-            color: 'var(--text-muted)', 
-            textTransform: 'uppercase', 
-            letterSpacing: '0.05em', 
-            marginBottom: '4px'
-          }}>
-            Verified
-          </div>
-          <div style={{ 
-            fontSize: '18px', 
-            fontWeight: 700, 
-            color: 'var(--success-primary)', 
-            fontFamily: 'var(--font-mono)', 
-            lineHeight: 1 
-          }}>
-            {verified}
-          </div>
-        </div>
-        
-        {hasNetAmount && (
-          <div style={{ minWidth: '105px' }}>
-            <div style={{ 
-              fontSize: '10px', 
-              fontWeight: 700, 
-              color: 'var(--text-muted)', 
-              textTransform: 'uppercase', 
-              letterSpacing: '0.05em', 
-              marginBottom: '4px'
-            }}>
-              Net Total
-            </div>
-            <div style={{ 
-              fontSize: '15px', 
-              fontWeight: 700, 
-              color: 'var(--accent-primary)', 
-              fontFamily: 'var(--font-mono)', 
-              lineHeight: 1 
-            }}>
-              ₱{fmt(netAmount)}
-            </div>
-          </div>
-        )}
-
-        {/* Progress Bar */}
-        <div style={{ flex: 1, maxWidth: '180px', minWidth: '120px' }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'baseline', 
-            fontSize: '10px', 
-            fontWeight: 700, 
-            color: 'var(--text-muted)', 
-            marginBottom: '6px'
-          }}>
-            <span style={{ letterSpacing: '0.05em', textTransform: 'uppercase' }}>Progress</span>
-            <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>{progress}%</span>
-          </div>
-          <div style={{ 
-            height: '6px', 
-            background: '#fef3c7', 
-            borderRadius: '3px', 
-            overflow: 'hidden',
-            border: '1px solid var(--border-subtle)'
-          }}>
-            <div style={{ 
-              height: '100%', 
-              width: `${progress}%`, 
-              background: 'var(--gradient-primary)', 
-              borderRadius: '2px', 
-              transition: 'width 0.4s ease' 
-            }} />
-          </div>
+      <div className="bc-receipt-count">
+        <strong>{total}</strong>
+        <span>{verified} extracted</span>
+      </div>
+      <div className="bc-row-progress">
+        <span>{progress}%</span>
+        <div
+          role="progressbar"
+          aria-label={`${batch.name} progress`}
+          aria-valuenow={progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <i style={{ width: `${progress}%` }} />
         </div>
       </div>
-
-      {/* Status & Actions */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '10px', 
-        minWidth: '140px', 
-        justifyContent: 'flex-end', 
-        flexShrink: 0 
-      }}>
-        {batch.checker_status === 'billing_ready' && (
-          <button 
+      <span className={`bc-status ${status.tone}`}>
+        <i />
+        {status.label}
+      </span>
+      <div className="bc-row-actions">
+        {status.group === "complete" && (
+          <button
+            className="bc-icon-button"
+            title="View summary"
+            aria-label={`View summary for ${batch.name}`}
             onClick={onViewSummary}
-            style={{ 
-              width: '32px', 
-              height: '32px', 
-              borderRadius: 'var(--radius-sm)',
-              background: 'rgba(21, 128, 61, 0.08)',
-              border: '1px solid rgba(21, 128, 61, 0.2)',
-              color: 'var(--success-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s',
-              flexShrink: 0,
-              cursor: 'pointer'
-            }}
-            title="View Summary"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(21, 128, 61, 0.15)';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(21, 128, 61, 0.08)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-            </svg>
+            <FileText size={15} />
           </button>
         )}
-        
-        <div style={{
-          padding: '6px 12px',
-          minWidth: '68px',
-          textAlign: 'center',
-          borderRadius: 'var(--radius-sm)',
-          background: status.bg,
-          border: `1px solid ${status.border}`,
-          color: status.color,
-          fontSize: '10px',
-          fontWeight: 800,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em'
-        }}>
-          {status.label}
-        </div>
-        
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(e);
-          }}
-          style={{ 
-            width: '32px', 
-            height: '32px', 
-            borderRadius: 'var(--radius-sm)',
-            background: 'transparent',
-            border: '1px solid transparent',
-            color: 'var(--text-muted)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.2s',
-            flexShrink: 0,
-            cursor: 'pointer'
-          }}
-          title="Delete Batch"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(185, 28, 28, 0.08)';
-            e.currentTarget.style.color = 'var(--danger-primary)';
-            e.currentTarget.style.borderColor = 'rgba(185, 28, 28, 0.2)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = 'var(--text-muted)';
-            e.currentTarget.style.borderColor = 'transparent';
-          }}
+        <button
+          className="bc-icon-button bc-delete"
+          title="Delete batch"
+          aria-label={`Delete ${batch.name}`}
+          onClick={onDelete}
         >
-          <Icon.Trash size={13} />
+          <Icon.Trash size={14} />
+        </button>
+        <button
+          className="bc-icon-button"
+          aria-label={`Open ${batch.name}`}
+          onClick={onClick}
+        >
+          <ChevronRight size={16} />
         </button>
       </div>
-    </div>
+    </article>
   );
 }
