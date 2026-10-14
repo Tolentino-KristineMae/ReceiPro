@@ -159,9 +159,9 @@ function DashboardStats({ receipts, onNavigate }) {
               />
               <div style={{
                 position: 'absolute',
-                left: '1rem',
-                right: '1rem',
+                left: '50%',
                 bottom: '1rem',
+                transform: 'translateX(-50%)',
                 display: 'flex',
                 flexDirection: 'column',
                 zIndex: 2,
