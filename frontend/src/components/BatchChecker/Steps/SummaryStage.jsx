@@ -93,19 +93,19 @@ export default function SummaryStage({
             alignItems: 'center',
             gap: '6px'
           }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#bb4d1b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
               <line x1="16" y1="13" x2="8" y2="13"/>
               <line x1="16" y1="17" x2="8" y2="17"/>
               <polyline points="10 9 9 9 8 9"/>
             </svg>
-            <span style={{ 
-              color: '#f97316', 
-              fontSize: '10px', 
-              fontWeight: 900, 
-              textTransform: 'uppercase', 
-              letterSpacing: '0.08em',
+            <span style={{
+              color: '#963b16',
+              fontSize: '11px',
+              fontWeight: 600,
+              textTransform: 'none',
+              letterSpacing: '0',
               fontFamily: "'Inter', sans-serif"
             }}>
               Claims Summary
@@ -114,13 +114,13 @@ export default function SummaryStage({
           <div style={{
             padding: '4px 10px',
             borderRadius: '6px',
-            background: '#fffbf5',
+            background: '#fbf7f2',
             border: '1px solid rgba(251, 146, 60, 0.15)'
           }}>
-            <span style={{ 
-              color: 'rgba(67, 20, 7, 0.6)', 
-              fontSize: '10px', 
-              fontWeight: 700,
+            <span style={{
+              color: 'var(--workspace-muted)',
+              fontSize: '11px',
+              fontWeight: 600,
               fontFamily: "'Inter', sans-serif"
             }}>
               {verifiedClaims?.length || 0} Claims
@@ -142,16 +142,16 @@ export default function SummaryStage({
           gap: '4px'
         }}>
           <div style={{
-            fontSize: '9px',
-            fontWeight: 900,
-            color: 'rgba(67, 20, 7, 0.5)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
+            fontSize: '11px',
+            fontWeight: 600,
+            color: 'var(--workspace-muted)',
+            textTransform: 'none',
+            letterSpacing: '0',
             fontFamily: "'Inter', sans-serif"
           }}>
             Gross Claims
           </div>
-          <div className="sum-card-amount" style={{ color: '#10b981' }}>
+          <div className="sum-card-amount" style={{ color: '#47613b' }}>
             ₱{fmt(totalClaimsAmount)}
           </div>
         </div>
@@ -167,37 +167,37 @@ export default function SummaryStage({
           gap: '4px'
         }}>
           <div style={{
-            fontSize: '9px',
-            fontWeight: 900,
-            color: 'rgba(67, 20, 7, 0.5)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
+            fontSize: '11px',
+            fontWeight: 600,
+            color: 'var(--workspace-muted)',
+            textTransform: 'none',
+            letterSpacing: '0',
             fontFamily: "'Inter', sans-serif"
           }}>
             Service Fee
           </div>
-          <div className="sum-card-amount" style={{ color: '#ef4444' }}>
+          <div className="sum-card-amount" style={{ color: '#a23429' }}>
             − ₱{fmt(serviceFee)}
           </div>
         </div>
       </div>
 
       {/* Deduction Controls */}
-      <div style={{
+      <div className="process-deductions" style={{
         padding: '20px',
         borderRadius: '16px',
-        background: '#fffbf5',
+        background: '#fbf7f2',
         border: '1px solid rgba(251, 146, 60, 0.15)',
         marginBottom: '16px',
-        boxShadow: '0 4px 12px rgba(67, 20, 7, 0.03)'
+        boxShadow: 'none'
       }}>
         <div className="sum-deductions-header">
           <div style={{
             fontSize: '11px',
-            fontWeight: 900,
-            color: '#431407',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
+            fontWeight: 600,
+            color: '#3e3028',
+            textTransform: 'none',
+            letterSpacing: '0',
             fontFamily: "'Inter', sans-serif"
           }}>
             Additional Deductions
@@ -210,11 +210,11 @@ export default function SummaryStage({
               borderRadius: '10px',
               background: 'rgba(249, 115, 22, 0.1)',
               border: '1px solid rgba(251, 146, 60, 0.3)',
-              color: '#f97316',
-              fontSize: '10px',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
+              color: '#963b16',
+              fontSize: '11px',
+              fontWeight: 600,
+              textTransform: 'none',
+              letterSpacing: '0',
               cursor: loading || deductionTypes.length === 0 ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s',
               fontFamily: "'Inter', sans-serif",
@@ -235,9 +235,9 @@ export default function SummaryStage({
 
         {deductions.length === 0 ? (
           <div style={{
-            padding: '30px',
+            padding: '16px 0',
             textAlign: 'center',
-            color: 'rgba(67, 20, 7, 0.4)',
+            color: 'var(--workspace-muted)',
             fontSize: '12px',
             fontFamily: "'Inter', sans-serif"
           }}>
@@ -250,7 +250,7 @@ export default function SummaryStage({
               </>
             ) : (
               <>
-                <div style={{ marginBottom: '8px', fontSize: '24px' }}>➕</div>
+
                 No deductions added. Click "Add Deduction" to add one.
               </>
             )}
@@ -262,29 +262,29 @@ export default function SummaryStage({
                 {/* Deduction Type */}
                 <div className="sum-deduction-type">
                   <label style={{
-                    fontSize: '9px',
-                    fontWeight: 900,
-                    color: 'rgba(67, 20, 7, 0.5)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.12em',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: 'var(--workspace-muted)',
+                    textTransform: 'none',
+                    letterSpacing: '0',
                     marginBottom: '6px',
                     display: 'block',
                     fontFamily: "'Inter', sans-serif"
                   }}>
                     Type
                   </label>
-                  <select 
-                    value={deduction.type} 
+                  <select aria-label={`Deduction ${index + 1} type`}
+                    value={deduction.type}
                     onChange={(e) => handleUpdateDeductionType(index, e.target.value)}
                     style={{
                       width: '100%',
-                      background: '#fffbf5',
+                      background: '#fbf7f2',
                       border: '1px solid rgba(251, 146, 60, 0.2)',
                       borderRadius: '8px',
                       padding: '10px 12px',
-                      color: '#431407',
+                      color: '#3e3028',
                       fontSize: '12px',
-                      fontWeight: 700,
+                      fontWeight: 600,
                       outline: 'none',
                       cursor: 'pointer',
                       fontFamily: "'Inter', sans-serif"
@@ -301,11 +301,11 @@ export default function SummaryStage({
                 {/* Amount */}
                 <div className="sum-deduction-amount">
                   <label style={{
-                    fontSize: '9px',
-                    fontWeight: 900,
-                    color: 'rgba(67, 20, 7, 0.5)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.12em',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: 'var(--workspace-muted)',
+                    textTransform: 'none',
+                    letterSpacing: '0',
                     marginBottom: '6px',
                     display: 'block',
                     fontFamily: "'Inter', sans-serif"
@@ -318,26 +318,26 @@ export default function SummaryStage({
                       left: '12px',
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      color: 'rgba(67, 20, 7, 0.4)',
+                      color: 'var(--workspace-muted)',
                       fontSize: '12px',
-                      fontWeight: 700,
+                      fontWeight: 600,
                       fontFamily: "'JetBrains Mono', monospace"
                     }}>
                       ₱
                     </span>
-                    <input 
-                      type="number" 
-                      value={deduction.amount || ''} 
+                    <input
+                      aria-label={`Deduction ${index + 1} amount`} type="number"
+                      value={deduction.amount || ''}
                       onChange={(e) => handleUpdateDeductionAmount(index, e.target.value)}
                       style={{
                         width: '100%',
-                        background: '#fffbf5',
+                        background: '#fbf7f2',
                         border: '1px solid rgba(251, 146, 60, 0.2)',
                         borderRadius: '8px',
                         padding: '10px 12px 10px 28px',
-                        color: '#431407',
+                        color: '#3e3028',
                         fontSize: '12px',
-                        fontWeight: 700,
+                        fontWeight: 600,
                         outline: 'none',
                         fontFamily: "'JetBrains Mono', monospace"
                       }}
@@ -349,13 +349,13 @@ export default function SummaryStage({
                 {/* Remove Button */}
                 <div className="sum-deduction-delete">
                   <button
-                    onClick={() => handleRemoveDeduction(index)}
+                    aria-label={`Remove deduction ${index + 1}`} onClick={() => handleRemoveDeduction(index)}
                     style={{
                       padding: '10px',
                       borderRadius: '10px',
                       background: 'rgba(239, 68, 68, 0.08)',
                       border: '1px solid rgba(239, 68, 68, 0.2)',
-                      color: '#ef4444',
+                      color: '#a23429',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       display: 'flex',
@@ -387,18 +387,18 @@ export default function SummaryStage({
           }}>
             <span style={{
               fontSize: '11px',
-              fontWeight: 900,
-              color: '#ef4444',
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
+              fontWeight: 600,
+              color: '#a23429',
+              textTransform: 'none',
+              letterSpacing: '0',
               fontFamily: "'Inter', sans-serif"
             }}>
               Total Deductions
             </span>
             <span style={{
               fontSize: '18px',
-              fontWeight: 900,
-              color: '#ef4444',
+              fontWeight: 600,
+              color: '#a23429',
               fontFamily: "'JetBrains Mono', monospace"
             }}>
               − ₱{fmt(totalDeductions)}
@@ -408,22 +408,22 @@ export default function SummaryStage({
       </div>
 
       {/* Net Amount Summary */}
-      <div style={{
+      <div className="process-net-total" style={{
         padding: '20px',
         borderRadius: '16px',
         background: 'rgba(249, 115, 22, 0.08)',
         border: '1px solid rgba(251, 146, 60, 0.3)',
         marginBottom: '16px',
-        boxShadow: '0 4px 16px rgba(249, 115, 22, 0.1)'
+        boxShadow: 'none'
       }}>
         <div className="sum-net-row">
           <div>
             <div style={{
-              fontSize: '10px',
-              fontWeight: 900,
-              color: 'rgba(67, 20, 7, 0.5)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.12em',
+              fontSize: '11px',
+              fontWeight: 600,
+              color: 'var(--workspace-muted)',
+              textTransform: 'none',
+              letterSpacing: '0',
               marginBottom: '4px',
               fontFamily: "'Inter', sans-serif"
             }}>
@@ -431,7 +431,7 @@ export default function SummaryStage({
             </div>
             <div style={{
               fontSize: '11px',
-              color: 'rgba(67, 20, 7, 0.6)',
+              color: 'var(--workspace-muted)',
               fontFamily: "'Inter', sans-serif"
             }}>
               Final amount for billing
@@ -445,7 +445,7 @@ export default function SummaryStage({
 
       {/* Action Buttons */}
       <div className="sum-actions">
-        <button 
+        <button
           onClick={onBack}
           style={{
             flex: 1,
@@ -453,14 +453,14 @@ export default function SummaryStage({
             borderRadius: '12px',
             fontFamily: "'Inter', system-ui, sans-serif",
             fontSize: '11px',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            letterSpacing: '0.12em',
+            fontWeight: 600,
+            textTransform: 'none',
+            letterSpacing: '0',
             border: '1px solid rgba(251, 146, 60, 0.2)',
             cursor: 'pointer',
             transition: 'all 0.2s',
             background: '#ffffff',
-            color: 'rgba(67, 20, 7, 0.6)',
+            color: 'var(--workspace-muted)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -472,7 +472,7 @@ export default function SummaryStage({
           </svg>
           Back
         </button>
-        <button 
+        <button
           onClick={() => onProceed(deductions, calculatedNetAmount)}
           style={{
             flex: 2,
@@ -480,15 +480,15 @@ export default function SummaryStage({
             borderRadius: '12px',
             fontFamily: "'Inter', system-ui, sans-serif",
             fontSize: '11px',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            letterSpacing: '0.12em',
+            fontWeight: 600,
+            textTransform: 'none',
+            letterSpacing: '0',
             border: 'none',
             cursor: 'pointer',
             transition: 'all 0.2s',
-            background: '#f97316',
+            background: '#bb4d1b',
             color: '#fff',
-            boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)',
+            boxShadow: 'none',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

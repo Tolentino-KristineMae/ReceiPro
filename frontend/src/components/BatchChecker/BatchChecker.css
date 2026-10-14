@@ -1113,3 +1113,9 @@
     display: none;
   }
 }
+
+.bcp-root .bc-upload-queue { border: 1px solid var(--workspace-border); border-radius: 9px; padding: 12px; margin: 12px 0; background: var(--workspace-surface); font-size: 11px; color: var(--workspace-muted); }
+.bcp-root .bc-upload-queue > span { display: block; margin-bottom: 10px; font-weight: 600; }
+.bcp-root .bc-upload-queue > div { display: flex; gap: 7px; align-items: center; padding: 5px 0; }
+.bcp-root .bc-upload-queue > div > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bcp-root .bc-upload-queue svg { color: #47613b; flex-shrink: 0; }

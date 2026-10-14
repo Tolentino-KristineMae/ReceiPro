@@ -1,5 +1,4 @@
 /* ─── Fonts ─────────────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
 
 /* ─── Root ───────────────────────────────────────────────────────────────────── */
 .sum-root {
@@ -32,10 +31,10 @@
   background: rgba(251, 146, 60, 0.2);
   border-radius: 99px;
 }
-.sum-root::-webkit-scrollbar-thumb:hover { background: #f97316; }
+.sum-root::-webkit-scrollbar-thumb:hover { background: var(--workspace-accent); }
 
 /* ─── Select Styling ─────────────────────────────────────────────────────────── */
-select {
+.sum-root select {
   color-scheme: light;
   min-height: 44px;
   font-size: 16px;
@@ -43,23 +42,23 @@ select {
   border-radius: 12px;
 }
 
-select option {
+.sum-root select option {
   background: #ffffff;
-  color: #431407;
+  color: var(--workspace-text);
 }
 
 /* ─── Input Focus States ─────────────────────────────────────────────────────── */
-input, select, textarea {
+.sum-root :is(input, select, textarea) {
   font-size: 16px !important;
 }
 
-input:focus {
-  border-color: #f97316 !important;
+.sum-root input:focus {
+  border-color: var(--workspace-accent) !important;
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1) !important;
 }
 
-select:focus {
-  border-color: #f97316 !important;
+.sum-root select:focus {
+  border-color: var(--workspace-accent) !important;
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1) !important;
 }
 
@@ -73,7 +72,7 @@ select:focus {
 
 .sum-card-amount {
   font-size: 20px;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.02em;
   font-family: 'JetBrains Mono', monospace;
   word-break: break-all;
@@ -90,8 +89,8 @@ select:focus {
 
 .sum-net-amount {
   font-size: 32px;
-  font-weight: 900;
-  color: #f97316;
+  font-weight: 600;
+  color: var(--workspace-accent);
   letter-spacing: -0.02em;
   font-family: 'JetBrains Mono', monospace;
 }
@@ -105,7 +104,7 @@ select:focus {
   border-radius: 12px;
   background: #ffffff;
   border: 1px solid rgba(251, 146, 60, 0.15);
-  box-shadow: 0 2px 6px rgba(67, 20, 7, 0.02);
+  box-shadow: 0 2px 6px var(--workspace-muted);
 }
 
 /* ─── Action Buttons ─────────────────────────────────────────────────────────── */
@@ -202,7 +201,7 @@ select:focus {
 
   .sum-deductions-header button {
     padding: 8px 10px !important;
-    font-size: 9px !important;
+    font-size: 11px !important;
     white-space: nowrap;
   }
 

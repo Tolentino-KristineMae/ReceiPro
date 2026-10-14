@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import WorkspacePageHeader from '../WorkspacePageHeader';
+import './TransactionsPage.css';
 import { getApiUrl } from '../../apiConfig';
 import { playTransactionSound } from '../../utils/sound';
 
@@ -17,8 +19,8 @@ const getBatchColor = (batchNumber) => {
   if (!batchNumber) return null;
   // Extract numeric part from batch number (e.g., "B-001" -> 1)
   const numMatch = batchNumber.match(/\d+/);
-  const num = numMatch ? parseInt(numMatch[0]) : 0;
-  return BATCH_COLORS[(num - 1) % 5];
+  const num = numMatch ? parseInt(numMatch[0], 10) : 1;
+  return BATCH_COLORS[Math.abs(num - 1) % BATCH_COLORS.length];
 };
 
 const fmt = (n) =>
@@ -34,1113 +36,6 @@ const EMPTY_FORM = () => ({
   label: '',
   opening_balance: '',
 });
-
-// ─── Modern Professional CSS ──────────────────────────────────────────────────
-const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
-
-  :root {
-    --bg-primary:        #fffbf5;
-    --bg-secondary:      #ffffff;
-    --bg-tertiary:       #fff7ed;
-    --bg-glass:          rgba(255, 255, 255, 0.7);
-    --bg-glass-hover:    rgba(251, 146, 60, 0.08);
-    --border-subtle:     rgba(251, 146, 60, 0.15);
-    --border-strong:     rgba(251, 146, 60, 0.25);
-    --border-glow:       rgba(249, 115, 22, 0.2);
-    
-    --gradient-primary:  linear-gradient(135deg, #fb923c 0%, #f97316 100%);
-    --gradient-accent:   linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-    --gradient-success:  linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-    --gradient-danger:   linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    
-    --text-primary:      #431407;
-    --text-secondary:    #7c2d12;
-    --text-muted:        #9a3412;
-    --text-muted-alt:    #c2410c;
-    
-    --accent-primary:    #f97316;
-    --accent-secondary:  #fb923c;
-    --success-primary:   #15803d;
-    --danger-primary:    #b91c1c;
-    
-    --shadow-sm:         0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md:         0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg:         0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl:         0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    --shadow-2xl:        0 25px 50px -12px rgb(0 0 0 / 0.25);
-    
-    --radius-sm:         8px;
-    --radius-md:         12px;
-    --radius-lg:         16px;
-    --radius-xl:         24px;
-    
-    --font-family:       'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono:         'JetBrains Mono', 'SF Mono', Menlo, monospace;
-  }
-
-  * { 
-    box-sizing: border-box; 
-    margin: 0; 
-    padding: 0; 
-  }
-
-  body {
-    font-family: var(--font-family);
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    line-height: 1.6;
-  }
-
-  .tx-root {
-    min-height: 100vh;
-    padding: 1.5rem 1.5rem;
-    max-width: 1600px;
-    margin: 0 auto;
-    overflow-x: hidden;
-  }
-
-  @media (max-width: 768px) {
-    .tx-root { padding: 1rem 0.75rem; }
-  }
-
-  /* ── Account Switcher ── */
-  .account-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  @media (max-width: 640px) {
-    .account-header {
-      flex-direction: column;
-      align-items: stretch;
-      margin-bottom: 1.5rem;
-    }
-  }
-
-  .account-tabs {
-    display: flex;
-    background: #fff7ed;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    padding: 4px;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-
-  .account-tab {
-    padding: 10px 20px;
-    border: 1px solid transparent;
-    background: transparent;
-    color: var(--text-muted);
-    font-weight: 700;
-    font-size: 13px;
-    border-radius: calc(var(--radius-lg) - 4px);
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-    flex: 1 1 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    position: relative;
-    white-space: nowrap;
-  }
-
-  .account-tab.active {
-    background: var(--accent-primary);
-    color: white;
-    box-shadow: var(--shadow-sm), 0 1px 2px rgba(249, 115, 22, 0.05);
-    border: 1px solid var(--accent-primary);
-  }
-
-  .account-tab:hover:not(.active) {
-    color: var(--accent-primary);
-    background: rgba(249, 115, 22, 0.12);
-  }
-
-  /* ── Print Button ── */
-  .print-button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    border-radius: var(--radius-md);
-    font-weight: 700;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    letter-spacing: 0.025em;
-  }
-
-  .print-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  }
-
-  .print-button:active {
-    transform: translateY(0);
-  }
-
-  @media (max-width: 640px) {
-    .print-button {
-      padding: 8px 16px;
-      font-size: 12px;
-    }
-  }
-
-  /* ── Main Layout ── */
-  .main-layout {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 1.25rem;
-    align-items: start;
-    min-width: 0;
-  }
-
-  .main-layout > * {
-    min-width: 0;
-  }
-
-  @media (max-width: 1280px) {
-    .main-layout { grid-template-columns: 280px 1fr; gap: 1rem; }
-  }
-
-  @media (max-width: 1024px) {
-    .main-layout { grid-template-columns: 1fr; gap: 1.5rem; }
-  }
-
-  /* ── Glass Panels ── */
-  .glass-panel {
-    background: #ffffff;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
-    position: relative;
-    overflow: hidden;
-    transition: box-shadow 0.3s ease;
-  }
-
-  .glass-panel:hover {
-    box-shadow: var(--shadow-md);
-  }
-
-  .glass-panel.sticky {
-    position: sticky;
-    top: 1.5rem;
-    align-self: start;
-  }
-
-  @media (max-width: 1024px) {
-    .glass-panel.sticky { position: static; }
-  }
-
-  /* ── Form Header ── */
-  .form-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1.25rem;
-    border-bottom: 1px solid var(--border-subtle);
-  }
-
-  .form-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-md);
-    background: var(--gradient-accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 17px;
-    box-shadow: var(--shadow-md);
-    flex-shrink: 0;
-  }
-
-  .form-title-group h2 {
-    font-size: 1.1rem;
-    font-weight: 800;
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin: 0;
-    line-height: 1.2;
-  }
-
-  .form-subtitle {
-    color: var(--text-muted);
-    font-size: 11px;
-    font-weight: 500;
-    margin-top: 0.15rem;
-  }
-
-  /* ── Form Fields ── */
-  .field-group {
-    margin-bottom: 1rem;
-  }
-
-  .field-label {
-    display: block;
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--text-muted);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 0.4rem;
-  }
-
-  .input-field {
-    width: 100%;
-    background: #ffffff;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-md);
-    padding: 10px 12px;
-    font-size: 16px;
-    color: var(--text-primary);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    font-family: inherit;
-    box-sizing: border-box;
-    height: 46px;
-    line-height: 1.4;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-
-  input[type="date"].input-field {
-    -webkit-appearance: none;
-    appearance: none;
-    padding: 10px 12px;
-    height: 46px;
-    line-height: 1.4;
-  }
-
-  .input-field:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px var(--border-glow);
-    background: #ffffff;
-  }
-
-  .input-field::placeholder {
-    color: var(--text-muted-alt);
-  }
-
-  .amount-input-container {
-    position: relative;
-  }
-
-  .amount-prefix {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-weight: 600;
-    font-size: 16px;
-    color: var(--text-muted);
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .amount-input {
-    padding-left: 34px;
-    font-family: var(--font-mono);
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-  }
-
-  /* ── Toggle Buttons ── */
-  .toggle-group {
-    display: flex;
-    background: #fff7ed;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-  }
-
-  .toggle-button {
-    flex: 1;
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-    padding: 10px 14px;
-    font-weight: 700;
-    font-size: 11px;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-
-  .toggle-button.active {
-    background: var(--gradient-success);
-    color: white;
-  }
-
-  .toggle-button.active.danger {
-    background: var(--gradient-danger);
-  }
-
-  /* ── Preview Card ── */
-  .preview-card {
-    background: var(--bg-glass-hover);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-md);
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.25rem;
-    backdrop-filter: blur(10px);
-  }
-
-  .preview-label {
-    font-size: 10px;
-    color: var(--text-muted);
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 0.25rem;
-    display: block;
-  }
-
-  .preview-value {
-    font-family: var(--font-mono);
-    font-size: 21px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-  }
-
-  .preview-value.credit { color: var(--success-primary); }
-  .preview-value.debit { color: var(--danger-primary); }
-
-  /* ── CTA Button ── */
-  .cta-button {
-    width: 100%;
-    background: var(--gradient-accent);
-    color: white;
-    border: none;
-    border-radius: var(--radius-md);
-    padding: 14px;
-    font-weight: 700;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    position: relative;
-    overflow: hidden;
-    box-shadow: var(--shadow-lg);
-  }
-
-  .cta-button:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-xl);
-  }
-
-  .cta-button:active {
-    transform: translateY(0);
-  }
-
-  .cta-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  /* ── Summary Grid ── */
-  .metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-
-  @media (max-width: 1400px) {
-    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-
-  @media (max-width: 480px) {
-    .metrics-grid { grid-template-columns: 1fr; gap: 0.75rem; }
-  }
-
-  .metric-card {
-    background: var(--bg-glass);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    padding: 1.25rem 1rem;
-    text-align: center;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  @media (max-width: 480px) {
-    .metric-card { padding: 1rem; text-align: left; }
-  }
-
-  .metric-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    box-shadow: var(--shadow-md);
-    flex-shrink: 0;
-    margin: 0 !important;
-  }
-
-  .metric-icon.neutral { background: #fff7ed; color: #f97316; }
-  .metric-icon.success { background: #f0fdf4; color: #16a34a; }
-  .metric-icon.danger  { background: #fef2f2; color: #dc2626; }
-  .metric-icon.accent  { background: #fff7ed; color: #ea580c; }
-
-  .metric-label {
-    font-size: 10px;
-    color: var(--text-muted);
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 0.2rem;
-    text-align: left;
-  }
-
-  .metric-value {
-    font-family: var(--font-mono);
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    text-align: left;
-  }
-
-  /* ── Table Header ── */
-  .table-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border-subtle);
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-
-  @media (max-width: 768px) {
-    .table-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-
-    .table-header > div:nth-child(2) {
-      width: 100%;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .table-header > div:nth-child(2) > div:first-child {
-      width: 100%;
-    }
-
-    .table-header > div:nth-child(2) > div:first-child input {
-      width: 100% !important;
-    }
-
-    .table-header > div:nth-child(2) > div:nth-child(2) {
-      width: 100%;
-      justify-content: space-between;
-    }
-  }
-
-  .table-title {
-    font-size: 1.25rem;
-    font-weight: 800;
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .table-stats {
-    background: var(--bg-glass);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    padding: 8px 16px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    height: 36px;
-    display: inline-flex;
-    align-items: center;
-    box-sizing: border-box;
-    cursor: pointer;
-  }
-
-  /* ── Modern Table ── */
-  .table-container {
-    background: var(--bg-glass);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    max-height: 550px;
-    overflow-y: auto;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-strong) transparent;
-  }
-
-  .table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: auto;
-  }
-
-  @media (max-width: 768px) {
-    .table-container {
-      overflow-x: auto;
-    }
-
-    .table thead {
-      display: none;
-    }
-
-    .table,
-    .table tbody,
-    .table tr,
-    .table td {
-      display: block;
-      width: 100% !important;
-    }
-
-    .table tr {
-      margin-bottom: 1rem;
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 1rem;
-      background: white;
-    }
-
-    .table td {
-      text-align: right;
-      padding-left: 50%;
-      position: relative;
-      white-space: normal;
-      word-break: break-word;
-      border-bottom: none;
-      padding-top: 0.5rem;
-      padding-bottom: 0.5rem;
-    }
-
-    .table td::before {
-      content: attr(data-label);
-      position: absolute;
-      left: 0;
-      width: 45%;
-      padding-right: 0.75rem;
-      font-weight: 700;
-      text-align: left;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      font-size: 10px;
-      letter-spacing: 0.05em;
-    }
-
-    .table td:last-child {
-      text-align: center;
-      padding-left: 0;
-      padding-top: 1rem;
-    }
-
-    .table td:last-child::before {
-      display: none;
-    }
-  }
-
-  .table-container::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  .table-container::-webkit-scrollbar-thumb {
-    background-color: var(--border-strong);
-    border-radius: 10px;
-  }
-
-  .table-container::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .table thead {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: var(--bg-secondary);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-
-  .table th {
-    padding: 1rem 1rem;
-    text-align: left;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-muted);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    background: #fffbf5;
-    border-bottom: 2px solid var(--border-strong);
-    white-space: nowrap;
-  }
-
-  .table th:last-child { text-align: center; }
-
-  .table td {
-    padding: 1rem 1rem;
-    border-bottom: 1px solid var(--border-subtle);
-    vertical-align: middle;
-    transition: background 0.2s ease;
-    white-space: nowrap;
-    overflow: visible;
-    font-size: 14px;
-  }
-
-  .table tr:hover td {
-    background: var(--bg-glass-hover);
-  }
-
-  .table tr:last-child td {
-    border-bottom: none;
-  }
-
-  /* ── Table Elements ── */
-  .date-display {
-    font-size: 12px;
-    color: var(--text-primary);
-    font-weight: 600;
-    font-family: var(--font-mono);
-    white-space: nowrap;
-  }
-
-  .type-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    padding: 3px 8px;
-    border-radius: 10px;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  .type-badge.credit {
-    background: rgba(16,185,129,0.1);
-    color: var(--success-primary);
-    border: 1px solid rgba(16,185,129,0.2);
-  }
-
-  .type-badge.debit {
-    background: rgba(239,68,68,0.1);
-    color: var(--danger-primary);
-    border: 1px solid rgba(239,68,68,0.2);
-  }
-
-  .type-dot {
-    display: none;
-  }
-
-  .type-dot.credit { background: var(--success-primary); }
-  .type-dot.debit { background: var(--danger-primary); }
-
-  .amount-display {
-    font-family: var(--font-mono);
-    font-size: 14px;
-    font-weight: 700;
-    text-align: right;
-    letter-spacing: -0.02em;
-    white-space: nowrap;
-  }
-
-  .amount-display.credit { color: var(--success-primary); }
-  .amount-display.debit { color: var(--danger-primary); }
-
-  .balance-display {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-primary);
-    text-align: right;
-    letter-spacing: -0.02em;
-    white-space: nowrap;
-  }
-
-  /* ── Batch Tag ── */
-  .batch-tag {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    font-weight: 600;
-    color: var(--accent-primary);
-    background: #fff7ed;
-    border: 1px solid var(--border-subtle);
-    padding: 2px 6px;
-    border-radius: 6px;
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    letter-spacing: 0.03em;
-    white-space: nowrap;
-  }
-
-  .batch-none {
-    color: var(--text-muted-alt);
-    font-size: 12px;
-    font-style: italic;
-    white-space: nowrap;
-  }
-
-  /* ── Edit Button ── */
-  .edit-button {
-    background: transparent;
-    border: 1px solid var(--border-subtle);
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 6px;
-    border-radius: var(--radius-sm);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .edit-button:hover {
-    background: rgba(59, 130, 246, 0.1);
-    color: var(--accent-primary);
-    border-color: rgba(59, 130, 246, 0.3);
-    transform: scale(1.05);
-  }
-
-  @media (max-width: 768px) {
-    .edit-button { 
-      background: rgba(59, 130, 246, 0.05);
-      border-color: rgba(59, 130, 246, 0.1);
-      color: var(--accent-primary);
-    }
-  }
-
-  /* ── Inline Edit Inputs ── */
-  .inline-edit-input,
-  .inline-edit-select {
-    width: 100%;
-    background: #ffffff;
-    border: 1px solid var(--border-strong);
-    color: var(--text-primary);
-    padding: 8px 12px;
-    border-radius: var(--radius-sm);
-    font-size: 16px;
-    font-weight: 600;
-    font-family: var(--font-family);
-    outline: none;
-    transition: all 0.2s;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-
-  .inline-edit-input:focus,
-  .inline-edit-select:focus {
-    border-color: var(--accent-primary);
-    background: rgba(59, 130, 246, 0.05);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  .inline-edit-select {
-    cursor: pointer;
-  }
-
-  .editing-row {
-    background: rgba(59, 130, 246, 0.03) !important;
-    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
-  }
-
-  /* ── Save/Cancel Buttons ── */
-  .save-button {
-    background: transparent;
-    border: 1px solid var(--border-subtle);
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 6px;
-    border-radius: var(--radius-sm);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .save-button:hover {
-    background: rgba(16, 185, 129, 0.1);
-    color: var(--success-primary);
-    border-color: rgba(16, 185, 129, 0.3);
-    transform: scale(1.05);
-  }
-
-  .cancel-button {
-    background: transparent;
-    border: 1px solid var(--border-subtle);
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 6px;
-    border-radius: var(--radius-sm);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .cancel-button:hover {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--danger-primary);
-    border-color: rgba(239, 68, 68, 0.3);
-    transform: scale(1.05);
-  }
-
-  /* ── Delete Button ── */
-  .delete-button {
-    background: transparent;
-    border: 1px solid var(--border-subtle);
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 6px;
-    border-radius: var(--radius-sm);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .delete-button:hover {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--danger-primary);
-    border-color: rgba(239, 68, 68, 0.3);
-    transform: scale(1.05);
-  }
-
-  @media (max-width: 768px) {
-    .delete-button { 
-      background: rgba(239, 68, 68, 0.05);
-      border-color: rgba(239, 68, 68, 0.1);
-      color: var(--danger-primary);
-    }
-  }
-
-  /* ── Checkboxes ── */
-  .checkbox-cell {
-    width: 40px;
-    text-align: center;
-  }
-
-  .custom-checkbox {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    accent-color: var(--accent-primary);
-  }
-
-  .bulk-delete-button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: var(--radius-md);
-    font-weight: 700;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-    letter-spacing: 0.025em;
-    text-transform: uppercase;
-  }
-
-  .bulk-delete-button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  }
-
-  .bulk-delete-button:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
-  .bulk-delete-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  /* ── Footer ── */
-  .table-footer {
-    background: var(--bg-secondary);
-    border-top: 1px solid var(--border-strong);
-  }
-
-  .table-footer td {
-    padding: 1.25rem 1rem;
-  }
-
-  @media (max-width: 768px) {
-    .table-footer { display: block; border-radius: var(--radius-md); margin-top: 1rem; }
-    .table-footer td { display: block; text-align: center; }
-    .table-footer td::before { display: none; }
-  }
-
-  .footer-stats {
-    font-size: 10px;
-    color: var(--text-muted);
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 0.25rem;
-  }
-
-  .footer-amounts {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.25rem;
-  }
-
-  @media (max-width: 768px) {
-    .footer-amounts { align-items: center; }
-  }
-
-  .footer-credit {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--success-primary);
-  }
-
-  .footer-debit {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--danger-primary);
-  }
-
-  .net-balance {
-    font-family: var(--font-mono);
-    font-size: 22px;
-    font-weight: 800;
-    color: var(--accent-primary);
-    text-align: right;
-    letter-spacing: -0.03em;
-    margin-top: 0.25rem;
-  }
-
-  @media (max-width: 768px) {
-    .net-balance { text-align: center; font-size: 20px; }
-  }
-
-  /* ── Empty States ── */
-  .empty-state {
-    text-align: center;
-    padding: 3rem 1.5rem;
-  }
-
-  .empty-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-lg);
-    background: var(--bg-glass);
-    border: 2px solid var(--border-subtle);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-    font-size: 20px;
-    margin: 0 auto 1rem;
-  }
-
-  .empty-text {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  /* ── Loading Spinner ── */
-  .spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid var(--border-subtle);
-    border-top: 3px solid var(--accent-primary);
-    border-radius: 50%;
-    animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    margin: 0 auto 0.75rem;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  /* ── Error State ── */
-  .error-message {
-    background: rgba(239,68,68,0.15);
-    border: 1px solid rgba(239,68,68,0.3);
-    border-radius: var(--radius-lg);
-    padding: 1rem;
-    color: var(--danger-primary);
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    backdrop-filter: blur(10px);
-    font-size: 14px;
-  }
-
-  /* ── Modal Responsiveness ── */
-  @media (max-width: 640px) {
-    .modal-container {
-      padding: 1.5rem !important;
-      border-radius: var(--radius-lg) !important;
-    }
-    
-    .modal-container .grid {
-      grid-template-columns: 1fr !important;
-      gap: 1.25rem !important;
-    }
-  }
-`;
 
 // ─── Modern Icons ─────────────────────────────────────────────────────────────
 const Icon = {
@@ -1291,7 +186,7 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
         const data = await response.json();
         setError(data.message || 'Failed to create transaction.');
       }
-    } catch (err) { setError('Network error. Please try again.'); }
+    } catch { setError('Network error. Please try again.'); }
     finally { setSubmitting(false); }
   };
 
@@ -1299,11 +194,11 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
   const netAmount = (parseFloat(formData.amount) || 0) - fee;
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all animate-in fade-in duration-300">
+    <div className="tx-modal fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all animate-in fade-in duration-300">
       <div className="modal-container bg-white border border-orange-200 rounded-[24px] p-8 max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl shadow-orange-900/10 text-orange-950 relative">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-orange-900">New Transaction</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-orange-900">New transaction</h2>
             <p className="text-[13px] text-orange-700/60 mt-1 uppercase tracking-wider font-semibold">Record a new receipt activity</p>
           </div>
           <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-xl text-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all">
@@ -1346,7 +241,7 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
             <div>
               <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">Amount</label>
               <div className="amount-input-container">
-                <span className="amount-prefix">₱</span>
+                <span className="amount-prefix" aria-hidden="true">₱</span>
                 <input type="number" step="0.01" min="0" value={formData.amount} onChange={(e) => {
                   const amount = parseFloat(e.target.value) || 0;
                   const denominations = suggestDenominations(amount);
@@ -1448,6 +343,20 @@ const recomputeBalances = (txns, openingBal, sortOrder = 'desc') => {
   return { transactions: result, meta };
 };
 
+function PrintRangeDialog({ range, onChange, onClose, onPrint }) {
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current.showModal(); }, []);
+  return <dialog className="tx-print-dialog tx-modal" ref={dialogRef} aria-labelledby="print-dialog-title" onCancel={onClose}>
+    <div className="tx-print-heading"><div><span>YOUR LEDGER, READY TO SHARE</span><h2 id="print-dialog-title">Print transactions</h2></div><button className="tx-print-close" aria-label="Close print options" onClick={onClose}>×</button></div>
+    <p>Choose an optional date range for your report across all accounts.</p>
+    <form onSubmit={event => { event.preventDefault(); onPrint(); }}>
+      <label htmlFor="print-start">From date</label><input id="print-start" className="input-field" type="date" value={range.startDate} max={range.endDate || undefined} onChange={event => onChange(previous => ({ ...previous, startDate: event.target.value }))} />
+      <label htmlFor="print-end">To date</label><input id="print-end" className="input-field" type="date" value={range.endDate} min={range.startDate || undefined} onChange={event => onChange(previous => ({ ...previous, endDate: event.target.value }))} />
+      <div className="tx-print-note">Leave both dates empty to include all transactions.</div><div className="tx-print-actions"><button className="print-button" type="button" onClick={onClose}>Cancel</button><button className="cta-button" type="submit">Print report</button></div>
+    </form>
+  </dialog>;
+}
+
 export default function TransactionsPage() {
   const [activeAccount, setActiveAccount] = useState(ACCOUNTS[0]);
   const [transactions, setTransactions] = useState([]);
@@ -1455,6 +364,7 @@ export default function TransactionsPage() {
   const [forms, setForms] = useState(() => Object.fromEntries(ACCOUNTS.map(a => [a, EMPTY_FORM()])));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [loadError, setLoadError] = useState('');
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [transactionMeta, setTransactionMeta] = useState({
     opening_balance: 0,
@@ -1482,7 +392,7 @@ export default function TransactionsPage() {
   const fetchTransactions = async () => {
     if (!activeAccount) return;
     setLoading(true);
-    setError(null);
+    setLoadError('');
     try {
       const params = new URLSearchParams({
         account_holder: activeAccount,
@@ -1492,6 +402,7 @@ export default function TransactionsPage() {
       if (searchQuery.trim()) params.set('search', searchQuery.trim());
 
       const response = await fetch(getApiUrl(`/api/transactions?${params.toString()}`), { cache: 'no-store' });
+      if (!response.ok) throw new Error('Unable to load transactions');
       const data = await response.json();
       const rawTxns = Array.isArray(data?.data) ? data.data : [];
       const ob = data?.meta?.opening_balance ?? 0;
@@ -1500,6 +411,7 @@ export default function TransactionsPage() {
       setTransactionMeta(meta);
     } catch {
       setTransactions([]);
+      setLoadError('We couldn’t load this ledger. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -1712,19 +624,13 @@ export default function TransactionsPage() {
     }
   };
 
-  const handleUpdateTransaction = async (updatedData) => {
-    await handleSaveEdit(editingTransaction.id, updatedData);
-  };
-
-  const completedBatches = reportData.completed_batches || [];
-  const canPrint = !!reportData.can_print;
-
   const handlePrintClick = () => {
     setShowPrintModal(true);
   };
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
+    if (!printWindow) { setError('Please allow pop-ups to print your report.'); return; }
     const printContent = generatePrintContent(printDateRange.startDate, printDateRange.endDate);
     printWindow.document.write(printContent);
     printWindow.document.close();
@@ -1992,22 +898,10 @@ export default function TransactionsPage() {
 
   return (
     <>
-      <style>{CSS}</style>
       <div className="tx-root">
-        <div className="account-header">
-          <div className="account-tabs">
-            {ACCOUNTS.map(acc => (
-              <button
-                key={acc}
-                className={`account-tab ${activeAccount === acc ? 'active' : ''}`}
-                onClick={() => setActiveAccount(acc)}
-              >
-                {acc}
-              </button>
-            ))}
-          </div>
-          
-          <button
+        <WorkspacePageHeader title="Transactions" eyebrow="EVERY ENTRY, IN PERSPECTIVE"
+          description="A clear view of your credits, debits, and everything in between."
+          actions={(          <button
             onClick={handlePrintClick}
             className="print-button"
             title="Print transaction report"
@@ -2018,9 +912,32 @@ export default function TransactionsPage() {
               <rect x="6" y="14" width="12" height="8" />
             </svg>
             Print Transactions
-          </button>
+          </button>)} />
+        {loadError && <div className="tx-load-error" role="alert"><Icon.Alert /><p>{loadError}</p><button onClick={fetchTransactions}>Retry</button></div>}
+        <div className="tx-section-heading"><h2>Account overview</h2><span>Choose an account to view its ledger</span></div>
+        <div className="account-header">
+          <div className="account-tabs" role="group" aria-label="Account ledger">
+            {ACCOUNTS.map(acc => (
+              <button
+                key={acc}
+                className={`account-tab ${activeAccount === acc ? 'active' : ''}`}
+                aria-pressed={activeAccount === acc}
+                onClick={() => setActiveAccount(acc)}
+              >
+                {acc}
+              </button>
+            ))}
+          </div>
+          
+
         </div>
 
+        <section className="metrics-grid" aria-label="Account balances">
+          <MetricCard label="Opening balance" value={openingBalance} icon={Icon.Wallet} />
+          <MetricCard label="Total credits" value={totalCredit} icon={Icon.ArrowUp} color="success" />
+          <MetricCard label="Total debits" value={totalDebit} icon={Icon.ArrowDown} color="danger" />
+          <MetricCard label="Current balance" value={currentBalance} icon={Icon.Balance} color="accent" />
+        </section>
         <div className="main-layout">
           {/* Form Panel */}
           <div className="glass-panel sticky">
@@ -2029,7 +946,7 @@ export default function TransactionsPage() {
                 <Icon.Plus />
               </div>
               <div className="form-title-group">
-                <h2>New Transaction</h2>
+                <h2>New transaction</h2>
                 <div className="form-subtitle">{activeAccount}</div>
               </div>
             </div>
@@ -2043,8 +960,8 @@ export default function TransactionsPage() {
 
             <form onSubmit={handleSubmit}>
               <div className="field-group">
-                <label className="field-label">Date</label>
-                <input
+                <label className="field-label" htmlFor="tx-date">Date</label>
+                <input id="tx-date"
                   type="date"
                   className="input-field"
                   value={form.transaction_date}
@@ -2058,14 +975,14 @@ export default function TransactionsPage() {
                 <div className="toggle-group">
                   <button
                     type="button"
-                    className={`toggle-button ${form.entry_type === 'credit' ? 'active' : ''}`}
+                    className={`toggle-button ${form.entry_type === 'credit' ? 'active' : ''}`} aria-pressed={form.entry_type === 'credit'}
                     onClick={() => setForm(f => ({ ...f, entry_type: 'credit' }))}
                   >
                     <Icon.ArrowUp /> Credit
                   </button>
                   <button
                     type="button"
-                    className={`toggle-button danger ${form.entry_type === 'debit' ? 'active' : ''}`}
+                    className={`toggle-button danger ${form.entry_type === 'debit' ? 'active' : ''}`} aria-pressed={form.entry_type === 'debit'}
                     onClick={() => setForm(f => ({ ...f, entry_type: 'debit' }))}
                   >
                     <Icon.ArrowDown /> Debit
@@ -2074,10 +991,10 @@ export default function TransactionsPage() {
               </div>
 
               <div className="field-group">
-                <label className="field-label">Amount</label>
+                <label className="field-label" htmlFor="tx-amount">Amount</label>
                 <div className="amount-input-container">
-                  <span className="amount-prefix">₱</span>
-                  <input
+                  <span className="amount-prefix" aria-hidden="true">₱</span>
+                  <input id="tx-amount"
                     type="number"
                     step="0.01"
                     min="0"
@@ -2091,8 +1008,8 @@ export default function TransactionsPage() {
               </div>
 
               <div className="field-group">
-                <label className="field-label">Reference / Label</label>
-                <input
+                <label className="field-label" htmlFor="tx-label">Reference / Label</label>
+                <input id="tx-label"
                   type="text"
                   className="input-field"
                   value={form.label}
@@ -2103,8 +1020,8 @@ export default function TransactionsPage() {
 
               {transactions.length === 0 && (
                 <div className="field-group">
-                  <label className="field-label">Opening Balance</label>
-                  <input
+                  <label className="field-label" htmlFor="tx-opening">Opening Balance</label>
+                  <input id="tx-opening"
                     type="number"
                     step="0.01"
                     className="input-field"
@@ -2146,14 +1063,14 @@ export default function TransactionsPage() {
           </div>
 
           {/* Main Content */}
-          <div>
+          <div className="tx-ledger">
             <div className="glass-panel">
               <div className="table-header">
                 <div>
-                  <h2 className="table-title">Transaction History</h2>
+                  <h2 className="table-title">Transaction history</h2>
                   <p className="form-subtitle">{activeAccount} • All activity</p>
                 </div>
-                <div className="flex items-center gap-3" style={{ gap: '10px' }}>
+                <div className="tx-table-tools">
                   {selectedTransactions.length > 0 && (
                     <button
                       onClick={handleBulkDelete}
@@ -2174,7 +1091,7 @@ export default function TransactionsPage() {
                       )}
                     </button>
                   )}
-                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <div className="tx-search">
                     {/* Search icon */}
                     <div style={{
                       position: 'absolute', left: '11px', top: '50%',
@@ -2191,7 +1108,8 @@ export default function TransactionsPage() {
                     </div>
                     <input
                       type="text"
-                      placeholder="Search transactions..."
+                      placeholder="Search transactions…"
+                      aria-label="Search transactions"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       style={{
@@ -2216,6 +1134,7 @@ export default function TransactionsPage() {
                     />
                     {searchQuery && (
                       <button
+                        aria-label="Clear transaction search"
                         onClick={() => setSearchQuery('')}
                         style={{
                           position: 'absolute', right: '8px', top: '50%',
@@ -2263,10 +1182,8 @@ export default function TransactionsPage() {
                   <div className="empty-icon">
                     <Icon.File />
                   </div>
-                  <div className="empty-text">No transactions yet</div>
-                  <p style={{ color: 'var(--text-muted-alt)', fontSize: '15px', marginTop: '0.5rem' }}>
-                    Add your first transaction above
-                  </p>
+                  <div className="empty-text">{searchQuery ? 'No matching transactions' : 'Your ledger starts here'}</div>
+                  <p>{searchQuery ? 'Try another reference or label to find your entry.' : 'Start with a credit or debit using the new transaction form.'}</p>
                 </div>
               ) : (
                 <div className="table-container">
@@ -2279,7 +1196,7 @@ export default function TransactionsPage() {
                             className="custom-checkbox"
                             checked={transactions.length > 0 && selectedTransactions.length === transactions.length}
                             onChange={handleSelectAll}
-                            title="Select all transactions"
+                            title="Select all transactions" aria-label="Select all transactions"
                           />
                         </th>
                         <th>Date</th>
@@ -2316,6 +1233,7 @@ export default function TransactionsPage() {
                                   <input
                                     type="checkbox"
                                     className="custom-checkbox"
+                                    aria-label={`Select transaction ${t.id}`}
                                     checked={selectedTransactions.includes(t.id)}
                                     onChange={() => handleSelectTransaction(t.id)}
                                   />
@@ -2325,14 +1243,14 @@ export default function TransactionsPage() {
                                     type="date"
                                     defaultValue={t.transaction_date}
                                     className="inline-edit-input"
-                                    id={`edit-date-${t.id}`}
+                                    aria-label="Edit date" id={`edit-date-${t.id}`}
                                   />
                                 </td>
                                 <td data-label="Type">
                                   <select
                                     defaultValue={t.entry_type}
                                     className="inline-edit-select"
-                                    id={`edit-type-${t.id}`}
+                                    aria-label="Edit type" id={`edit-type-${t.id}`}
                                   >
                                     <option value="credit">Credit</option>
                                     <option value="debit">Debit</option>
@@ -2345,7 +1263,7 @@ export default function TransactionsPage() {
                                       style={{
                                         background: 'rgba(239, 68, 68, 0.1)',
                                         borderColor: 'rgba(239, 68, 68, 0.3)',
-                                        color: '#ef4444'
+                                        color: '#a33e2c'
                                       }}
                                     >
                                       {displayLabel}
@@ -2375,7 +1293,7 @@ export default function TransactionsPage() {
                                     defaultValue={t.label || ''}
                                     placeholder="Label"
                                     className="inline-edit-input"
-                                    id={`edit-label-${t.id}`}
+                                    aria-label="Edit label" id={`edit-label-${t.id}`}
                                   />
                                 </td>
                                 <td data-label="Amount">
@@ -2384,7 +1302,7 @@ export default function TransactionsPage() {
                                     step="0.01"
                                     defaultValue={amt}
                                     className="inline-edit-input"
-                                    id={`edit-amount-${t.id}`}
+                                    aria-label="Edit amount" id={`edit-amount-${t.id}`}
                                   />
                                 </td>
                                 <td data-label="Balance">
@@ -2434,7 +1352,8 @@ export default function TransactionsPage() {
                                 <input
                                   type="checkbox"
                                   className="custom-checkbox"
-                                  checked={selectedTransactions.includes(t.id)}
+                                  aria-label={`Select transaction ${t.id}`}
+                                    checked={selectedTransactions.includes(t.id)}
                                   onChange={() => handleSelectTransaction(t.id)}
                                 />
                               </td>
@@ -2454,7 +1373,7 @@ export default function TransactionsPage() {
                                     style={{
                                       background: 'rgba(239, 68, 68, 0.1)',
                                       borderColor: 'rgba(239, 68, 68, 0.3)',
-                                      color: '#ef4444'
+                                      color: '#a33e2c'
                                     }}
                                   >
                                     {displayLabel}
@@ -2538,100 +1457,8 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* Print Date Range Modal */}
-      {showPrintModal && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all animate-in fade-in duration-300"
-          onClick={() => setShowPrintModal(false)}
-        >
-          <div 
-            className="bg-white border border-orange-200 rounded-[24px] p-8 max-w-md w-full shadow-2xl shadow-orange-900/10"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight text-orange-900">Print Transactions</h2>
-                <p className="text-[13px] text-orange-700/60 mt-1 uppercase tracking-wider font-semibold">Select date range (optional)</p>
-              </div>
-              <button 
-                onClick={() => setShowPrintModal(false)} 
-                className="w-10 h-10 flex items-center justify-center rounded-xl text-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+      {showPrintModal && <PrintRangeDialog range={printDateRange} onChange={setPrintDateRange} onClose={() => setShowPrintModal(false)} onPrint={handlePrint} />}
 
-            <div className="space-y-5">
-              <div>
-                <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={printDateRange.startDate}
-                  onChange={(e) => setPrintDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                  className="input-field w-full"
-                  placeholder="Leave empty for all"
-                />
-                <p className="text-[11px] text-orange-600/60 mt-1 ml-1">Leave empty to include all transactions from the beginning</p>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={printDateRange.endDate}
-                  onChange={(e) => setPrintDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                  className="input-field w-full"
-                  placeholder="Leave empty for all"
-                />
-                <p className="text-[11px] text-orange-600/60 mt-1 ml-1">Leave empty to include all transactions up to present</p>
-              </div>
-
-              <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-4">
-                <p className="text-[12px] text-orange-800 font-medium">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline mr-2">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                  </svg>
-                  {printDateRange.startDate || printDateRange.endDate 
-                    ? `Printing transactions from ${printDateRange.startDate ? new Date(printDateRange.startDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'beginning'} to ${printDateRange.endDate ? new Date(printDateRange.endDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'present'}`
-                    : 'Printing all transactions (no date filter)'
-                  }
-                </p>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setShowPrintModal(false)}
-                  className="flex-1 px-6 py-3.5 border border-orange-200 text-orange-600 font-bold text-[13px] uppercase tracking-wider rounded-xl hover:bg-orange-50 transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handlePrint}
-                  className="flex-1 print-button"
-                  style={{ margin: 0 }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 6 2 18 2 18 9" />
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                    <rect x="6" y="14" width="12" height="8" />
-                  </svg>
-                  Print Now
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Removed EditTransactionModal - using inline editing instead */}
     </>
   );
 }

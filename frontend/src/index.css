@@ -46,6 +46,18 @@ html { font-size: 14px; -webkit-font-smoothing: antialiased; }
 
 /* ── CSS Custom Properties ── */
 :root {
+  /* Orange brand accents with warm, earthy workspace surfaces. */
+  --workspace-bg: #fbf7f2;
+  --workspace-surface: #fffdfa;
+  --workspace-text: #3e3028;
+  --workspace-muted: #746355;
+  --workspace-border: #eadfd2;
+  --workspace-accent: #bb4d1b;
+  --workspace-accent-hover: #963b16;
+  --workspace-accent-soft: #fff0e4;
+  --workspace-accent-border: #efcfb5;
+  --workspace-sand: #f5ede2;
+
   --bg:               #f8fafc;
   --panel:            #ffffff;
   --panel-2:          #f8fafc;

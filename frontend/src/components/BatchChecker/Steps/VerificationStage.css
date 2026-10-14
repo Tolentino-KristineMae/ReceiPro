@@ -39,7 +39,7 @@
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid rgba(251, 146, 60, 0.2);
-  background: #fffbf5;
+  background: var(--workspace-bg);
   flex-shrink: 0;
 }
 
@@ -68,16 +68,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #f97316;
+  color: var(--workspace-accent);
   flex-shrink: 0;
 }
-.vs-banner.done .vs-banner-icon { color: #10b981; border-color: rgba(16, 185, 129, 0.2); }
+.vs-banner.done .vs-banner-icon { color: #47613b; border-color: rgba(16, 185, 129, 0.2); }
 
 .vs-spin {
   width: 16px;
   height: 16px;
   border: 2px solid rgba(249, 115, 22, 0.25);
-  border-top-color: #f97316;
+  border-top-color: var(--workspace-accent);
   border-radius: 50%;
   animation: vs-rotate 0.7s linear infinite;
 }
@@ -92,8 +92,8 @@
 
 .vs-banner-title {
   font-size: 13px;
-  font-weight: 800;
-  color: #431407;
+  font-weight: 600;
+  color: var(--workspace-text);
   letter-spacing: -0.01em;
   line-height: 1.2;
   white-space: nowrap;
@@ -102,7 +102,7 @@
 .vs-banner-sub {
   font-size: 11px;
   font-weight: 500;
-  color: rgba(67, 20, 7, 0.6);
+  color: var(--workspace-muted);
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -135,21 +135,21 @@
 
 .vs-stat-val {
   font-size: 18px;
-  font-weight: 900;
-  color: #431407;
+  font-weight: 600;
+  color: var(--workspace-text);
   letter-spacing: -0.02em;
   line-height: 1;
 }
-.vs-stat.success .vs-stat-val { color: #059669; }
-.vs-stat.warning .vs-stat-val { color: #ea580c; }
+.vs-stat.success .vs-stat-val { color: #47613b; }
+.vs-stat.warning .vs-stat-val { color: var(--workspace-accent-hover); }
 .vs-stat.danger  .vs-stat-val { color: #dc2626; }
 
 .vs-stat-lbl {
-  font-size: 9px;
-  font-weight: 700;
-  color: rgba(67, 20, 7, 0.5);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--workspace-muted);
+  text-transform: none;
+  letter-spacing: 0;
   white-space: nowrap;
 }
 
@@ -171,15 +171,15 @@
 
 .vs-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #10b981, #34d399);
+  background: linear-gradient(90deg, #47613b, #34d399);
   border-radius: 99px;
   transition: width 0.4s ease;
 }
 
 .vs-progress-pct {
   font-size: 11px;
-  font-weight: 900;
-  color: #059669;
+  font-weight: 600;
+  color: #47613b;
   min-width: 30px;
   text-align: right;
 }
@@ -210,9 +210,9 @@
   border-radius: 11px;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
   border: none;
   cursor: pointer;
   display: flex;
@@ -229,22 +229,22 @@
 
 .vs-btn.primary {
   width: 100%;
-  background: #f97316;
+  background: var(--workspace-accent);
   color: #ffffff;
   box-shadow: 0 3px 10px rgba(249, 115, 22, 0.25);
 }
-.vs-btn.primary:active { background: #ea580c; }
+.vs-btn.primary:active { background: var(--workspace-accent-hover); }
 
 .vs-btn.ghost {
   background: #ffffff;
-  color: rgba(67, 20, 7, 0.6);
+  color: var(--workspace-muted);
   border: 1px solid rgba(251, 146, 60, 0.25);
   flex: 1;
 }
-.vs-btn.ghost:active { background: #fffbf5; color: #431407; }
+.vs-btn.ghost:active { background: var(--workspace-bg); color: var(--workspace-text); }
 
 .vs-btn.finalize {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  background: linear-gradient(135deg, var(--workspace-accent) 0%, var(--workspace-accent-hover) 100%);
   color: #ffffff;
   box-shadow: 0 3px 10px rgba(249, 115, 22, 0.3);
   flex: 2;
@@ -261,11 +261,11 @@
 /* ─── Stage Label ────────────────────────────────────────────────────────── */
 .vs-stage-label {
   text-align: center;
-  font-size: 9px;
-  font-weight: 700;
-  color: rgba(67, 20, 7, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--workspace-muted);
+  text-transform: none;
+  letter-spacing: 0;
   flex-shrink: 0;
 }
 
@@ -275,14 +275,14 @@
   .vs-banner  { padding: 10px 12px; }
   .vs-banner-icon { width: 32px; height: 32px; min-width: 32px; }
   .vs-banner-title { font-size: 12px; }
-  .vs-banner-sub   { font-size: 10px; }
+  .vs-banner-sub   { font-size: 11px; }
   .vs-stats-row    { gap: 4px; }
   .vs-stat         { padding: 5px 3px; }
   .vs-stat-val     { font-size: 14px; }
-  .vs-stat-lbl     { font-size: 7px; letter-spacing: 0.02em; }
+  .vs-stat-lbl     { font-size: 11px; letter-spacing: 0; }
   .vs-progress-wrap { gap: 6px; }
-  .vs-progress-pct { font-size: 10px; min-width: 28px; }
-  .vs-notice       { padding: 6px 8px; font-size: 10px; gap: 5px; }
+  .vs-progress-pct { font-size: 11px; min-width: 28px; }
+  .vs-notice       { padding: 6px 8px; font-size: 11px; gap: 5px; }
   .vs-btn          { padding: 11px 10px; font-size: 11px; }
   .vs-nav          { gap: 6px; }
 }
@@ -297,7 +297,7 @@
   .vs-banner-sub   { font-size: 12px; white-space: normal; }
 
   .vs-stat-val { font-size: 22px; }
-  .vs-stat-lbl { font-size: 10px; }
+  .vs-stat-lbl { font-size: 11px; }
   .vs-stat     { padding: 10px 6px; }
 
   .vs-btn      { font-size: 13px; padding: 14px; }
