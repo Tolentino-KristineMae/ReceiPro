@@ -28,6 +28,7 @@ function App() {
 
    const [receipts, setReceipts] = useState([]);
   const [batches, setBatches] = useState([]);
+  const [batchesLoading, setBatchesLoading] = useState(true);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -57,13 +58,15 @@ function App() {
   // Load batches on mount and poll every 10 seconds
   useEffect(() => {
     const fetchBatches = () => {
+      setBatchesLoading(true);
       fetch(getApiUrl(`/api/batches?t=${Date.now()}`), { cache: 'no-store' })
         .then(res => res.ok ? res.json() : [])
         .then(data => {
           const batchesData = Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []);
           setBatches(batchesData);
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => setBatchesLoading(false));
     };
 
     // Initial fetch
@@ -132,6 +135,7 @@ function App() {
                   <Dashboard
                     receipts={receipts}
                     batches={batches}
+                    batchesLoading={batchesLoading}
                     onSelectReceipt={setSelectedReceipt}
                     onNavigate={(path) => navigate(path)}
                   />

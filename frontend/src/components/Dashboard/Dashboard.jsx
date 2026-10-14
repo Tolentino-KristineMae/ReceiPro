@@ -257,7 +257,7 @@ function DashboardStats({ receipts, onNavigate }) {
   );
 }
 
-function RecentBatches({ batches, onNavigate }) {
+function RecentBatches({ batches, onNavigate, isLoading }) {
   const [selectedBatch, setSelectedBatch] = React.useState(null);
   const [showSummaryModal, setShowSummaryModal] = React.useState(false);
   
@@ -352,7 +352,50 @@ function RecentBatches({ batches, onNavigate }) {
         gridTemplateColumns: getGridColumns(),
         gap: '1.25rem'
       }}>
-        {recentBatches.length > 0 ? recentBatches.map(batch => {
+        {isLoading ? (
+          // Loading State
+          <>
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                style={{
+                  background: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
+                  borderRadius: '20px',
+                  padding: '1.75rem',
+                  border: '1px solid rgba(217, 119, 6, 0.2)',
+                  minHeight: '320px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'column',
+                  gap: '1rem'
+                }}
+              >
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  border: '4px solid rgba(234, 88, 12, 0.2)',
+                  borderTop: '4px solid #ea580c',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }} />
+                <style>{`
+                  @keyframes spin {
+                    to { transform: rotate(360deg); }
+                  }
+                `}</style>
+                <span style={{
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  color: '#92400e',
+                  fontFamily: 'Inter, sans-serif'
+                }}>
+                  Loading batch...
+                </span>
+              </div>
+            ))}
+          </>
+        ) : recentBatches.length > 0 ? recentBatches.map(batch => {
           const status = statusColor[batch.checker_status] || statusColor.open;
           const receiptCount = batch.stats?.total || batch.receipts?.length || 0;
           const verifiedCount = batch.stats?.verified || 0;
@@ -896,6 +939,7 @@ function BatchSummaryModal({ batch, onClose }) {
 export default function Dashboard({
   receipts = [],
   batches = [],
+  batchesLoading = false,
   onSelectReceipt,
   onNavigate,
 }) {
@@ -918,7 +962,7 @@ export default function Dashboard({
     }}>
       <DashboardStats receipts={receipts} batches={batches} onNavigate={onNavigate} />
       <div style={{ marginTop: '1rem' }}>
-        <RecentBatches batches={batches} onNavigate={onNavigate} />
+        <RecentBatches batches={batches} onNavigate={onNavigate} isLoading={batchesLoading} />
       </div>
     </div>
   );
