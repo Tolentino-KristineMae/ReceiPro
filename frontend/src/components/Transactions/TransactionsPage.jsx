@@ -1300,7 +1300,7 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all animate-in fade-in duration-300">
-      <div className="modal-container bg-white border border-orange-200 rounded-[24px] p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl shadow-orange-900/10 text-orange-950 relative">
+      <div className="modal-container bg-white border border-orange-200 rounded-[24px] p-8 max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl shadow-orange-900/10 text-orange-950 relative">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-orange-900">New Transaction</h2>
@@ -1320,7 +1320,7 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6" style={{ padding: 0 }}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div>
               <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">Date</label>
               <input type="date" value={formData.transaction_date} onChange={(e) => setFormData({...formData, transaction_date: e.target.value})} className="input-field" required />
@@ -1333,9 +1333,16 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
                 <option value="Account 3" className="bg-white">Account 3</option>
               </select>
             </div>
+            <div>
+              <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">Source Type</label>
+              <div className="toggle-group">
+                <button type="button" onClick={() => setFormData({...formData, source_type: 'gcash'})} className={`toggle-button ${formData.source_type === 'gcash' ? 'active' : ''}`}>GCASH</button>
+                <button type="button" onClick={() => setFormData({...formData, source_type: 'others'})} className={`toggle-button ${formData.source_type === 'others' ? 'active danger' : ''}`}>OTHERS</button>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
               <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">Amount</label>
               <div className="amount-input-container">
@@ -1348,20 +1355,12 @@ export function TransactionEntryModal({ onClose, receipt, onTransactionCreated }
               </div>
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">Source Type</label>
-              <div className="toggle-group">
-                <button type="button" onClick={() => setFormData({...formData, source_type: 'gcash'})} className={`toggle-button ${formData.source_type === 'gcash' ? 'active' : ''}`}>GCASH</button>
-                <button type="button" onClick={() => setFormData({...formData, source_type: 'others'})} className={`toggle-button ${formData.source_type === 'others' ? 'active danger' : ''}`}>OTHERS</button>
-              </div>
+              <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">Reference / Label</label>
+              <input type="text" value={formData.label} onChange={(e) => setFormData({...formData, label: e.target.value})} placeholder="e.g. 50238 / Int" className="input-field" />
             </div>
           </div>
 
-          <div>
-            <label className="block text-[11px] font-bold text-orange-800/60 uppercase tracking-wider mb-2 ml-1">Reference / Label</label>
-            <input type="text" value={formData.label} onChange={(e) => setFormData({...formData, label: e.target.value})} placeholder="e.g. 50238 / Int" className="input-field" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex flex-col items-center">
               <span className="text-[10px] font-bold text-green-700/60 uppercase tracking-widest mb-1">Fee (Calculated)</span>
               <span className="text-xl font-bold text-green-600 font-mono">₱{fee.toFixed(2)}</span>
@@ -2148,33 +2147,6 @@ export default function TransactionsPage() {
 
           {/* Main Content */}
           <div>
-            <div className="metrics-grid">
-              <MetricCard 
-                label="Opening" 
-                value={openingBalance} 
-                icon={Icon.Wallet}
-                color="neutral"
-              />
-              <MetricCard 
-                label="Credits" 
-                value={totalCredit} 
-                icon={Icon.ArrowUp}
-                color="success"
-              />
-              <MetricCard 
-                label="Debits" 
-                value={totalDebit} 
-                icon={Icon.ArrowDown}
-                color="danger"
-              />
-              <MetricCard 
-                label="Balance" 
-                value={currentBalance} 
-                icon={Icon.Balance}
-                color="accent"
-              />
-            </div>
-
             <div className="glass-panel">
               <div className="table-header">
                 <div>
