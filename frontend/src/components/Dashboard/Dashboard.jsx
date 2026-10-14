@@ -1,6 +1,7 @@
 import React from 'react';
 import unclaimedCardImg from '../../../../unclaimedcard.png';
 import claimedCardImg from '../../claimedcard.png';
+import totalRepCardImg from '../../totalrep.png';
 
 const Icon = {
   Receipt: ({ size = 18, className = "" }) => (
@@ -73,7 +74,8 @@ function DashboardStats({ receipts }) {
       tag: 'Monthly',
       icon: Icon.Receipt,
       gradient: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-      bg: 'linear-gradient(135deg, rgba(99,102,241,0.05) 0%, rgba(139,92,246,0.05) 100%)'
+      bg: 'linear-gradient(135deg, rgba(99,102,241,0.05) 0%, rgba(139,92,246,0.05) 100%)',
+      image: totalRepCardImg
     },
     {
       key: 'total_claimed',
@@ -128,29 +130,33 @@ function DashboardStats({ receipts }) {
         <div
           key={stat.key}
           style={{ 
-            background: stat.bg,
-            backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 255, 255, 0.7)',
-            borderRadius: '16px',
+            background: stat.image ? 'transparent' : stat.bg,
+            backdropFilter: stat.image ? 'none' : 'blur(12px)',
+            border: stat.image ? 'none' : '1px solid rgba(255, 255, 255, 0.7)',
+            borderRadius: stat.image ? '0' : '16px',
             padding: stat.image ? '0' : '1.25rem 1rem',
             position: 'relative',
             overflow: 'hidden',
             transition: 'all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
             cursor: 'pointer',
-            boxShadow: '0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05)',
-            minHeight: stat.image ? '180px' : 'auto',
+            boxShadow: stat.image ? 'none' : '0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05)',
+            minHeight: stat.image ? '240px' : 'auto',
             display: stat.image ? 'flex' : 'block',
             alignItems: stat.image ? 'stretch' : 'flex-start',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)';
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.9)';
+            if (stat.image) {
+              e.currentTarget.style.transform = 'scale(1.03)';
+            } else {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.9)';
+            }
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05)';
-            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.7)';
+            e.currentTarget.style.transform = stat.image ? 'scale(1)' : 'translateY(0)';
+            e.currentTarget.style.boxShadow = stat.image ? 'none' : '0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05)';
+            e.currentTarget.style.borderColor = stat.image ? 'none' : 'rgba(255, 255, 255, 0.7)';
           }}
         >
           {stat.image ? (
