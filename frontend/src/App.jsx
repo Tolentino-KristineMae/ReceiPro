@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard/Dashboard';
 import { TransactionEntryModal as TransactionModal } from './components/Transactions/TransactionsPage';
@@ -27,32 +27,46 @@ function App() {
   }, []);
 
    const [receipts, setReceipts] = useState([]);
+  const [receiptsLoading, setReceiptsLoading] = useState(true);
+  const [receiptsError, setReceiptsError] = useState('');
+  const [batchesError, setBatchesError] = useState('');
   const [batches, setBatches] = useState([]);
   const [batchesLoading, setBatchesLoading] = useState(true);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileMenu, setMobileMenu] = useState({ open: false, path: '' });
   const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const isMobileMenuOpen = mobileMenu.open && mobileMenu.path === location.pathname;
+  // Reset the drawer when navigation changes, including browser back/forward.
+  if (mobileMenu.open && mobileMenu.path !== location.pathname) {
+    setMobileMenu({ open: false, path: location.pathname });
+  }
+  const toggleMobileMenu = useCallback(() => setMobileMenu(menu => ({
+    open: menu.path === location.pathname ? !menu.open : true,
+    path: location.pathname,
+  })), [location.pathname]);
 
   useEffect(() => {
-    const checkIsMobile = () => setIsMobile(window.innerWidth < 768);
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setMobileMenu(menu => menu.open ? { ...menu, open: false } : menu);
+      }
+    };
     checkIsMobile();
     window.addEventListener('resize', checkIsMobile);
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [location.pathname]);
-
   // Load receipts on mount
   useEffect(() => {
     fetch(getApiUrl(`/api/receipts?t=${Date.now()}`), { cache: 'no-store' })
-      .then(res => res.ok ? res.json() : [])
+      .then(res => { if (!res.ok) throw new Error('Unable to load receipts.'); return res.json(); })
       .then(data => setReceipts(Array.isArray(data) ? data : data.data ?? []))
-      .catch(() => {});
+      .catch(() => setReceiptsError('Unable to load receipts.'))
+      .finally(() => setReceiptsLoading(false));
   }, []);
 
   // Load batches on mount and poll every 10 seconds
@@ -66,12 +80,13 @@ function App() {
       }
       
       fetch(getApiUrl(`/api/batches?t=${Date.now()}`), { cache: 'no-store' })
-        .then(res => res.ok ? res.json() : [])
+        .then(res => { if (!res.ok) throw new Error('Unable to load batches.'); return res.json(); })
         .then(data => {
+          setBatchesError('');
           const batchesData = Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []);
           setBatches(batchesData);
         })
-        .catch(() => {})
+        .catch(() => setBatchesError('Unable to load batches.'))
         .finally(() => {
           if (isInitialLoad) {
             setBatchesLoading(false);
@@ -98,44 +113,26 @@ function App() {
     );
   };
 
-  // Update account_holder in local state when assigned from a card
-  const handleAccountAssigned = (updatedReceipt) => {
-    setReceipts(prev =>
-      prev.map(r => r.id === updatedReceipt.id ? { ...r, account_holder: updatedReceipt.account_holder } : r)
-    );
-  };
-
-  const moveReceipt = (receiptId, targetColumn) => {
-     fetch(getApiUrl(`/api/receipts/${receiptId}`), {
-       method: 'PATCH',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({ category: targetColumn }),
-     }).then(() => {
-       setReceipts(prev =>
-         prev.map(r => r.id === receiptId ? { ...r, category: targetColumn } : r)
-       );
-     });
-   };
-
    return (
     <ThemeProvider>
-      <div className="flex h-screen overflow-hidden" style={{ background: location.pathname.startsWith('/batch') ? '#f8f9fb' : '#fffbf5' }}>
+      <div className="flex h-screen overflow-hidden" style={{ background: '#f7f8f3' }}>
           <Sidebar 
-            onMobileToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+            onMobileToggle={toggleMobileMenu}
             isMobileMenuOpen={isMobileMenuOpen} 
           />
 
           <main 
-            className="flex-1 overflow-y-auto overflow-x-hidden min-w-0" 
+            className="flex-1 overflow-y-auto overflow-x-hidden min-w-0"
+            inert={isMobile && isMobileMenuOpen}
             style={{ 
-              background: location.pathname.startsWith('/batch') ? '#f8f9fb' : '#fffbf5',
-              paddingTop: isMobile ? '70px' : '0' 
+              background: '#f7f8f3',
+              paddingTop: isMobile ? '64px' : '0'
             }}
           >
             <div 
               className="mx-auto" 
               style={{ 
-                padding: isMobile ? '16px' : (location.pathname.startsWith('/batch') ? '28px 36px' : '32px 40px'),
+                padding: isMobile ? '20px 18px' : '26px clamp(24px, 3vw, 48px)',
                 maxWidth: '1600px',
                 minWidth: 0,
                 width: '100%',
@@ -147,7 +144,8 @@ function App() {
                     receipts={receipts}
                     batches={batches}
                     batchesLoading={batchesLoading}
-                    onSelectReceipt={setSelectedReceipt}
+                    receiptsLoading={receiptsLoading}
+                    dataError={[receiptsError, batchesError].filter(Boolean).join(' ')}
                     onNavigate={(path) => navigate(path)}
                   />
                 } />
