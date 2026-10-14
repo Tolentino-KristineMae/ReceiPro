@@ -178,7 +178,7 @@ function DashboardStats({ receipts, onNavigate }) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '0.35rem',
-                    padding: '0.6rem 1rem',
+                    padding: '0.5rem 0.75rem',
                     background: '#f97316',
                     color: 'white',
                     border: 'none',
