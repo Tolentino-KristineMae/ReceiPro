@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import profLogo from '../prof.png';
+import profLogo from '../../newprof.png';
 
 const NAV = [
   {
@@ -172,8 +172,8 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
             src={profLogo}
             alt="ReceiPro logo"
             style={{
-              width: collapsed && !isMobile ? '34px' : '120px',
-              height: collapsed && !isMobile ? '34px' : '44px',
+              width: collapsed && !isMobile ? '46px' : '190px',
+              height: collapsed && !isMobile ? '46px' : '58px',
               objectFit: 'contain',
               flexShrink: 0,
               borderRadius: '8px',
