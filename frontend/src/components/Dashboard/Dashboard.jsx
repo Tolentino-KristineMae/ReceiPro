@@ -1,8 +1,6 @@
 import React from 'react';
-import unclaimedCardImg from '../../../../unclaimedcard.png';
-import claimedCardImg from '../../claimedcard.png';
-import totalRepCardImg from '../../newnew.png';
-
+import unclaimedCardImg from '../../../../totalunclaimedcard-removebg-preview.png';
+import claimedCardImg from '../../totalclaimedcard-removebg-preview.png';
 const Icon = {
   Receipt: ({ size = 18, className = "" }) => (
     <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
