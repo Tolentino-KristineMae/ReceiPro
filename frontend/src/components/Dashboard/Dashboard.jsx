@@ -159,12 +159,14 @@ function DashboardStats({ receipts, onNavigate }) {
               />
               <div style={{
                 position: 'absolute',
-                left: '1.25rem',
-                bottom: '1.25rem',
+                left: '50%',
+                bottom: '1.5rem',
+                transform: 'translateX(-50%)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '0.5rem',
                 zIndex: 2,
+                width: 'calc(100% - 3rem)',
               }}>
                 <button
                   onClick={(e) => {
@@ -178,11 +180,11 @@ function DashboardStats({ receipts, onNavigate }) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '0.5rem',
-                    padding: '0.75rem 1.5rem',
+                    padding: '0.875rem 1.5rem',
                     background: '#f97316',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '14px',
+                    borderRadius: '12px',
                     fontSize: '0.95rem',
                     fontWeight: '700',
                     fontFamily: 'Inter, sans-serif',
@@ -190,7 +192,7 @@ function DashboardStats({ receipts, onNavigate }) {
                     boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
                     transition: 'all 0.2s ease',
                     whiteSpace: 'nowrap',
-                    alignSelf: 'flex-start',
+                    width: '100%',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = '#ea580c';
