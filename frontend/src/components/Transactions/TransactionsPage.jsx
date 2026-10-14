@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import WorkspacePageHeader from '../WorkspacePageHeader';
 import './TransactionsPage.css';
+import { requestJson } from '../../utils/requestJson';
 import { getApiUrl } from '../../apiConfig';
 import { playTransactionSound } from '../../utils/sound';
 
@@ -389,7 +390,7 @@ export default function TransactionsPage() {
     return { ...prev, [activeAccount]: typeof updater === 'function' ? updater(cur) : updater };
   });
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async (signal) => {
     if (!activeAccount) return;
     setLoading(true);
     setLoadError('');
@@ -401,21 +402,21 @@ export default function TransactionsPage() {
       });
       if (searchQuery.trim()) params.set('search', searchQuery.trim());
 
-      const response = await fetch(getApiUrl(`/api/transactions?${params.toString()}`), { cache: 'no-store' });
-      if (!response.ok) throw new Error('Unable to load transactions');
-      const data = await response.json();
+      const data = await requestJson(getApiUrl(`/api/transactions?${params.toString()}`), { cache: 'no-store', signal });
+      if (signal?.aborted) return;
       const rawTxns = Array.isArray(data?.data) ? data.data : [];
       const ob = data?.meta?.opening_balance ?? 0;
       const { transactions: computed, meta } = recomputeBalances(rawTxns, ob, sortOrder);
       setTransactions(computed);
       setTransactionMeta(meta);
     } catch {
+      if (signal?.aborted) return;
       setTransactions([]);
       setLoadError('We couldn’t load this ledger. Please check your connection and try again.');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  };
+  }, [activeAccount, searchQuery, sortOrder]);
 
   const fetchReport = async () => {
     try {
@@ -429,9 +430,12 @@ export default function TransactionsPage() {
   };
 
   useEffect(() => {
-    fetchTransactions();
-    setSelectedTransactions([]); // Clear selection when account, search, or sort changes
-  }, [activeAccount, searchQuery, sortOrder]);
+    const controller = new AbortController();
+    // Wait for typing to pause and cancel the old account/search request.
+    const timer = setTimeout(() => fetchTransactions(controller.signal), searchQuery.trim() ? 250 : 0);
+    setSelectedTransactions([]);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [fetchTransactions, searchQuery]);
 
   useEffect(() => {
     fetchReport();

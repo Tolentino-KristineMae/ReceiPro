@@ -1,13 +1,16 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard/Dashboard';
-import { TransactionEntryModal as TransactionModal } from './components/Transactions/TransactionsPage';
+import { useDashboardData } from './hooks/useDashboardData';
 import Sidebar from './components/Sidebar';
-import TransactionsPage from './components/Transactions/TransactionsPage';
-import BatchCheckerPage from './components/BatchChecker/BatchCheckerPage';
-import SettingsPage from './pages/SettingsPage';
+import PageErrorBoundary from './components/PageErrorBoundary';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { getApiUrl } from './apiConfig';
+
+const TransactionModal = lazy(() => import('./components/Transactions/TransactionsPage').then(module => ({ default: module.TransactionEntryModal })));
+const TransactionsPage = lazy(() => import('./components/Transactions/TransactionsPage'));
+const BatchCheckerPage = lazy(() => import('./components/BatchChecker/BatchCheckerPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
 function App() {
   // Add global CSS to prevent horizontal scrolling
@@ -26,18 +29,13 @@ function App() {
     return () => document.head.removeChild(style);
   }, []);
 
-   const [receipts, setReceipts] = useState([]);
-  const [receiptsLoading, setReceiptsLoading] = useState(true);
-  const [receiptsError, setReceiptsError] = useState('');
-  const [batchesError, setBatchesError] = useState('');
-  const [batches, setBatches] = useState([]);
-  const [batchesLoading, setBatchesLoading] = useState(true);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [mobileMenu, setMobileMenu] = useState({ open: false, path: '' });
   const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { receipts, setReceipts, receiptsLoading, receiptsError, batches, activeBatchCount, batchesLoading, batchesError } = useDashboardData(location.pathname === "/");
   const isMobileMenuOpen = mobileMenu.open && mobileMenu.path === location.pathname;
   // Reset the drawer when navigation changes, including browser back/forward.
   if (mobileMenu.open && mobileMenu.path !== location.pathname) {
@@ -58,51 +56,6 @@ function App() {
     checkIsMobile();
     window.addEventListener('resize', checkIsMobile);
     return () => window.removeEventListener('resize', checkIsMobile);
-  }, []);
-
-  // Load receipts on mount
-  useEffect(() => {
-    fetch(getApiUrl(`/api/receipts?t=${Date.now()}`), { cache: 'no-store' })
-      .then(res => { if (!res.ok) throw new Error('Unable to load receipts.'); return res.json(); })
-      .then(data => setReceipts(Array.isArray(data) ? data : data.data ?? []))
-      .catch(() => setReceiptsError('Unable to load receipts.'))
-      .finally(() => setReceiptsLoading(false));
-  }, []);
-
-  // Load batches on mount and poll every 10 seconds
-  useEffect(() => {
-    let isInitialLoad = true;
-    
-    const fetchBatches = () => {
-      // Only show loading state on initial load, not on polling updates
-      if (isInitialLoad) {
-        setBatchesLoading(true);
-      }
-      
-      fetch(getApiUrl(`/api/batches?t=${Date.now()}`), { cache: 'no-store' })
-        .then(res => { if (!res.ok) throw new Error('Unable to load batches.'); return res.json(); })
-        .then(data => {
-          setBatchesError('');
-          const batchesData = Array.isArray(data?.batches) ? data.batches : (Array.isArray(data) ? data : []);
-          setBatches(batchesData);
-        })
-        .catch(() => setBatchesError('Unable to load batches.'))
-        .finally(() => {
-          if (isInitialLoad) {
-            setBatchesLoading(false);
-            isInitialLoad = false;
-          }
-        });
-    };
-
-    // Initial fetch
-    fetchBatches();
-
-    // Set up polling interval (every 10 seconds)
-    const intervalId = setInterval(fetchBatches, 10000);
-
-    // Cleanup interval on unmount
-    return () => clearInterval(intervalId);
   }, []);
 
   // Mark receipt as matched in local state after a transaction is created
@@ -138,11 +91,14 @@ function App() {
                 width: '100%',
               }}
             >
+              <PageErrorBoundary key={location.pathname}>
+              <Suspense fallback={<p role="status">Loading page…</p>}>
               <Routes>
                 <Route path="/" element={
                   <Dashboard
                     receipts={receipts}
                     batches={batches}
+                    activeBatchCount={activeBatchCount}
                     batchesLoading={batchesLoading}
                     receiptsLoading={receiptsLoading}
                     dataError={[receiptsError, batchesError].filter(Boolean).join(' ')}
@@ -156,6 +112,8 @@ function App() {
                 <Route path="/messages" element={<div className="text-orange-950 p-10">Messages coming soon...</div>} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              </Suspense>
+              </PageErrorBoundary>
             </div>
           </main>
         </div>
@@ -168,6 +126,7 @@ function App() {
         )}
 
         {showTransactionModal && selectedReceipt && (
+          <Suspense fallback={<p role="status">Loading transaction…</p>}>
           <TransactionModal
             receipt={selectedReceipt}
             onClose={() => {
@@ -176,6 +135,7 @@ function App() {
             }}
             onTransactionCreated={handleTransactionCreated}
           />
+          </Suspense>
         )}
     </ThemeProvider>
   );

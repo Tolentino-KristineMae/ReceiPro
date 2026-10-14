@@ -74,7 +74,6 @@ class BatchStatsService
                 return true;
             }
             return $r->ocr_status === 'completed'
-                || $r->ocr_status === 'processing'
                 || ($ocr && !empty($ocr['raw_text']));
         })->count();
 
@@ -95,9 +94,9 @@ class BatchStatsService
         ];
     }
 
-    public function getOverallProgress(Batch $batch): int
+    public function getOverallProgress(Batch $batch, ?array $stats = null): int
     {
-        $stats = $this->calculateStats($batch);
+        $stats ??= $this->calculateStats($batch);
         $total = $stats['total'];
         if ($total === 0) {
             return 0;
@@ -220,10 +219,12 @@ class BatchStatsService
             }]);
         }
 
-        $batch->setAttribute('stats', $this->calculateStats($batch));
-        $batch->setAttribute('progress', $this->getOverallProgress($batch));
+        $stats = $this->calculateStats($batch);
+        $batch->setAttribute('stats', $stats);
+        $batch->setAttribute('progress', $this->getOverallProgress($batch, $stats));
         $batch->setAttribute('verified_claims', $this->getVerifiedClaims($batch));
         $batch->setAttribute('linked_transactions', $this->syncService->getLinkedTransactions($batch));
+        $batch->unsetRelation('transactions');
         $batch->setAttribute('verification_summary', $this->summarizeBatchReceipts($batch));
         $batch->setAttribute('sync_repair', $repair);
         return $batch;

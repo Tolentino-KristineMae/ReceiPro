@@ -11,6 +11,8 @@ import VerificationStage from './Steps/VerificationStage';
 import FinalizeStage from './Steps/FinalizeStage';
 import SummaryStage from './Steps/SummaryStage';
 import { getApiUrl } from '../../apiConfig';
+import { requestJson } from '../../utils/requestJson';
+import { parseOCRData } from './BatchUtils';
 import qrJonarld from '../../assets/qr-jonarld.jpg';
 import './ProcessStages.css';
 
@@ -158,15 +160,18 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
   // Try to reconstruct ocrResults from receipts if they have data
   useEffect(() => {
     if ((phase === 'ocr' || phase === 'finalize' || phase === 'summary' || phase === 'billing') && !ocrResults && receipts.length > 0) {
-      const hasOcrData = receipts.some(r => {
-        const ocr = r.ocr_data ? (typeof r.ocr_data === 'string' ? JSON.parse(r.ocr_data) : r.ocr_data) : null;
+      if (isProcessingOcr) return;
+      const categorized = receipts.filter(r => r.category && r.category !== 'unsorted');
+      const extractedReceipts = categorized.filter(r => {
+        const ocr = parseOCRData(r.ocr_data);
         return r.ocr_status === 'completed' || (ocr && (ocr.raw_text || ocr.manual));
       });
 
-      if (hasOcrData) {
+      // A single completed receipt must not mark the entire extraction as done.
+      if (extractedReceipts.length > 0 && (phase !== 'ocr' || extractedReceipts.length === categorized.length)) {
         console.log('Reconstructing ocrResults from receipts data...');
-        const results = receipts.map(r => {
-          const ocr = r.ocr_data ? (typeof r.ocr_data === 'string' ? JSON.parse(r.ocr_data) : r.ocr_data) : {};
+        const results = extractedReceipts.map(r => {
+          const ocr = parseOCRData(r.ocr_data) || {};
           return {
             receipt: r,
             amount: ocr.amount || 0,
@@ -184,7 +189,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
         if (phase === 'ocr') setShowOcrPreview(true);
       }
     }
-  }, [phase, receipts, ocrResults]);
+  }, [phase, receipts, ocrResults, isProcessingOcr]);
 
   // Initialize verification when opening directly at the verify stage
   useEffect(() => {
@@ -1085,10 +1090,11 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
     if (isReCropping && currentCategory === 'gcash' && dataUrl) {
       console.log('Re-cropping detected, running OCR extraction for receipt:', current.id);
 
+      let worker;
       try {
         setIsProcessingOcr(true);
 
-        const worker = await createWorker('eng', 1, {
+        worker = await createWorker('eng', 1, {
           logger: m => {
             if (m.status === 'recognizing text') console.log(`[OCR re-crop] ${Math.round(m.progress * 100)}%`);
           },
@@ -1155,7 +1161,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
           }
         }
 
-        const patchRes = await fetch(getApiUrl(`/api/receipts/${current.id}`), {
+        const updatedReceipt = await requestJson(getApiUrl(`/api/receipts/${current.id}`), {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1171,9 +1177,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
           }),
         });
 
-        if (!patchRes.ok) throw new Error(`Save failed for receipt #${current.id}`);
-
-        const updatedReceipt = await patchRes.json();
 
         setOcrResults(prevResults => {
           const newResults = [...prevResults];
@@ -1192,8 +1195,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
           return newResults;
         });
 
-        await worker.terminate();
-        setIsProcessingOcr(false);
         setPhase('ocr');
         setShowOcrPreview(true);
 
@@ -1206,10 +1207,12 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
       } catch (e) {
         console.error('Re-extraction failed:', e);
         showToast('Re-extraction failed', e.message, 'error', 6000);
-        setIsProcessingOcr(false);
         setPhase('ocr');
         setShowOcrPreview(true);
         return;
+      } finally {
+        if (worker) await worker.terminate().catch(console.warn);
+        setIsProcessingOcr(false);
       }
     }
 
@@ -1370,22 +1373,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
     setOcrResults(null);
     setOcrProgress(0); // Initialize progress
 
-    const worker = await createWorker('eng', 1, {
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          console.log(`[OCR] ${Math.round(m.progress * 100)}%`);
-        }
-      },
-      errorHandler: e => console.error('Tesseract Worker Error:', e),
-    });
-
-    // PSM 6 = single uniform text block — ideal for cropped receipt sections
-    // OEM 1 = LSTM only (more accurate than legacy)
-    await worker.setParameters({
-      tessedit_pageseg_mode: '6',
-      tessedit_ocr_engine_mode: '1',
-    });
-
+    let worker;
     try {
       const results = [];
       const failedReceipts = [];
@@ -1492,6 +1480,24 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
 
           // Run OCR on crop with enhancement (contrast boost + upscale for small crops)
           const cropCanvas = await loadCanvas(imageSrc, true);
+          // Manual entries and missing images need no OCR engine download.
+          if (!worker) {
+            worker = await createWorker('eng', 1, {
+              logger: m => {
+                if (m.status === 'recognizing text') {
+                  console.log(`[OCR] ${Math.round(m.progress * 100)}%`);
+                }
+              },
+              errorHandler: e => console.error('Tesseract Worker Error:', e),
+            });
+
+            // PSM 6 = single uniform text block — ideal for cropped receipt sections
+            // OEM 1 = LSTM only (more accurate than legacy)
+            await worker.setParameters({
+              tessedit_pageseg_mode: '6',
+              tessedit_ocr_engine_mode: '1',
+            });
+          }
           const { data: { text: cropText } } = await worker.recognize(cropCanvas);
           const extracted = extractFields(cropText);
 
@@ -1525,7 +1531,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
             console.warn(`Receipt #${r.id}: OCR found no amount or reference. Crop text: ${cropText.substring(0, 100)}`);
           }
 
-          const patchRes = await fetch(getApiUrl(`/api/receipts/${r.id}`), {
+          const updatedReceipt = await requestJson(getApiUrl(`/api/receipts/${r.id}`), {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1542,9 +1548,6 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
             }),
           });
 
-          if (!patchRes.ok) throw new Error(`Save failed for receipt #${r.id} (HTTP ${patchRes.status})`);
-
-          const updatedReceipt = await patchRes.json();
           results.push({
             receipt: updatedReceipt,
             amount: extracted.amount || 0,
@@ -1576,7 +1579,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
       console.error('OCR Extraction failed:', e);
       alert(`Extraction failed: ${e.message}. Please check your connection and try again.`);
     } finally {
-      await worker.terminate();
+      if (worker) await worker.terminate().catch(console.warn);
       setIsProcessingOcr(false);
     }
   };
@@ -2408,7 +2411,7 @@ const CropWizard = ({ receipts = [], batchId, onDone, onClose, onSaved, initialP
                 isProcessingOcr={isProcessingOcr}
                 ocrResults={ocrResults}
                 onStartExtraction={handleRunOcrExtraction}
-                receiptsCount={receipts.length}
+                receiptsCount={liveReceipts.filter(r => r.category && r.category !== 'unsorted').length}
                 ocrProgress={ocrProgress}
                 onReExtract={() => {
                   setOcrResults(null);

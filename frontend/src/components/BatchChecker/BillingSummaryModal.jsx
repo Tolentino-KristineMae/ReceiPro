@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect } from 'react';
-import html2canvas from 'html2canvas';
 import { getApiUrl } from '../../apiConfig';
 
 const fmt = (n) =>
@@ -143,14 +142,16 @@ const BillingSummaryModal = ({
   const isMobile = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const scale = isMobile() ? 1 : 2;
 
-  const captureCanvas = () =>
-    html2canvas(cardRef.current, {
+  const captureCanvas = async () => {
+    const { default: html2canvas } = await import('html2canvas');
+    return html2canvas(cardRef.current, {
       backgroundColor: '#ffffff',
       scale,
       useCORS: true,
       logging: false,
       imageTimeout: 10000 // Prevent hanging on image load
     });
+  };
 
   const handleCopyImage = async () => {
     if (!cardRef.current) return;
