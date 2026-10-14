@@ -114,7 +114,7 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
       >
         {/* Logo */}
         <div style={{
-          height: '68px',
+          height: '80px',
           display: 'flex',
           alignItems: 'center',
           padding: isMobile ? '0 18px' : (collapsed ? '0' : '0 20px'),
@@ -128,8 +128,8 @@ export default function Sidebar({ onMobileToggle, isMobileMenuOpen }) {
             src={profLogo}
             alt="ReceiPro"
             style={{
-              width: collapsed && !isMobile ? '42px' : '150px',
-              height: collapsed && !isMobile ? '42px' : '46px',
+              width: collapsed && !isMobile ? '48px' : '180px',
+              height: collapsed && !isMobile ? '48px' : '56px',
               objectFit: 'contain',
               flexShrink: 0,
             }}
