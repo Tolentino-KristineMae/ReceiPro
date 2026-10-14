@@ -59,9 +59,8 @@ function DashboardStats({ receipts, onNavigate }) {
     return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
   });
 
-  const total = currentMonthReceipts.length;
   const claimed = currentMonthReceipts.filter(r => r.match_status === 'verified' || r.match_status === 'matched').length;
-  const unclaimed = total - claimed;
+  const unclaimed = currentMonthReceipts.length - claimed;
 
   const stats = [
     {
